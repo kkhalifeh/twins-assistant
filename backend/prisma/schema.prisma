@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(PARENT)
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  feedingLogs  FeedingLog[]
+  sleepLogs    SleepLog[]
+  diaperLogs   DiaperLog[]
+  healthLogs   HealthLog[]
+  schedules    Schedule[]
+}
+
+model Child {
+  id          String    @id @default(cuid())
+  name        String
+  dateOfBirth DateTime
+  gender      Gender
+  photoUrl    String?
+  medicalNotes String?  @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  feedingLogs  FeedingLog[]
+  sleepLogs    SleepLog[]
+  diaperLogs   DiaperLog[]
+  healthLogs   HealthLog[]
+  milestones   Milestone[]
+  schedules    Schedule[]
+  insights     Insight[]
+}
+
+model FeedingLog {
+  id         String       @id @default(cuid())
+  childId    String
+  userId     String
+  startTime  DateTime
+  endTime    DateTime?
+  type       FeedingType
+  amount     Float?       // in ml
+  duration   Int?         // in minutes
+  notes      String?
+  createdAt  DateTime     @default(now())
+  
+  // Relations
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  
+  @@index([childId, startTime])
+}
+
+model SleepLog {
+  id        String     @id @default(cuid())
+  childId   String
+  userId    String
+  startTime DateTime
+  endTime   DateTime?
+  duration  Int?       // in minutes (calculated)
+  type      SleepType
+  quality   SleepQuality?
+  notes     String?
+  createdAt DateTime   @default(now())
+  
+  // Relations
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  
+  @@index([childId, startTime])
+}
+
+model DiaperLog {
+  id          String        @id @default(cuid())
+  childId     String
+  userId      String
+  timestamp   DateTime
+  type        DiaperType
+  consistency Consistency?
+  color       String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  
+  // Relations
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  
+  @@index([childId, timestamp])
+}
+
+model HealthLog {
+  id        String      @id @default(cuid())
+  childId   String
+  userId    String
+  timestamp DateTime
+  type      HealthType
+  value     String      // temperature, medicine name, etc.
+  unit      String?     // °C, ml, etc.
+  notes     String?
+  createdAt DateTime    @default(now())
+  
+  // Relations
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  
+  @@index([childId, timestamp])
+}
+
+model Schedule {
+  id         String        @id @default(cuid())
+  childId    String?
+  userId     String
+  eventType  EventType
+  dueTime    DateTime
+  recurrence RecurrenceType?
+  frequency  String?       // "every 3 hours", "daily", etc.
+  status     ScheduleStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  
+  // Relations
+  child Child? @relation(fields: [childId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+  
+  @@index([dueTime, status])
+}
+
+model Inventory {
+  id               String   @id @default(cuid())
+  category         ItemCategory
+  brand            String?
+  itemName         String
+  unitSize         String   // "30 diapers", "800g powder"
+  currentStock     Float
+  minimumStock     Float
+  consumptionRate  Float?   // units per day
+  lastRestocked    DateTime?
+  nextReorderDate  DateTime?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@index([category])
+}
+
+model Milestone {
+  id          String        @id @default(cuid())
+  childId     String
+  type        MilestoneType
+  name        String
+  dateAchieved DateTime
+  notes       String?
+  mediaUrl    String?
+  createdAt   DateTime      @default(now())
+  
+  // Relations
+  child Child @relation(fields: [childId], references: [id])
+  
+  @@index([childId, dateAchieved])
+}
+
+model Insight {
+  id           String      @id @default(cuid())
+  childId      String?
+  patternType  PatternType
+  description  String      @db.Text
+  confidence   Float       // 0-1
+  suggestion   String?     @db.Text
+  validFrom    DateTime
+  validUntil   DateTime?
+  createdAt    DateTime    @default(now())
+  
+  // Relations
+  child Child? @relation(fields: [childId], references: [id])
+  
+  @@index([childId, validFrom])
+}
+
+// Enums
+enum UserRole {
+  PARENT
+  CAREGIVER
+  VIEWER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum FeedingType {
+  BREAST
+  BOTTLE
+  FORMULA
+  MIXED
+  SOLID
+}
+
+enum SleepType {
+  NAP
+  NIGHT
+}
+
+enum SleepQuality {
+  DEEP
+  RESTLESS
+  INTERRUPTED
+}
+
+enum DiaperType {
+  WET
+  DIRTY
+  MIXED
+}
+
+enum Consistency {
+  NORMAL
+  WATERY
+  HARD
+}
+
+enum HealthType {
+  TEMPERATURE
+  MEDICINE
+  WEIGHT
+  HEIGHT
+  VACCINATION
+  SYMPTOM
+  DOCTOR_VISIT
+}
+
+enum EventType {
+  FEEDING
+  NAP
+  MEDICINE
+  VACCINATION
+  APPOINTMENT
+  OTHER
+}
+
+enum ScheduleStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+enum RecurrenceType {
+  ONCE
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+
+enum ItemCategory {
+  FORMULA
+  DIAPERS
+  WIPES
+  CLOTHES
+  MEDICINE
+  TOYS
+  FEEDING_SUPPLIES
+  OTHER
+}
+
+enum MilestoneType {
+  MOTOR
+  LANGUAGE
+  SOCIAL
+  COGNITIVE
+}
+
+enum PatternType {
+  FEEDING
+  SLEEP
+  HEALTH
+  BEHAVIOR
+  CORRELATION
+}

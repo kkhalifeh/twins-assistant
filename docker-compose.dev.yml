@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: twins_postgres
+    environment:
+      POSTGRES_DB: twins_assistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - twins_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: twins_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - twins_network
+
+  adminer:
+    image: adminer
+    container_name: twins_adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - twins_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  twins_network:
+    driver: bridge

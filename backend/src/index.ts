@@ -1,0 +1,114 @@
+import express, { Express, Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
+
+// Import routes
+import authRoutes from './routes/auth.routes';
+import childrenRoutes from './routes/children.routes';
+import feedingRoutes from './routes/feeding.routes';
+import sleepRoutes from './routes/sleep.routes';
+import diaperRoutes from './routes/diaper.routes';
+import healthRoutes from './routes/health.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import dashboardRoutes from './routes/dashboard.routes';
+import chatRoutes from './routes/chat.routes';// Load environment variables
+dotenv.config();
+
+// Initialize Prisma Client
+export const prisma = new PrismaClient();
+
+// Create Express app
+const app: Express = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Logging middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    service: 'twins-assistant-api'
+  });
+});
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/children', childrenRoutes);
+app.use('/api/feeding', feedingRoutes);
+app.use('/api/sleep', sleepRoutes);
+app.use('/api/diapers', diaperRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/chat', chatRoutes);// Base API route
+app.get('/api', (req: Request, res: Response) => {
+  res.json({ 
+    message: 'Twin Parenting Assistant API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      children: '/api/children',
+      feeding: '/api/feeding',
+      sleep: '/api/sleep',
+      diapers: '/api/diapers',
+      health: '/api/health',
+      analytics: '/api/analytics'
+    }
+  });
+});
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    message: err.message 
+  });
+});
+
+// Start server
+async function startServer() {
+  try {
+    // Connect to database
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+    
+    // Start Express server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`📊 Database UI available at http://localhost:8080`);
+      console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n👋 Shutting down gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+// Start the server
+startServer();
