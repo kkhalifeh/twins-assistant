@@ -5,12 +5,13 @@ const prisma = new PrismaClient();
 
 export class AnalyticsService {
   // Analyze feeding patterns
-  async analyzeFeedingPatterns(childId: string, days: number = 7) {
+  async analyzeFeedingPatterns(childId: string, days: number = 7, userId: string) {
     const since = subDays(new Date(), days);
-    
+
     const feedingLogs = await prisma.feedingLog.findMany({
       where: {
         childId,
+        userId,
         startTime: { gte: since }
       },
       orderBy: { startTime: 'asc' }
@@ -46,12 +47,13 @@ export class AnalyticsService {
   }
 
   // Analyze sleep patterns
-  async analyzeSleepPatterns(childId: string, days: number = 7) {
+  async analyzeSleepPatterns(childId: string, days: number = 7, userId: string) {
     const since = subDays(new Date(), days);
-    
+
     const sleepLogs = await prisma.sleepLog.findMany({
       where: {
         childId,
+        userId,
         startTime: { gte: since },
         endTime: { not: null }
       }
@@ -115,22 +117,22 @@ export class AnalyticsService {
   }
 
   // Detect correlations between activities
-  async detectCorrelations(childId: string, days: number = 14) {
+  async detectCorrelations(childId: string, days: number = 14, userId: string) {
     const since = subDays(new Date(), days);
     const correlations: any[] = [];
 
     // Get all activity logs
     const [feedingLogs, sleepLogs, diaperLogs] = await Promise.all([
       prisma.feedingLog.findMany({
-        where: { childId, startTime: { gte: since } },
+        where: { childId, userId, startTime: { gte: since } },
         orderBy: { startTime: 'asc' }
       }),
       prisma.sleepLog.findMany({
-        where: { childId, startTime: { gte: since } },
+        where: { childId, userId, startTime: { gte: since } },
         orderBy: { startTime: 'asc' }
       }),
       prisma.diaperLog.findMany({
-        where: { childId, timestamp: { gte: since } },
+        where: { childId, userId, timestamp: { gte: since } },
         orderBy: { timestamp: 'asc' }
       })
     ]);
@@ -181,22 +183,24 @@ export class AnalyticsService {
   }
 
   // Compare twins patterns
-  async compareTwins(days: number = 7) {
-    const children = await prisma.child.findMany();
+  async compareTwins(days: number = 7, userId: string) {
+    const children = await prisma.child.findMany({
+      where: { userId }
+    });
     if (children.length !== 2) return null;
 
     const [child1Patterns, child2Patterns] = await Promise.all([
-      this.analyzeFeedingPatterns(children[0].id, days),
-      this.analyzeFeedingPatterns(children[1].id, days)
+      this.analyzeFeedingPatterns(children[0].id, days, userId),
+      this.analyzeFeedingPatterns(children[1].id, days, userId)
     ]);
 
     const [child1Sleep, child2Sleep] = await Promise.all([
-      this.analyzeSleepPatterns(children[0].id, days),
-      this.analyzeSleepPatterns(children[1].id, days)
+      this.analyzeSleepPatterns(children[0].id, days, userId),
+      this.analyzeSleepPatterns(children[1].id, days, userId)
     ]);
 
-    const feedingSync = await this.calculateSynchronization(children[0].id, children[1].id, 'feeding', days);
-    const sleepSync = await this.calculateSynchronization(children[0].id, children[1].id, 'sleep', days);
+    const feedingSync = await this.calculateSynchronization(children[0].id, children[1].id, 'feeding', days, userId);
+    const sleepSync = await this.calculateSynchronization(children[0].id, children[1].id, 'sleep', days, userId);
 
     return {
       feeding: {
@@ -217,17 +221,18 @@ export class AnalyticsService {
     child1Id: string,
     child2Id: string,
     type: 'feeding' | 'sleep',
-    days: number
+    days: number,
+    userId: string
   ): Promise<number> {
     const since = subDays(new Date(), days);
-    
+
     if (type === 'feeding') {
       const [child1Logs, child2Logs] = await Promise.all([
         prisma.feedingLog.findMany({
-          where: { childId: child1Id, startTime: { gte: since } }
+          where: { childId: child1Id, userId, startTime: { gte: since } }
         }),
         prisma.feedingLog.findMany({
-          where: { childId: child2Id, startTime: { gte: since } }
+          where: { childId: child2Id, userId, startTime: { gte: since } }
         })
       ]);
 
@@ -243,10 +248,10 @@ export class AnalyticsService {
     } else {
       const [child1Logs, child2Logs] = await Promise.all([
         prisma.sleepLog.findMany({
-          where: { childId: child1Id, startTime: { gte: since } }
+          where: { childId: child1Id, userId, startTime: { gte: since } }
         }),
         prisma.sleepLog.findMany({
-          where: { childId: child2Id, startTime: { gte: since } }
+          where: { childId: child2Id, userId, startTime: { gte: since } }
         })
       ]);
 
@@ -263,13 +268,15 @@ export class AnalyticsService {
   }
 
   // Generate AI insights
-  async generateInsights() {
-    const children = await prisma.child.findMany();
+  async generateInsights(userId: string) {
+    const children = await prisma.child.findMany({
+      where: { userId }
+    });
     const insights: any[] = [];
 
     for (const child of children) {
       // Feeding insights
-      const feedingPattern = await this.analyzeFeedingPatterns(child.id, 7);
+      const feedingPattern = await this.analyzeFeedingPatterns(child.id, 7, userId);
       if (feedingPattern) {
         insights.push({
           childId: child.id,
@@ -279,7 +286,7 @@ export class AnalyticsService {
           description: `${child.name} feeds every ${feedingPattern.averageInterval} hours on average, consuming about ${feedingPattern.averageAmount}ml per feeding.`,
           trend: feedingPattern.trend,
           confidence: 0.85,
-          recommendation: feedingPattern.trend === 'increasing' 
+          recommendation: feedingPattern.trend === 'increasing'
             ? 'Feeding intervals are getting longer, which is normal as baby grows.'
             : 'Maintain current feeding schedule.',
           nextAction: `Next feeding expected around ${format(feedingPattern.nextFeedingEstimate, 'h:mm a')}`
@@ -287,7 +294,7 @@ export class AnalyticsService {
       }
 
       // Sleep insights
-      const sleepPattern = await this.analyzeSleepPatterns(child.id, 7);
+      const sleepPattern = await this.analyzeSleepPatterns(child.id, 7, userId);
       if (sleepPattern) {
         insights.push({
           childId: child.id,
@@ -297,7 +304,7 @@ export class AnalyticsService {
           description: `${child.name} sleeps ${sleepPattern.totalSleepHours} hours per day on average.`,
           quality: sleepPattern.sleepQuality,
           confidence: 0.80,
-          recommendation: sleepPattern.sleepQuality === 'Excellent' 
+          recommendation: sleepPattern.sleepQuality === 'Excellent'
             ? 'Sleep patterns are healthy and consistent.'
             : 'Consider adjusting bedtime routine for better sleep quality.',
           typicalWakeTime: sleepPattern.typicalWakeTime
@@ -305,7 +312,7 @@ export class AnalyticsService {
       }
 
       // Correlations
-      const correlations = await this.detectCorrelations(child.id, 14);
+      const correlations = await this.detectCorrelations(child.id, 14, userId);
       for (const correlation of correlations) {
         insights.push({
           childId: child.id,
@@ -320,17 +327,17 @@ export class AnalyticsService {
     }
 
     // Twin comparison insights
-    const comparison = await this.compareTwins(7);
+    const comparison = await this.compareTwins(7, userId);
     if (comparison) {
       const feedingSync = comparison.feeding.synchronization;
       const sleepSync = comparison.sleep.synchronization;
-      
+
       insights.push({
         type: 'comparison',
         title: 'Twin Synchronization',
         description: `Feeding synchronization: ${feedingSync}%, Sleep synchronization: ${sleepSync}%`,
         confidence: 0.90,
-        recommendation: feedingSync > 70 
+        recommendation: feedingSync > 70
           ? 'Great job keeping twins on similar schedules!'
           : 'Try to align feeding times for easier management.'
       });
@@ -340,12 +347,14 @@ export class AnalyticsService {
   }
 
   // Generate predictions
-  async generatePredictions() {
-    const children = await prisma.child.findMany();
+  async generatePredictions(userId: string) {
+    const children = await prisma.child.findMany({
+      where: { userId }
+    });
     const predictions: any[] = [];
 
     for (const child of children) {
-      const feedingPattern = await this.analyzeFeedingPatterns(child.id, 7);
+      const feedingPattern = await this.analyzeFeedingPatterns(child.id, 7, userId);
       if (feedingPattern) {
         predictions.push({
           type: 'feeding',
@@ -358,7 +367,7 @@ export class AnalyticsService {
 
       // Predict nap time based on wake windows
       const lastSleep = await prisma.sleepLog.findFirst({
-        where: { childId: child.id, endTime: { not: null } },
+        where: { childId: child.id, userId, endTime: { not: null } },
         orderBy: { endTime: 'desc' }
       });
 
@@ -377,7 +386,7 @@ export class AnalyticsService {
 
       // Predict diaper change
       const lastDiaper = await prisma.diaperLog.findFirst({
-        where: { childId: child.id },
+        where: { childId: child.id, userId },
         orderBy: { timestamp: 'desc' }
       });
 

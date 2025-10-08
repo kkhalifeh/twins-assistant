@@ -6,21 +6,25 @@ import { parseIntSafe } from '../utils/validation';
 export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
   try {
     const { childId, date, limit = '50' } = req.query;
-    
-    const where: any = {};
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const where: any = { userId };
     if (childId) where.childId = childId as string;
     if (date) {
       const startDate = new Date(date as string);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(date as string);
       endDate.setHours(23, 59, 59, 999);
-      
+
       where.timestamp = {
         gte: startDate,
         lte: endDate
       };
     }
-    
+
     const logs = await prisma.diaperLog.findMany({
       where,
       include: {
@@ -32,7 +36,7 @@ export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
       orderBy: { timestamp: 'desc' },
       take: parseIntSafe(limit as string) || 50
     });
-    
+
     res.json(logs);
   } catch (error) {
     console.error('Get diaper logs error:', error);
@@ -53,16 +57,21 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
       notes 
     } = req.body;
     
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     if (!childId || !type) {
-      return res.status(400).json({ 
-        error: 'Child ID and type are required' 
+      return res.status(400).json({
+        error: 'Child ID and type are required'
       });
     }
     
     const log = await prisma.diaperLog.create({
       data: {
         childId,
-        userId: req.user!.userId,
+        userId: req.user!.id,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
         type,
         consistency,
@@ -89,9 +98,16 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
 export const getLastDiaperChange = async (req: AuthRequest, res: Response) => {
   try {
     const { childId } = req.params;
-    
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     const lastLog = await prisma.diaperLog.findFirst({
-      where: { childId },
+      where: {
+        childId,
+        userId
+      },
       orderBy: { timestamp: 'desc' },
       include: {
         child: true,

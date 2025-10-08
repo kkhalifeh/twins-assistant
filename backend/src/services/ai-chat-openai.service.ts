@@ -13,9 +13,12 @@ const conversationHistory = new Map<string, any[]>();
 // Define available functions for OpenAI to call
 const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   logFeeding: async (args: any): Promise<string> => {
-    const { childName, amount, type, notes } = args;
+    const { childName, amount, type, notes, userId } = args;
     const child = await prisma.child.findFirst({
-      where: { name: { contains: childName, mode: 'insensitive' } }
+      where: {
+        name: { contains: childName, mode: 'insensitive' },
+        userId
+      }
     });
     
     if (!child) throw new Error(`Child ${childName} not found`);
@@ -40,6 +43,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     const todayCount = await prisma.feedingLog.count({
       where: {
         childId: child.id,
+        userId,
         startTime: { gte: startOfDay(new Date()) }
       }
     });
@@ -48,18 +52,25 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   startSleep: async (args: any): Promise<string> => {
-    const { childName, type } = args;
+    const { childName, type, userId } = args;
     const child = await prisma.child.findFirst({
-      where: { name: { contains: childName, mode: 'insensitive' } }
+      where: {
+        name: { contains: childName, mode: 'insensitive' },
+        userId
+      }
     });
     
     if (!child) throw new Error(`Child ${childName} not found`);
     
     // Check if already sleeping
     const activeSleep = await prisma.sleepLog.findFirst({
-      where: { childId: child.id, endTime: null }
+      where: {
+        childId: child.id,
+        userId,
+        endTime: null
+      }
     });
-    
+
     if (activeSleep) {
       return `${child.name} is already sleeping (started ${format(activeSleep.startTime, 'h:mm a')})`;
     }
@@ -77,17 +88,24 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   endSleep: async (args: any): Promise<string> => {
-    const { childName } = args;
+    const { childName, userId } = args;
     const child = await prisma.child.findFirst({
-      where: { name: { contains: childName, mode: 'insensitive' } }
+      where: {
+        name: { contains: childName, mode: 'insensitive' },
+        userId
+      }
     });
     
     if (!child) throw new Error(`Child ${childName} not found`);
     
     const activeSleep = await prisma.sleepLog.findFirst({
-      where: { childId: child.id, endTime: null }
+      where: {
+        childId: child.id,
+        userId,
+        endTime: null
+      }
     });
-    
+
     if (!activeSleep) {
       return `${child.name} is not currently sleeping`;
     }
@@ -109,9 +127,12 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   logDiaper: async (args: any): Promise<string> => {
-    const { childName, type } = args;
+    const { childName, type, userId } = args;
     const child = await prisma.child.findFirst({
-      where: { name: { contains: childName, mode: 'insensitive' } }
+      where: {
+        name: { contains: childName, mode: 'insensitive' },
+        userId
+      }
     });
     
     if (!child) throw new Error(`Child ${childName} not found`);
@@ -128,6 +149,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     const todayCount = await prisma.diaperLog.count({
       where: {
         childId: child.id,
+        userId,
         timestamp: { gte: startOfDay(new Date()) }
       }
     });
@@ -136,9 +158,12 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   logTemperature: async (args: any): Promise<string> => {
-    const { childName, temperature } = args;
+    const { childName, temperature, userId } = args;
     const child = await prisma.child.findFirst({
-      where: { name: { contains: childName, mode: 'insensitive' } }
+      where: {
+        name: { contains: childName, mode: 'insensitive' },
+        userId
+      }
     });
     
     if (!child) throw new Error(`Child ${childName} not found`);
@@ -162,17 +187,23 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getLastFeeding: async (args: any): Promise<string> => {
-    const { childName } = args;
-    
+    const { childName, userId } = args;
+
     if (childName) {
       const child = await prisma.child.findFirst({
-        where: { name: { contains: childName, mode: 'insensitive' } }
+        where: {
+          name: { contains: childName, mode: 'insensitive' },
+          userId
+        }
       });
       
       if (!child) throw new Error(`Child ${childName} not found`);
       
       const lastFeeding = await prisma.feedingLog.findFirst({
-        where: { childId: child.id },
+        where: {
+          childId: child.id,
+          userId
+        },
         orderBy: { startTime: 'desc' }
       });
       
@@ -184,12 +215,17 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       return `${child.name} was last fed ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml ${lastFeeding.type.toLowerCase()}) at ${format(lastFeeding.startTime, 'h:mm a')}`;
     } else {
       // Get for all children
-      const children = await prisma.child.findMany();
+      const children = await prisma.child.findMany({
+        where: { userId }
+      });
       const results = [];
-      
+
       for (const child of children) {
         const lastFeeding = await prisma.feedingLog.findFirst({
-          where: { childId: child.id },
+          where: {
+            childId: child.id,
+            userId
+          },
           orderBy: { startTime: 'desc' }
         });
         
@@ -205,16 +241,22 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getLastDiaperChange: async (args: any): Promise<string> => {
-    const { childName } = args;
-    
+    const { childName, userId } = args;
+
     const child = await prisma.child.findFirst({
-      where: { name: { contains: childName, mode: 'insensitive' } }
+      where: {
+        name: { contains: childName, mode: 'insensitive' },
+        userId
+      }
     });
     
     if (!child) throw new Error(`Child ${childName} not found`);
     
     const lastDiaper = await prisma.diaperLog.findFirst({
-      where: { childId: child.id },
+      where: {
+        childId: child.id,
+        userId
+      },
       orderBy: { timestamp: 'desc' }
     });
     
@@ -226,9 +268,13 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     return `${child.name}'s last diaper change was ${hoursAgo}h ${minutesAgo}m ago (${lastDiaper.type.toLowerCase()}) at ${format(lastDiaper.timestamp, 'h:mm a')}`;
   },
   
-  getSleepStatus: async (): Promise<string> => {
+  getSleepStatus: async (args: any): Promise<string> => {
+    const { userId } = args;
     const activeSleeps = await prisma.sleepLog.findMany({
-      where: { endTime: null },
+      where: {
+        endTime: null,
+        userId
+      },
       include: { child: true }
     });
     
@@ -245,7 +291,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getFeedingCount: async (args: any): Promise<string> => {
-    const { childName, timeframe = 'today' } = args;
+    const { childName, timeframe = 'today', userId } = args;
     
     let startDate: Date;
     if (timeframe === 'week') {
@@ -258,27 +304,34 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     
     if (childName) {
       const child = await prisma.child.findFirst({
-        where: { name: { contains: childName, mode: 'insensitive' } }
+        where: {
+          name: { contains: childName, mode: 'insensitive' },
+          userId
+        }
       });
-      
+
       if (!child) throw new Error(`Child ${childName} not found`);
-      
+
       const count = await prisma.feedingLog.count({
         where: {
           childId: child.id,
+          userId,
           startTime: { gte: startDate }
         }
       });
       
       return `${child.name} has had ${count} feedings this ${timeframe}`;
     } else {
-      const children = await prisma.child.findMany();
+      const children = await prisma.child.findMany({
+        where: { userId }
+      });
       const results = [];
-      
+
       for (const child of children) {
         const count = await prisma.feedingLog.count({
           where: {
             childId: child.id,
+            userId,
             startTime: { gte: startDate }
           }
         });
@@ -289,40 +342,47 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     }
   },
   
-  compareTwinsToday: async (): Promise<string> => {
+  compareTwinsToday: async (args: any): Promise<string> => {
+    const { userId } = args;
     const startDate = startOfDay(new Date());
-    const children = await prisma.child.findMany();
+    const children = await prisma.child.findMany({
+      where: { userId }
+    });
     
     const comparison = [];
-    
+
     for (const child of children) {
       const feedingCount = await prisma.feedingLog.count({
         where: {
           childId: child.id,
+          userId,
           startTime: { gte: startDate }
         }
       });
-      
+
       const totalAmount = await prisma.feedingLog.aggregate({
         where: {
           childId: child.id,
+          userId,
           startTime: { gte: startDate }
         },
         _sum: {
           amount: true
         }
       });
-      
+
       const diaperCount = await prisma.diaperLog.count({
         where: {
           childId: child.id,
+          userId,
           timestamp: { gte: startDate }
         }
       });
-      
+
       const sleepLogs = await prisma.sleepLog.findMany({
         where: {
           childId: child.id,
+          userId,
           startTime: { gte: startDate }
         }
       });
@@ -364,7 +424,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getSummary: async (args: any): Promise<string> => {
-    const { timeframe = 'today', childName } = args;
+    const { timeframe = 'today', childName, userId } = args;
     
     let startDate: Date;
     if (timeframe === 'week') {
@@ -375,11 +435,16 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       startDate = startOfDay(new Date());
     }
     
-    const children = childName 
+    const children = childName
       ? await prisma.child.findMany({
-          where: { name: { contains: childName, mode: 'insensitive' } }
+          where: {
+            name: { contains: childName, mode: 'insensitive' },
+            userId
+          }
         })
-      : await prisma.child.findMany();
+      : await prisma.child.findMany({
+          where: { userId }
+        });
     
     const summaries = [];
     
@@ -387,20 +452,23 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       const feedingCount = await prisma.feedingLog.count({
         where: {
           childId: child.id,
+          userId,
           startTime: { gte: startDate }
         }
       });
-      
+
       const diaperCount = await prisma.diaperLog.count({
         where: {
           childId: child.id,
+          userId,
           timestamp: { gte: startDate }
         }
       });
-      
+
       const sleepLogs = await prisma.sleepLog.findMany({
         where: {
           childId: child.id,
+          userId,
           startTime: { gte: startDate }
         }
       });
@@ -440,8 +508,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
 };
 
 export class OpenAIChatService {
-  private systemPrompt = `You are a helpful assistant for parents tracking their twin babies Samar and Maryam.
-You can help log activities (feeding, sleep, diapers, health) and answer questions about the babies' patterns.
+  private systemPrompt = `You are a helpful assistant for parents tracking their children's activities.
+You can help log activities (feeding, sleep, diapers, health) and answer questions about the children's patterns.
 
 When the user wants to log an activity or asks a question, use the appropriate function.
 Be conversational and friendly. If you're not sure which child they're referring to, ask for clarification.
@@ -451,7 +519,7 @@ IMPORTANT:
 - When comparing twins, use compareTwinsToday for today's comparison
 - Always include specific times when reporting last activities
 - Remember conversation context - if user asks "what time" after a previous query, they're referring to the time mentioned in your last response
-- For typos like "samr" understand it as "Samar"
+- Handle common typos and variations in child names
 
 Available functions:
 - logFeeding: Log a feeding session
@@ -465,11 +533,7 @@ Available functions:
 - getFeedingCount: Count feedings in a timeframe
 - compareTwinsToday: Compare both twins' activities today
 - getSummary: Get a comprehensive summary
-- multipleActions: Execute multiple actions in sequence
-
-The twins are:
-- Samar (girl)
-- Maryam (girl)`;
+- multipleActions: Execute multiple actions in sequence`;
 
   async processMessage(message: string, userId: string): Promise<string> {
     try {
@@ -497,7 +561,7 @@ The twins are:
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child (Samar or Maryam)' },
+              childName: { type: 'string', description: 'Name of the child' },
               amount: { type: 'number', description: 'Amount in ml' },
               type: { type: 'string', enum: ['bottle', 'breast', 'formula'], description: 'Type of feeding' },
               notes: { type: 'string', description: 'Optional notes' }

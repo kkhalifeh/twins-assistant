@@ -6,11 +6,15 @@ import { parseIntSafe } from '../utils/validation';
 export const getHealthLogs = async (req: AuthRequest, res: Response) => {
   try {
     const { childId, type, limit = '50' } = req.query;
-    
-    const where: any = {};
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const where: any = { userId };
     if (childId) where.childId = childId as string;
     if (type) where.type = type as string;
-    
+
     const logs = await prisma.healthLog.findMany({
       where,
       include: {
@@ -22,7 +26,7 @@ export const getHealthLogs = async (req: AuthRequest, res: Response) => {
       orderBy: { timestamp: 'desc' },
       take: parseIntSafe(limit as string) || 50
     });
-    
+
     res.json(logs);
   } catch (error) {
     console.error('Get health logs error:', error);
@@ -43,16 +47,21 @@ export const createHealthLog = async (req: AuthRequest, res: Response) => {
       notes 
     } = req.body;
     
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     if (!childId || !type || !value) {
-      return res.status(400).json({ 
-        error: 'Child ID, type, and value are required' 
+      return res.status(400).json({
+        error: 'Child ID, type, and value are required'
       });
     }
     
     const log = await prisma.healthLog.create({
       data: {
         childId,
-        userId: req.user!.userId,
+        userId: req.user!.id,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
         type,
         value: value.toString(),
@@ -79,20 +88,24 @@ export const createHealthLog = async (req: AuthRequest, res: Response) => {
 export const getLatestVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { childId } = req.params;
-    
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     // Get latest of each vital type
     const temperature = await prisma.healthLog.findFirst({
-      where: { childId, type: 'TEMPERATURE' },
+      where: { childId, userId, type: 'TEMPERATURE' },
       orderBy: { timestamp: 'desc' }
     });
-    
+
     const weight = await prisma.healthLog.findFirst({
-      where: { childId, type: 'WEIGHT' },
+      where: { childId, userId, type: 'WEIGHT' },
       orderBy: { timestamp: 'desc' }
     });
-    
+
     const height = await prisma.healthLog.findFirst({
-      where: { childId, type: 'HEIGHT' },
+      where: { childId, userId, type: 'HEIGHT' },
       orderBy: { timestamp: 'desc' }
     });
     

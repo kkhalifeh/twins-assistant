@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import {
   Home,
   Milk,
@@ -16,6 +17,7 @@ import {
   X
 } from 'lucide-react'
 import { useState } from 'react'
+import { childrenAPI } from '@/lib/api'
 
 const menuItems = [
   { icon: Home, label: 'Overview', href: '/' },
@@ -32,6 +34,18 @@ const menuItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Fetch children data
+  const { data: children = [] } = useQuery({
+    queryKey: ['children'],
+    queryFn: childrenAPI.getAll,
+    retry: false,
+  })
+
+  // Generate children names for display
+  const childrenNames = children.length > 0
+    ? children.map((child: any) => child.name).join(' & ')
+    : 'Your Children'
 
   // Don't show sidebar on login page
   if (pathname === '/login') {
@@ -55,7 +69,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b">
             <h1 className="text-xl font-bold text-gray-900">Twin Assistant</h1>
-            <p className="text-sm text-gray-600 mt-1">Samar & Maryam</p>
+            <p className="text-sm text-gray-600 mt-1">{childrenNames}</p>
           </div>
 
           <nav className="flex-1 p-4">

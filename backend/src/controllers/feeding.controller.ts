@@ -6,21 +6,25 @@ import { parseFloatSafe, parseIntSafe } from '../utils/validation';
 export const getFeedingLogs = async (req: AuthRequest, res: Response) => {
   try {
     const { childId, date, limit = '50' } = req.query;
-    
-    const where: any = {};
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const where: any = { userId };
     if (childId) where.childId = childId as string;
     if (date) {
       const startDate = new Date(date as string);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(date as string);
       endDate.setHours(23, 59, 59, 999);
-      
+
       where.startTime = {
         gte: startDate,
         lte: endDate
       };
     }
-    
+
     const logs = await prisma.feedingLog.findMany({
       where,
       include: {
@@ -32,7 +36,7 @@ export const getFeedingLogs = async (req: AuthRequest, res: Response) => {
       orderBy: { startTime: 'desc' },
       take: parseIntSafe(limit as string) || 50
     });
-    
+
     res.json(logs);
   } catch (error) {
     console.error('Get feeding logs error:', error);
@@ -54,16 +58,21 @@ export const createFeedingLog = async (req: AuthRequest, res: Response) => {
       notes 
     } = req.body;
     
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     if (!childId || !startTime || !type) {
-      return res.status(400).json({ 
-        error: 'Child ID, start time, and type are required' 
+      return res.status(400).json({
+        error: 'Child ID, start time, and type are required'
       });
     }
     
     const log = await prisma.feedingLog.create({
       data: {
         childId,
-        userId: req.user!.userId,
+        userId: req.user!.id,
         startTime: new Date(startTime),
         endTime: endTime ? new Date(endTime) : null,
         type,
@@ -91,17 +100,25 @@ export const createFeedingLog = async (req: AuthRequest, res: Response) => {
 export const updateFeedingLog = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { 
-      startTime, 
-      endTime, 
-      type, 
-      amount, 
-      duration, 
-      notes 
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const {
+      startTime,
+      endTime,
+      type,
+      amount,
+      duration,
+      notes
     } = req.body;
-    
+
     const log = await prisma.feedingLog.update({
-      where: { id },
+      where: {
+        id,
+        userId
+      },
       data: {
         ...(startTime && { startTime: new Date(startTime) }),
         ...(endTime !== undefined && { endTime: endTime ? new Date(endTime) : null }),
@@ -130,9 +147,16 @@ export const updateFeedingLog = async (req: AuthRequest, res: Response) => {
 export const deleteFeedingLog = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     await prisma.feedingLog.delete({
-      where: { id }
+      where: {
+        id,
+        userId
+      }
     });
     
     res.json({ message: 'Feeding log deleted successfully' });
@@ -148,9 +172,16 @@ export const deleteFeedingLog = async (req: AuthRequest, res: Response) => {
 export const getLastFeeding = async (req: AuthRequest, res: Response) => {
   try {
     const { childId } = req.params;
-    
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     const lastLog = await prisma.feedingLog.findFirst({
-      where: { childId },
+      where: {
+        childId,
+        userId
+      },
       orderBy: { startTime: 'desc' },
       include: {
         child: true,

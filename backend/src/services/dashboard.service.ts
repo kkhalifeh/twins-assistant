@@ -17,7 +17,7 @@ import {
 const prisma = new PrismaClient();
 
 export class DashboardService {
-  async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day') {
+  async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day', userId: string) {
     // Get date range based on view mode
     let startDate: Date;
     let endDate: Date;
@@ -38,9 +38,12 @@ export class DashboardService {
     }
 
     const [children, feedingLogs, sleepLogs, diaperLogs] = await Promise.all([
-      prisma.child.findMany(),
+      prisma.child.findMany({
+        where: { userId }
+      }),
       prisma.feedingLog.findMany({
         where: {
+          userId,
           startTime: {
             gte: startDate,
             lte: endDate
@@ -51,6 +54,7 @@ export class DashboardService {
       }),
       prisma.sleepLog.findMany({
         where: {
+          userId,
           startTime: {
             gte: startDate,
             lte: endDate
@@ -61,6 +65,7 @@ export class DashboardService {
       }),
       prisma.diaperLog.findMany({
         where: {
+          userId,
           timestamp: {
             gte: startDate,
             lte: endDate
@@ -73,7 +78,10 @@ export class DashboardService {
 
     // Get active sleep sessions
     const activeSleepSessions = await prisma.sleepLog.findMany({
-      where: { endTime: null },
+      where: {
+        userId,
+        endTime: null
+      },
       include: { child: true }
     });
 
@@ -85,8 +93,8 @@ export class DashboardService {
       activeSleepSessions: activeSleepSessions.length,
       avgFeedingInterval: this.calculateAvgFeedingInterval(feedingLogs),
       totalSleepHours: this.calculateTotalSleepHours(sleepLogs),
-      lastFeedings: await this.getLastFeedingsPerChild(),
-      lastDiaperChanges: await this.getLastDiaperChangesPerChild()
+      lastFeedings: await this.getLastFeedingsPerChild(userId),
+      lastDiaperChanges: await this.getLastDiaperChangesPerChild(userId)
     };
 
     // Generate real-time insights
@@ -141,33 +149,43 @@ export class DashboardService {
     return Math.round((totalMinutes / 60) * 10) / 10;
   }
 
-  private async getLastFeedingsPerChild() {
-    const children = await prisma.child.findMany();
+  private async getLastFeedingsPerChild(userId: string) {
+    const children = await prisma.child.findMany({
+      where: { userId }
+    });
     const lastFeedings: Record<string, any> = {};
-    
+
     for (const child of children) {
       const lastFeeding = await prisma.feedingLog.findFirst({
-        where: { childId: child.id },
+        where: {
+          childId: child.id,
+          userId
+        },
         orderBy: { startTime: 'desc' }
       });
       lastFeedings[child.id] = lastFeeding;
     }
-    
+
     return lastFeedings;
   }
 
-  private async getLastDiaperChangesPerChild() {
-    const children = await prisma.child.findMany();
+  private async getLastDiaperChangesPerChild(userId: string) {
+    const children = await prisma.child.findMany({
+      where: { userId }
+    });
     const lastChanges: Record<string, any> = {};
-    
+
     for (const child of children) {
       const lastChange = await prisma.diaperLog.findFirst({
-        where: { childId: child.id },
+        where: {
+          childId: child.id,
+          userId
+        },
         orderBy: { timestamp: 'desc' }
       });
       lastChanges[child.id] = lastChange;
     }
-    
+
     return lastChanges;
   }
 

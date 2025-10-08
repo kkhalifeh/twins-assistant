@@ -52,14 +52,14 @@ router.post('/message', async (req: Request, res: Response) => {
 router.get('/suggestions', async (req: Request, res: Response) => {
   try {
     const suggestions = [
-      "Fed Samar 120ml",
-      "Maryam is sleeping",
-      "Changed Samar's diaper - wet",
-      "When was Maryam last fed?",
+      "Fed baby 120ml",
+      "Child is sleeping",
+      "Changed diaper - wet",
+      "When was last feeding?",
       "Show today's summary",
-      "How many times did Samar eat this week?",
-      "Samar temperature 37.2",
-      "Maryam woke up",
+      "How many times did child eat this week?",
+      "Temperature 37.2",
+      "Child woke up",
       "Is anyone sleeping?",
       "How many diapers today?",
       "Compare twins feeding patterns",

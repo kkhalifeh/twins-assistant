@@ -1,7 +1,10 @@
+// Load environment variables FIRST
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
 // Import routes
@@ -13,8 +16,8 @@ import diaperRoutes from './routes/diaper.routes';
 import healthRoutes from './routes/health.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import dashboardRoutes from './routes/dashboard.routes';
-import chatRoutes from './routes/chat.routes';// Load environment variables
-dotenv.config();
+import chatRoutes from './routes/chat.routes';
+import journalRoutes from './routes/journal.routes';
 
 // Initialize Prisma Client
 export const prisma = new PrismaClient();
@@ -53,7 +56,10 @@ app.use('/api/diapers', diaperRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/chat', chatRoutes);// Base API route
+app.use('/api/chat', chatRoutes);
+app.use('/api/journal', journalRoutes);
+
+// Base API route
 app.get('/api', (req: Request, res: Response) => {
   res.json({ 
     message: 'Twin Parenting Assistant API',

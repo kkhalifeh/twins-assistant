@@ -5,12 +5,13 @@ import { Inter } from 'next/font/google'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { 
-  Home, Activity, Moon, Baby, Heart, Trophy, 
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import {
+  Home, Activity, Moon, Baby, Heart, Trophy,
   Package, Brain, Settings, Menu, X, LogOut,
-  MessageSquare
+  MessageSquare, Calendar
 } from 'lucide-react'
+import { authAPI } from '@/lib/api'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,7 @@ const queryClient = new QueryClient({
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Journal', href: '/journal', icon: Calendar },
   { name: 'Feeding', href: '/feeding', icon: Activity },
   { name: 'Sleep', href: '/sleep', icon: Moon },
   { name: 'Diapers', href: '/diapers', icon: Baby },
@@ -35,6 +37,41 @@ const navigation = [
   { name: 'Chat Test', href: '/chat', icon: MessageSquare },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
+
+function UserSection({ handleLogout }: { handleLogout: () => void }) {
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: authAPI.getCurrentUser,
+    retry: false,
+  })
+
+  const userInitial = currentUser?.name?.charAt(0)?.toUpperCase() || 'U'
+  const userName = currentUser?.name || 'User'
+  const userRole = currentUser?.role || 'Parent'
+
+  return (
+    <div className="border-t p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+            <span className="text-gray-600 font-medium">{userInitial}</span>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-900">{userName}</p>
+            <p className="text-xs text-gray-500">{userRole}</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="p-2 text-gray-500 hover:text-red-600 transition-colors"
+          title="Logout"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function RootLayout({
   children,
@@ -50,7 +87,7 @@ export default function RootLayout({
     const token = localStorage.getItem('token')
     setIsAuthenticated(!!token)
     
-    if (!token && pathname !== '/login' && pathname !== '/register') {
+    if (!token && pathname !== '/login' && pathname !== '/register' && pathname !== '/onboarding') {
       router.push('/login')
     }
   }, [pathname, router])
@@ -62,7 +99,7 @@ export default function RootLayout({
   }
 
   // Don't show sidebar on auth pages
-  if (pathname === '/login' || pathname === '/register' || !isAuthenticated) {
+  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding' || !isAuthenticated) {
     return (
       <html lang="en">
         <body className={inter.className}>
@@ -134,26 +171,7 @@ export default function RootLayout({
                 </nav>
 
                 {/* User section */}
-                <div className="border-t p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 font-medium">K</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Khaled</p>
-                        <p className="text-xs text-gray-500">Parent</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="p-2 text-gray-500 hover:text-red-600 transition-colors"
-                      title="Logout"
-                    >
-                      <LogOut className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+                <UserSection handleLogout={handleLogout} />
               </div>
             </div>
 

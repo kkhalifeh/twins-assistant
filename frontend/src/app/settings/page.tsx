@@ -1,21 +1,51 @@
 'use client'
 
-import { useState } from 'react'
-import { 
-  User, Bell, Shield, Smartphone, Database, 
-  Globe, Save, Camera, Check 
+import { useState, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  User, Bell, Shield, Smartphone, Database,
+  Globe, Save, Camera, Check, Trash2, AlertTriangle
 } from 'lucide-react'
+import { childrenAPI, authAPI } from '@/lib/api'
+import api from '@/lib/api'
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
   const [saved, setSaved] = useState(false)
-  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const queryClient = useQueryClient()
+
   const [profile, setProfile] = useState({
-    name: 'Khaled',
-    email: 'khaled@example.com',
-    phone: '+962XXXXXXXXX',
-    role: 'Parent',
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
   })
+
+  // Fetch current user data
+  const { data: currentUser, isLoading: userLoading } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: authAPI.getCurrentUser,
+  })
+
+  // Fetch children data
+  const { data: children = [], isLoading: childrenLoading } = useQuery({
+    queryKey: ['children'],
+    queryFn: childrenAPI.getAll,
+  })
+
+  // Update profile state when user data loads
+  useEffect(() => {
+    if (currentUser) {
+      setProfile({
+        name: currentUser.name || '',
+        email: currentUser.email || '',
+        phone: currentUser.phone || '',
+        role: currentUser.role || '',
+      })
+    }
+  }, [currentUser])
   
   const [notifications, setNotifications] = useState({
     whatsapp: true,
@@ -29,6 +59,33 @@ export default function SettingsPage() {
   const handleSave = () => {
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const handleDeleteData = async (type: string) => {
+    setDeleteLoading(true)
+    try {
+      await api.delete(`/data/${type}`)
+      queryClient.invalidateQueries()
+      setShowDeleteConfirm(null)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (error) {
+      console.error('Delete failed:', error)
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true)
+    try {
+      await api.delete('/auth/account')
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Account deletion failed:', error)
+      setDeleteLoading(false)
+    }
   }
 
   const tabs = [
@@ -127,37 +184,59 @@ export default function SettingsPage() {
 
           {activeTab === 'children' && (
             <div className="space-y-6">
-              <div className="card">
-                <div className="flex items-start space-x-4">
-                  <div className="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">👧</span>
+              {childrenLoading ? (
+                <div className="card">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold">Samar</h3>
-                    <p className="text-sm text-gray-600">Born: December 15, 2024</p>
-                    <p className="text-sm text-gray-600">Gender: Female</p>
-                    <button className="mt-2 text-sm text-primary-600 hover:text-primary-700">
-                      Edit Profile
+                </div>
+              ) : children.length > 0 ? (
+                children.map((child: any, index: number) => (
+                  <div key={child.id} className="card">
+                    <div className="flex items-start space-x-4">
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center ${
+                        child.gender === 'FEMALE' ? 'bg-pink-100' : 'bg-blue-100'
+                      }`}>
+                        <span className="text-2xl">
+                          {child.gender === 'FEMALE' ? '👧' : '👦'}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{child.name}</h3>
+                        <p className="text-sm text-gray-600">
+                          Born: {new Date(child.dateOfBirth).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Gender: {child.gender === 'FEMALE' ? 'Female' : 'Male'}
+                        </p>
+                        {child.medicalNotes && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Notes: {child.medicalNotes}
+                          </p>
+                        )}
+                        <button className="mt-2 text-sm text-primary-600 hover:text-primary-700">
+                          Edit Profile
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="card">
+                  <div className="text-center py-8">
+                    <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Children Added</h3>
+                    <p className="text-gray-600 mb-4">Start by adding your children to track their care.</p>
+                    <button
+                      onClick={() => window.location.href = '/onboarding'}
+                      className="btn-primary"
+                    >
+                      Add Children
                     </button>
                   </div>
                 </div>
-              </div>
-              
-              <div className="card">
-                <div className="flex items-start space-x-4">
-                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">👧</span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold">Maryam</h3>
-                    <p className="text-sm text-gray-600">Born: December 15, 2024</p>
-                    <p className="text-sm text-gray-600">Gender: Female</p>
-                    <button className="mt-2 text-sm text-primary-600 hover:text-primary-700">
-                      Edit Profile
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -248,27 +327,97 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'privacy' && (
-            <div className="card">
-              <h2 className="text-lg font-semibold mb-4">Privacy & Security</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Data Encryption</h3>
-                  <p className="text-sm text-gray-600">All your data is encrypted at rest and in transit</p>
+            <div className="space-y-6">
+              {/* Data Management */}
+              <div className="card">
+                <h2 className="text-lg font-semibold mb-4">Data Management</h2>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Delete Specific Data</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Remove specific types of data while keeping your account active
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button
+                        onClick={() => setShowDeleteConfirm('feeding')}
+                        className="flex items-center justify-center space-x-2 p-4 border-2 border-gray-300 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                        <span>Delete All Feeding Data</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteConfirm('sleep')}
+                        className="flex items-center justify-center space-x-2 p-4 border-2 border-gray-300 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                        <span>Delete All Sleep Data</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteConfirm('diaper')}
+                        className="flex items-center justify-center space-x-2 p-4 border-2 border-gray-300 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                        <span>Delete All Diaper Data</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowDeleteConfirm('health')}
+                        className="flex items-center justify-center space-x-2 p-4 border-2 border-gray-300 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                        <span>Delete All Health Data</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <button
+                      onClick={() => setShowDeleteConfirm('all')}
+                      className="w-full flex items-center justify-center space-x-2 p-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                      <span>Reset All Data (Keep Account)</span>
+                    </button>
+                  </div>
                 </div>
-                
-                <div>
-                  <h3 className="font-medium mb-2">Account Security</h3>
-                  <button className="btn-secondary">Change Password</button>
+              </div>
+
+              {/* Account Security */}
+              <div className="card">
+                <h2 className="text-lg font-semibold mb-4">Account Security</h2>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Data Encryption</h3>
+                    <p className="text-sm text-gray-600">All your data is encrypted at rest and in transit</p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-medium mb-2">Change Password</h3>
+                    <button className="btn-secondary">Update Password</button>
+                  </div>
                 </div>
-                
-                <div>
-                  <h3 className="font-medium mb-2">Delete Account</h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    This will permanently delete all your data
-                  </p>
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                    Delete Account
-                  </button>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="card border-red-200 bg-red-50">
+                <h2 className="text-lg font-semibold mb-4 text-red-900">Danger Zone</h2>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2 text-red-900">Delete Account</h3>
+                    <p className="text-sm text-red-700 mb-4">
+                      This will permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                    <button
+                      onClick={() => setShowDeleteConfirm('account')}
+                      className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Delete Account Permanently</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -314,6 +463,50 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirm Deletion
+              </h3>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              {showDeleteConfirm === 'account'
+                ? 'Are you sure you want to delete your account? This will permanently remove all your data and cannot be undone.'
+                : showDeleteConfirm === 'all'
+                ? 'Are you sure you want to delete all your data? This will remove all feeding, sleep, diaper, and health records but keep your account active.'
+                : `Are you sure you want to delete all ${showDeleteConfirm} data? This action cannot be undone.`
+              }
+            </p>
+
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={deleteLoading}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  showDeleteConfirm === 'account'
+                    ? handleDeleteAccount()
+                    : handleDeleteData(showDeleteConfirm)
+                }
+                disabled={deleteLoading}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

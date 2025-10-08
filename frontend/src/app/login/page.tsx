@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { authAPI } from '@/lib/api'
 
 export default function Login() {
@@ -78,6 +79,15 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
           
+          <div className="text-center">
+            <span className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link href="/register" className="font-medium text-primary-600 hover:text-primary-500">
+                Sign up
+              </Link>
+            </span>
+          </div>
+
           <div className="text-center text-sm text-gray-600">
             Default: khaled@example.com / password123
           </div>

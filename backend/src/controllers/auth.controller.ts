@@ -55,11 +55,7 @@ export const register = async (req: Request, res: Response) => {
     });
     
     // Generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role
-    });
+    const token = generateToken(user.id);
     
     res.status(201).json({
       message: 'User registered successfully',
@@ -110,11 +106,7 @@ export const login = async (req: Request, res: Response) => {
     }
     
     // Generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role
-    });
+    const token = generateToken(user.id);
     
     res.json({
       message: 'Login successful',
