@@ -32,9 +32,15 @@ class WhatsAppWebhook:
                 
                 logger.info(f"Message from {sender_name} ({from_number}): {message_text}")
                 
+                # TODO: Add user lookup by phone number
+                # For now, we'll use a placeholder user_id
+                # In production, you'd look up the user by phone number
+                user_id = "placeholder_user_id"
+
                 # Process the message
                 result = await self.message_processor.process_message(
                     message=message_text,
+                    user_id=user_id,
                     user_phone=from_number,
                     user_name=sender_name
                 )

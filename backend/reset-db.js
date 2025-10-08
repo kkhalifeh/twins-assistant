@@ -3,42 +3,25 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function resetDatabase() {
+  console.log('🧹 Cleaning database...');
+
   try {
-    console.log('🗑️  Starting database reset...');
+    // Delete all data in the correct order (respecting foreign key constraints)
+    await prisma.healthLog.deleteMany();
+    await prisma.diaperLog.deleteMany();
+    await prisma.sleepLog.deleteMany();
+    await prisma.feedingLog.deleteMany();
+    await prisma.milestone.deleteMany();
+    await prisma.insight.deleteMany();
+    await prisma.schedule.deleteMany();
+    await prisma.inventory.deleteMany();
+    await prisma.child.deleteMany();
+    await prisma.user.deleteMany();
 
-    // Delete all data in correct order (respecting foreign key constraints)
-    console.log('Deleting insights...');
-    await prisma.insight.deleteMany({});
-
-    console.log('Deleting milestones...');
-    await prisma.milestone.deleteMany({});
-
-    console.log('Deleting schedules...');
-    await prisma.schedule.deleteMany({});
-
-    console.log('Deleting health logs...');
-    await prisma.healthLog.deleteMany({});
-
-    console.log('Deleting diaper logs...');
-    await prisma.diaperLog.deleteMany({});
-
-    console.log('Deleting sleep logs...');
-    await prisma.sleepLog.deleteMany({});
-
-    console.log('Deleting feeding logs...');
-    await prisma.feedingLog.deleteMany({});
-
-    console.log('Deleting children...');
-    await prisma.child.deleteMany({});
-
-    console.log('Deleting users...');
-    await prisma.user.deleteMany({});
-
-    console.log('✅ Database reset completed successfully!');
-    console.log('📊 All users, children, and related data have been deleted.');
-
+    console.log('✅ Database completely cleaned!');
+    console.log('🎉 Ready for fresh data!');
   } catch (error) {
-    console.error('❌ Error resetting database:', error);
+    console.error('❌ Error cleaning database:', error);
   } finally {
     await prisma.$disconnect();
   }

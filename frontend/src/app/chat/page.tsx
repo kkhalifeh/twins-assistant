@@ -21,7 +21,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "👋 Hi! I'm your Twin Assistant. I can help you log activities and answer questions about Samar and Maryam. Try saying things like 'Fed Samar 120ml' or 'When was Maryam last fed?'",
+      text: "👋 Hi! I'm your Twin Assistant. I can help you log activities and answer questions about your children. Try saying things like 'Fed [child name] 120ml' or 'When was [child name] last fed?'",
       sender: 'bot',
       timestamp: new Date()
     }
@@ -232,7 +232,7 @@ export default function ChatPage() {
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={handleKeyPress}
             onFocus={() => setShowSuggestions(false)}
-            placeholder="Type a message... (e.g., 'Fed Samar 120ml')"
+            placeholder="Type a message... (e.g., 'Fed [child name] 120ml')"
             className="flex-1 px-4 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
             disabled={isLoading}
           />

@@ -83,32 +83,39 @@ export default function SleepPage() {
   }
 
   const getDailySleepData = () => {
+    if (!children || children.length === 0) return []
+
     const groupedByDay: Record<string, any> = {}
-    
+
     filteredLogs.forEach((log: any) => {
       const day = format(new Date(log.startTime), 'MM/dd')
       if (!groupedByDay[day]) {
-        groupedByDay[day] = { day, Samar: 0, Maryam: 0, Total: 0 }
+        // Initialize with day and Total, plus each child's name
+        const dayData: any = { day, Total: 0 }
+        children.forEach((child: any) => {
+          dayData[child.name] = 0
+        })
+        groupedByDay[day] = dayData
       }
-      
+
       const duration = log.duration || 0
       const hours = duration / 60
-      
-      if (log.child?.name === 'Samar') {
-        groupedByDay[day].Samar += hours
-      } else if (log.child?.name === 'Maryam') {
-        groupedByDay[day].Maryam += hours
+      const childName = log.child?.name
+
+      if (childName && groupedByDay[day][childName] !== undefined) {
+        groupedByDay[day][childName] += hours
       }
       groupedByDay[day].Total += hours
     })
-    
+
     return Object.values(groupedByDay)
-      .map(day => ({
-        ...day,
-        Samar: Math.round(day.Samar * 10) / 10,
-        Maryam: Math.round(day.Maryam * 10) / 10,
-        Total: Math.round(day.Total * 10) / 10,
-      }))
+      .map(day => {
+        const result: any = { day: day.day, Total: Math.round(day.Total * 10) / 10 }
+        children.forEach((child: any) => {
+          result[child.name] = Math.round(day[child.name] * 10) / 10
+        })
+        return result
+      })
       .sort((a, b) => a.day.localeCompare(b.day))
   }
 
@@ -276,8 +283,16 @@ export default function SleepPage() {
               <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="Samar" fill="#ec4899" />
-              <Bar dataKey="Maryam" fill="#8b5cf6" />
+              {children?.map((child: any, index: number) => {
+                const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                return (
+                  <Bar
+                    key={child.id}
+                    dataKey={child.name}
+                    fill={colors[index % colors.length]}
+                  />
+                )
+              })}
             </BarChart>
           </ResponsiveContainer>
         ) : (

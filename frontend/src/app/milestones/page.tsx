@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { childrenAPI } from '@/lib/api'
 import { Trophy, Camera, Star, Calendar, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -42,9 +45,21 @@ const milestoneCategories = {
 }
 
 export default function MilestonesPage() {
-  const [selectedChild, setSelectedChild] = useState<'samar' | 'maryam'>('samar')
+  const [selectedChild, setSelectedChild] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<keyof typeof milestoneCategories>('MOTOR')
   const [achievements, setAchievements] = useState<Record<string, any>>({})
+
+  const { data: children } = useQuery({
+    queryKey: ['children'],
+    queryFn: childrenAPI.getAll,
+  })
+
+  // Initialize selectedChild with first child when children are loaded
+  React.useEffect(() => {
+    if (children && children.length > 0 && !selectedChild) {
+      setSelectedChild(children[0].id)
+    }
+  }, [children, selectedChild])
 
   const handleMilestoneToggle = (milestone: string) => {
     const key = `${selectedChild}-${milestone}`
@@ -74,26 +89,31 @@ export default function MilestonesPage() {
       {/* Child Selector */}
       <div className="card mb-6">
         <div className="flex space-x-4">
-          <button
-            onClick={() => setSelectedChild('samar')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-              selectedChild === 'samar' 
-                ? 'bg-pink-100 text-pink-700' 
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            <span>👧 Samar</span>
-          </button>
-          <button
-            onClick={() => setSelectedChild('maryam')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-              selectedChild === 'maryam' 
-                ? 'bg-purple-100 text-purple-700' 
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            <span>👧 Maryam</span>
-          </button>
+          {children?.map((child: any, index: number) => {
+            const colorClasses = [
+              { bg: 'bg-pink-100', text: 'text-pink-700' },
+              { bg: 'bg-purple-100', text: 'text-purple-700' },
+              { bg: 'bg-green-100', text: 'text-green-700' },
+              { bg: 'bg-blue-100', text: 'text-blue-700' },
+              { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+              { bg: 'bg-indigo-100', text: 'text-indigo-700' }
+            ]
+            const colors = colorClasses[index % colorClasses.length]
+
+            return (
+              <button
+                key={child.id}
+                onClick={() => setSelectedChild(child.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                  selectedChild === child.id
+                    ? `${colors.bg} ${colors.text}`
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                <span>👧 {child.name}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -156,39 +176,48 @@ export default function MilestonesPage() {
         })}
       </div>
 
-      {/* Twin Comparison */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Twin Comparison</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Every child develops at their own pace. This is just for tracking, not competition! 💕
-        </p>
-        <div className="space-y-3">
-          {milestoneCategories[selectedCategory].slice(0, 5).map((milestone) => {
-            const samarAchieved = achievements[`samar-${milestone}`]
-            const maryamAchieved = achievements[`maryam-${milestone}`]
-            
-            return (
-              <div key={milestone} className="flex items-center space-x-4">
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{milestone}</p>
-                </div>
-                <div className="flex space-x-4">
-                  <div className={`px-3 py-1 rounded-full text-xs ${
-                    samarAchieved ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    Samar {samarAchieved ? '✓' : '-'}
+      {/* Children Comparison */}
+      {children && children.length > 1 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Children Comparison</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Every child develops at their own pace. This is just for tracking, not competition! 💕
+          </p>
+          <div className="space-y-3">
+            {milestoneCategories[selectedCategory].slice(0, 5).map((milestone) => {
+              return (
+                <div key={milestone} className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{milestone}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs ${
-                    maryamAchieved ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    Maryam {maryamAchieved ? '✓' : '-'}
+                  <div className="flex space-x-4">
+                    {children.map((child: any, index: number) => {
+                      const childAchieved = achievements[`${child.id}-${milestone}`]
+                      const colorClasses = [
+                        { bg: 'bg-pink-100', text: 'text-pink-700' },
+                        { bg: 'bg-purple-100', text: 'text-purple-700' },
+                        { bg: 'bg-green-100', text: 'text-green-700' },
+                        { bg: 'bg-blue-100', text: 'text-blue-700' },
+                        { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+                        { bg: 'bg-indigo-100', text: 'text-indigo-700' }
+                      ]
+                      const colors = colorClasses[index % colorClasses.length]
+
+                      return (
+                        <div key={child.id} className={`px-3 py-1 rounded-full text-xs ${
+                          childAchieved ? `${colors.bg} ${colors.text}` : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {child.name} {childAchieved ? '✓' : '-'}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

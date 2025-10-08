@@ -13,6 +13,24 @@ import {
 } from 'recharts'
 
 export default function FeedingPage() {
+  // Color mapping function for dynamic children
+  const getChildColorClass = (childName: string, type: 'bg' | 'text') => {
+    if (!children) return type === 'bg' ? 'bg-gray-100' : 'text-gray-600'
+
+    const childIndex = children.findIndex((child: any) => child.name === childName)
+    const colorMap = [
+      { bg: 'bg-pink-100', text: 'text-pink-600' },
+      { bg: 'bg-purple-100', text: 'text-purple-600' },
+      { bg: 'bg-green-100', text: 'text-green-600' },
+      { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+      { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+      { bg: 'bg-red-100', text: 'text-red-600' }
+    ]
+
+    return childIndex >= 0
+      ? colorMap[childIndex % colorMap.length][type]
+      : type === 'bg' ? 'bg-gray-100' : 'text-gray-600'
+  }
   const [selectedChild, setSelectedChild] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
@@ -64,24 +82,30 @@ export default function FeedingPage() {
   }, [feedingLogs, dateRange])
 
   const getDailyIntakeData = () => {
+    if (!children || children.length === 0) return []
+
     const groupedByDay: Record<string, any> = {}
-    
+
     filteredLogs.forEach((log: any) => {
       const day = format(new Date(log.startTime), 'MM/dd')
       if (!groupedByDay[day]) {
-        groupedByDay[day] = { day, Samar: 0, Maryam: 0, Total: 0 }
+        // Initialize with day and Total, plus each child's name
+        const dayData: any = { day, Total: 0 }
+        children.forEach((child: any) => {
+          dayData[child.name] = 0
+        })
+        groupedByDay[day] = dayData
       }
-      
+
       const amount = log.amount || 0
-      if (log.child?.name === 'Samar') {
-        groupedByDay[day].Samar += amount
-      } else if (log.child?.name === 'Maryam') {
-        groupedByDay[day].Maryam += amount
+      const childName = log.child?.name
+      if (childName && groupedByDay[day][childName] !== undefined) {
+        groupedByDay[day][childName] += amount
       }
       groupedByDay[day].Total += amount
     })
-    
-    return Object.values(groupedByDay).sort((a, b) => 
+
+    return Object.values(groupedByDay).sort((a, b) =>
       a.day.localeCompare(b.day)
     )
   }
@@ -166,8 +190,16 @@ export default function FeedingPage() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="Samar" fill="#ec4899" />
-                <Bar dataKey="Maryam" fill="#8b5cf6" />
+                {children?.map((child: any, index: number) => {
+                  const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                  return (
+                    <Bar
+                      key={child.id}
+                      dataKey={child.name}
+                      fill={colors[index % colors.length]}
+                    />
+                  )
+                })}
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -209,10 +241,10 @@ export default function FeedingPage() {
               <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-full ${
-                    log.child?.name === 'Samar' ? 'bg-pink-100' : 'bg-purple-100'
+                    getChildColorClass(log.child?.name, 'bg')
                   }`}>
                     <Milk className={`w-5 h-5 ${
-                      log.child?.name === 'Samar' ? 'text-pink-600' : 'text-purple-600'
+                      getChildColorClass(log.child?.name, 'text')
                     }`} />
                   </div>
                   <div>

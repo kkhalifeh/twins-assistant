@@ -10,6 +10,8 @@ import logging
 # Import our modules
 from message_processor import MessageProcessor
 from webhook_handler import WhatsAppWebhook
+from user_service import user_service
+from models import ProcessMessageRequest, RegisterUserRequest, APIResponse
 
 # Load environment variables
 load_dotenv()
@@ -76,10 +78,7 @@ async def receive_message(request: Request):
         return {"status": "error", "message": str(e)}
 
 # Direct message processing endpoint (for testing)
-class ProcessMessageRequest(BaseModel):
-    message: str
-    user_phone: str
-    user_name: Optional[str] = None
+# ProcessMessageRequest is now imported from models
 
 @app.post("/process")
 async def process_message(request: ProcessMessageRequest):
@@ -87,14 +86,85 @@ async def process_message(request: ProcessMessageRequest):
     try:
         result = await message_processor.process_message(
             message=request.message,
+            user_id=request.user_id,
             user_phone=request.user_phone,
             user_name=request.user_name
         )
         return {"status": "success", "result": result}
-    
+
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# User registration endpoint
+@app.post("/register")
+async def register_user(request: RegisterUserRequest):
+    """Register a new user"""
+    try:
+        user = await user_service.register_new_user(
+            email=request.email,
+            password=request.password,
+            name=request.name,
+            phone_number=request.phone_number
+        )
+
+        if user:
+            return APIResponse(
+                success=True,
+                message="User registered successfully",
+                data={
+                    "user_id": user.id,
+                    "name": user.name,
+                    "email": user.email
+                }
+            )
+        else:
+            return APIResponse(
+                success=False,
+                message="Registration failed",
+                error="Could not create user"
+            )
+
+    except Exception as e:
+        logger.error(f"Error registering user: {e}")
+        return APIResponse(
+            success=False,
+            message="Registration failed",
+            error=str(e)
+        )
+
+# User authentication endpoint
+@app.post("/authenticate")
+async def authenticate_user(email: str, password: str):
+    """Authenticate user and return user context"""
+    try:
+        user = await user_service.authenticate_user_by_credentials(email, password)
+
+        if user:
+            return APIResponse(
+                success=True,
+                message="Authentication successful",
+                data={
+                    "user_id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "children": [child.name for child in user.children]
+                }
+            )
+        else:
+            return APIResponse(
+                success=False,
+                message="Authentication failed",
+                error="Invalid credentials"
+            )
+
+    except Exception as e:
+        logger.error(f"Error authenticating user: {e}")
+        return APIResponse(
+            success=False,
+            message="Authentication failed",
+            error=str(e)
+        )
 
 # API info endpoint
 @app.get("/")
@@ -105,7 +175,9 @@ async def root():
             "health": "/health",
             "webhook_verify": "GET /webhook",
             "webhook_receive": "POST /webhook",
-            "process_message": "POST /process"
+            "process_message": "POST /process",
+            "register": "POST /register",
+            "authenticate": "POST /authenticate"
         }
     }
 

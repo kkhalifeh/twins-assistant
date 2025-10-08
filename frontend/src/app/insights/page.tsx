@@ -245,7 +245,7 @@ export default function InsightsPage() {
       {/* Twin Comparison */}
       {comparison && (
         <div className="card mb-6">
-          <h2 className="text-lg font-semibold mb-4">Twin Synchronization Analysis</h2>
+          <h2 className="text-lg font-semibold mb-4">Children Synchronization Analysis</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-3">Feeding Synchronization</h3>
@@ -263,12 +263,14 @@ export default function InsightsPage() {
                   />
                 </div>
               </div>
-              {comparison.feeding?.Samar && (
-                <div className="text-sm text-gray-600">
-                  <p>Samar: Every {comparison.feeding.Samar.averageInterval}h</p>
-                  <p>Maryam: Every {comparison.feeding.Maryam?.averageInterval}h</p>
-                </div>
-              )}
+              {comparison.feeding && Object.keys(comparison.feeding).filter(key => key !== 'synchronization').map((childName, index) => {
+                const child = comparison.feeding[childName]
+                return (
+                  <div key={childName} className="text-sm text-gray-600">
+                    <p>{childName}: Every {child.averageInterval}h</p>
+                  </div>
+                )
+              })}
             </div>
             
             <div>
@@ -287,12 +289,14 @@ export default function InsightsPage() {
                   />
                 </div>
               </div>
-              {comparison.sleep?.Samar && (
-                <div className="text-sm text-gray-600">
-                  <p>Samar: {comparison.sleep.Samar.totalSleepHours}h/day</p>
-                  <p>Maryam: {comparison.sleep.Maryam?.totalSleepHours}h/day</p>
-                </div>
-              )}
+              {comparison.sleep && Object.keys(comparison.sleep).filter(key => key !== 'synchronization').map((childName, index) => {
+                const child = comparison.sleep[childName]
+                return (
+                  <div key={childName} className="text-sm text-gray-600">
+                    <p>{childName}: {child.totalSleepHours}h/day</p>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
