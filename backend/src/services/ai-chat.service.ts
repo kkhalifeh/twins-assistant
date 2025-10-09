@@ -34,7 +34,8 @@ export class AIChatService {
       'fed', 'feeding', 'bottle', 'breast', 'nursed',
       'sleep', 'sleeping', 'nap', 'woke', 'wake',
       'diaper', 'changed', 'wet', 'dirty', 'poop',
-      'temperature', 'temp', 'medicine', 'gave'
+      'temperature', 'temp', 'medicine', 'gave',
+      'add inventory', 'restock', 'bought', 'purchased'
     ];
     return logKeywords.some(keyword => message.includes(keyword));
   }
@@ -58,9 +59,9 @@ export class AIChatService {
     }
 
     // Detect child name
-    const children = await prisma.child.findMany();
+    const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
     let childId = this.context.lastChildMentioned;
-    
+
     for (const child of children) {
       if (lowerMessage.includes(child.name.toLowerCase())) {
         childId = child.id;
@@ -74,7 +75,11 @@ export class AIChatService {
     }
 
     if (!childId) {
-      return "Which twin are you logging this for? Please mention Samar or Maryam.";
+      if (children.length === 0) {
+        return "You haven't added any children yet. Please add your child/children first.";
+      }
+      const childNames = children.map(c => c.name).join(', ');
+      return `Which child are you logging this for? Please mention one of: ${childNames}`;
     }
 
     const child = children.find(c => c.id === childId);
@@ -190,7 +195,7 @@ export class AIChatService {
       if (lowerMessage.includes('medicine') || lowerMessage.includes('gave')) {
         const medicineMatch = message.match(/gave\s+(\w+)/i) || message.match(/(\w+)\s+medicine/i);
         const medicineName = medicineMatch ? medicineMatch[1] : 'Medicine';
-        
+
         const healthLog = await prisma.healthLog.create({
           data: {
             childId: childId,
@@ -202,8 +207,62 @@ export class AIChatService {
             notes: `Logged via chat: ${message}`
           }
         });
-        
+
         return `✅ Logged medicine for ${childName}: ${medicineName}`;
+      }
+
+      // Handle inventory restocking
+      if (lowerMessage.includes('restock') || lowerMessage.includes('bought') || lowerMessage.includes('purchased') || lowerMessage.includes('add inventory')) {
+        // Try to extract item name and quantity
+        const quantityMatch = message.match(/(\d+\.?\d*)\s*(?:pieces|ml|grams?|g|bottles?|packs?)?/i);
+        const quantity = quantityMatch ? parseFloat(quantityMatch[1]) : null;
+
+        // Find mentioned inventory items
+        const userInventory = await prisma.inventory.findMany({
+          where: { userId: this.context.userId }
+        });
+
+        let matchedItem = null;
+        for (const item of userInventory) {
+          if (lowerMessage.includes(item.itemName.toLowerCase())) {
+            matchedItem = item;
+            break;
+          }
+        }
+
+        if (!matchedItem) {
+          return "I couldn't find that item in your inventory. Please add it first using the inventory page, or tell me more about which item you restocked.";
+        }
+
+        if (!quantity || quantity <= 0) {
+          return `How many ${matchedItem.unitSize} of ${matchedItem.itemName} did you add?`;
+        }
+
+        // Update the inventory
+        const newStock = matchedItem.currentStock + quantity;
+        let nextReorderDate = null;
+        if (matchedItem.consumptionRate && matchedItem.consumptionRate > 0) {
+          const daysUntilReorder = (newStock - matchedItem.minimumStock) / matchedItem.consumptionRate;
+          if (daysUntilReorder > 0) {
+            nextReorderDate = new Date();
+            nextReorderDate.setDate(nextReorderDate.getDate() + Math.floor(daysUntilReorder));
+          }
+        }
+
+        await prisma.inventory.update({
+          where: { id: matchedItem.id },
+          data: {
+            currentStock: newStock,
+            lastRestocked: new Date(),
+            nextReorderDate
+          }
+        });
+
+        const daysText = nextReorderDate
+          ? ` Next reorder around ${nextReorderDate.toLocaleDateString()}.`
+          : '';
+
+        return `✅ Restocked ${matchedItem.itemName}: Added ${quantity} ${matchedItem.unitSize}. New total: ${newStock} ${matchedItem.unitSize}.${daysText}`;
       }
 
     } catch (error) {
@@ -211,7 +270,9 @@ export class AIChatService {
       return "❌ Sorry, there was an error logging this activity. Please try again.";
     }
 
-    return "I understood you want to log an activity. Could you be more specific? For example: 'Fed Samar 120ml' or 'Maryam is sleeping'.";
+    const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
+    const exampleName = children.length > 0 ? children[0].name : '[child name]';
+    return `I understood you want to log an activity. Could you be more specific? For example: 'Fed ${exampleName} 120ml', '${exampleName} is sleeping', or 'Restocked diapers 50 pieces'.`;
   }
 
   private async handleQuestion(message: string): Promise<string> {
@@ -222,8 +283,8 @@ export class AIChatService {
       if (lowerMessage.includes('last fed') || lowerMessage.includes('last feeding')) {
         const childId = await this.getChildIdFromMessage(message);
         if (!childId) {
-          // Get for both twins
-          const children = await prisma.child.findMany();
+          // Get for all children
+          const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
           const responses = [];
           
           for (const child of children) {
@@ -355,42 +416,86 @@ export class AIChatService {
         return `Today's feedings:\n${feedingList.join('\n')}`;
       }
 
-      if (lowerMessage.includes('check supplies') || lowerMessage.includes('inventory')) {
-        const lowStock = await prisma.inventory.findMany({
-          where: {
-            currentStock: {
-              lte: prisma.inventory.fields.minimumStock
-            }
-          }
+      if (lowerMessage.includes('check supplies') || lowerMessage.includes('inventory') || lowerMessage.includes('stock')) {
+        const userId = this.context.userId;
+
+        // Get all inventory items
+        const allItems = await prisma.inventory.findMany({
+          where: { userId },
+          orderBy: { category: 'asc' }
         });
 
-        if (lowStock.length === 0) {
-          return "✅ All supplies are well stocked!";
+        if (allItems.length === 0) {
+          return "You haven't added any inventory items yet. Add items to start tracking your supplies!";
         }
 
-        const items = lowStock.map(item => 
-          `⚠️ ${item.itemName}: ${item.currentStock} left (minimum: ${item.minimumStock})`
-        );
+        // Find low stock items (current stock <= minimum stock)
+        const lowStock = allItems.filter(item => item.currentStock <= item.minimumStock);
 
-        return `Low supplies:\n${items.join('\n')}`;
+        if (lowerMessage.includes('low') || lowerMessage.includes('running out')) {
+          if (lowStock.length === 0) {
+            return "✅ All supplies are well stocked! No items running low.";
+          }
+
+          const items = lowStock.map(item => {
+            const daysRemaining = item.consumptionRate && item.consumptionRate > 0
+              ? (item.currentStock - item.minimumStock) / item.consumptionRate
+              : null;
+            const daysText = daysRemaining !== null && daysRemaining > 0
+              ? ` (${daysRemaining.toFixed(1)} days left)`
+              : '';
+            return `⚠️ ${item.itemName}: ${item.currentStock} ${item.unitSize} (min: ${item.minimumStock})${daysText}`;
+          });
+
+          return `Low supplies:\n${items.join('\n')}`;
+        }
+
+        // Show all inventory
+        const itemsByCategory: { [key: string]: typeof allItems } = {};
+        allItems.forEach(item => {
+          if (!itemsByCategory[item.category]) {
+            itemsByCategory[item.category] = [];
+          }
+          itemsByCategory[item.category].push(item);
+        });
+
+        const summary = Object.entries(itemsByCategory).map(([category, items]) => {
+          const itemList = items.map(item => {
+            const status = item.currentStock <= item.minimumStock ? '🔴' : '🟢';
+            return `  ${status} ${item.itemName}: ${item.currentStock} ${item.unitSize}`;
+          }).join('\n');
+          return `${category}:\n${itemList}`;
+        });
+
+        const lowStockWarning = lowStock.length > 0
+          ? `\n\n⚠️ ${lowStock.length} item(s) running low!`
+          : '';
+
+        return `📦 Inventory Summary:\n\n${summary.join('\n\n')}${lowStockWarning}`;
       }
 
       if (lowerMessage.includes('help')) {
+        const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
+        const exampleName = children.length > 0 ? children[0].name : '[child name]';
+
         return `I can help you with:
 📝 Logging activities:
-  • "Fed Samar 120ml"
-  • "Maryam is sleeping"
-  • "Changed wet diaper for Samar"
-  
+  • "Fed ${exampleName} 120ml"
+  • "${exampleName} is sleeping"
+  • "Changed wet diaper for ${exampleName}"
+  • "Restocked diapers 50 pieces"
+  • "Bought formula 800g"
+
 ❓ Asking questions:
-  • "When was Maryam last fed?"
+  • "When was ${exampleName} last fed?"
   • "Is anyone sleeping?"
   • "How many diapers today?"
-  
+
 📊 Commands:
   • "Show today's summary"
   • "Show feedings"
-  • "Check supplies"`;
+  • "Check supplies" or "Check inventory"
+  • "What's running low?"`;
       }
 
     } catch (error) {
@@ -402,9 +507,13 @@ export class AIChatService {
   }
 
   private async handleGeneralConversation(message: string): Promise<string> {
+    const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
+    const exampleName = children.length > 0 ? children[0].name : '[child name]';
+    const childrenNames = children.length > 0 ? children.map(c => c.name).join(' and ') : 'your children';
+
     const responses = [
-      "I'm here to help you track Samar and Maryam's activities. You can tell me about feedings, diaper changes, sleep times, or ask questions!",
-      "Try saying things like 'Fed Samar 120ml' or 'When was Maryam last fed?'",
+      `I'm here to help you track ${childrenNames}'s activities. You can tell me about feedings, diaper changes, sleep times, or ask questions!`,
+      `Try saying things like 'Fed ${exampleName} 120ml' or 'When was ${exampleName} last fed?'`,
       "I can track feeding, sleep, diapers, and health data. What would you like to log?",
       "Need help? Say 'help' to see what I can do!"
     ];
@@ -419,15 +528,15 @@ export class AIChatService {
   }
 
   private async getChildIdFromMessage(message: string): Promise<string | null> {
-    const children = await prisma.child.findMany();
+    const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
     const lowerMessage = message.toLowerCase();
-    
+
     for (const child of children) {
       if (lowerMessage.includes(child.name.toLowerCase())) {
         return child.id;
       }
     }
-    
+
     return this.context.lastChildMentioned || null;
   }
 

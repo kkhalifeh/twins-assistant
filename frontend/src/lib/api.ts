@@ -128,3 +128,17 @@ export const journalAPI = {
   getDailyData: (date: string, childId?: string) =>
     api.get('/journal/daily', { params: { date, childId } }).then(res => res.data),
 };
+
+// Inventory API
+export const inventoryAPI = {
+  getAll: (params?: any) => api.get('/inventory', { params }).then(res => res.data),
+  getOne: (id: string) => api.get(`/inventory/${id}`).then(res => res.data),
+  getLowStock: () => api.get('/inventory/low-stock').then(res => res.data),
+  create: (data: any) => api.post('/inventory', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/inventory/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/inventory/${id}`).then(res => res.data),
+  restock: (id: string, quantity: number) =>
+    api.put(`/inventory/${id}/restock`, { quantity }).then(res => res.data),
+  decrease: (id: string, quantity: number) =>
+    api.put(`/inventory/${id}/decrease`, { quantity }).then(res => res.data),
+};

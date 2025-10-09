@@ -182,12 +182,12 @@ export class AnalyticsService {
     return correlations;
   }
 
-  // Compare twins patterns
-  async compareTwins(days: number = 7, userId: string) {
+  // Compare children patterns
+  async compareChildren(days: number = 7, userId: string) {
     const children = await prisma.child.findMany({
       where: { userId }
     });
-    if (children.length !== 2) return null;
+    if (children.length < 2) return null;
 
     const [child1Patterns, child2Patterns] = await Promise.all([
       this.analyzeFeedingPatterns(children[0].id, days, userId),
@@ -326,19 +326,20 @@ export class AnalyticsService {
       }
     }
 
-    // Twin comparison insights
-    const comparison = await this.compareTwins(7, userId);
+    // Children comparison insights (only if multiple children)
+    const comparison = await this.compareChildren(7, userId);
     if (comparison) {
       const feedingSync = comparison.feeding.synchronization;
       const sleepSync = comparison.sleep.synchronization;
+      const children = await prisma.child.findMany({ where: { userId } });
 
       insights.push({
         type: 'comparison',
-        title: 'Twin Synchronization',
+        title: 'Children Synchronization',
         description: `Feeding synchronization: ${feedingSync}%, Sleep synchronization: ${sleepSync}%`,
         confidence: 0.90,
         recommendation: feedingSync > 70
-          ? 'Great job keeping twins on similar schedules!'
+          ? `Great job keeping ${children.map(c => c.name).join(' and ')} on similar schedules!`
           : 'Try to align feeding times for easier management.'
       });
     }

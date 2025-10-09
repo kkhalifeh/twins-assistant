@@ -320,23 +320,23 @@ export class DashboardService {
       }
     }
 
-    // Twin synchronization insights
-    if (children.length === 2 && feedingLogs.length >= 2) {
-      const twin1Feedings = feedingLogs.filter(f => f.childId === children[0].id);
-      const twin2Feedings = feedingLogs.filter(f => f.childId === children[1].id);
-      
-      if (twin1Feedings.length > 0 && twin2Feedings.length > 0) {
+    // Children synchronization insights (only for multiple children)
+    if (children.length >= 2 && feedingLogs.length >= 2) {
+      const child1Feedings = feedingLogs.filter(f => f.childId === children[0].id);
+      const child2Feedings = feedingLogs.filter(f => f.childId === children[1].id);
+
+      if (child1Feedings.length > 0 && child2Feedings.length > 0) {
         const timeDiff = Math.abs(differenceInMinutes(
-          twin1Feedings[0].startTime,
-          twin2Feedings[0].startTime
+          child1Feedings[0].startTime,
+          child2Feedings[0].startTime
         ));
-        
+
         if (timeDiff < 30) {
           insights.push({
             type: 'sync_good',
             priority: 'info',
-            title: 'Twins are well synchronized',
-            description: 'Both fed within 30 minutes of each other',
+            title: 'Children are well synchronized',
+            description: `${children[0].name} and ${children[1].name} fed within 30 minutes of each other`,
             icon: 'check-circle',
             color: 'green'
           });

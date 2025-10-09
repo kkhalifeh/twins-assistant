@@ -21,7 +21,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "👋 Hi! I'm your Twin Assistant. I can help you log activities and answer questions about your children. Try saying things like 'Fed [child name] 120ml' or 'When was [child name] last fed?'",
+      text: "👋 Hi! I'm your parenting assistant. I can help you log activities and answer questions about your children. Try saying things like 'Fed [child name] 120ml' or 'When was [child name] last fed?'",
       sender: 'bot',
       timestamp: new Date()
     }
@@ -126,8 +126,8 @@ export default function ChatPage() {
             <MessageSquare className="w-6 h-6 text-primary-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Twin Assistant Chat</h1>
-            <p className="text-sm text-gray-600">WhatsApp-style interface for quick logging</p>
+            <h1 className="text-xl font-bold text-gray-900">AI Assistant Chat</h1>
+            <p className="text-sm text-gray-600">Quick logging and activity tracking</p>
           </div>
         </div>
       </div>

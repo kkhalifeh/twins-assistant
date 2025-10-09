@@ -87,7 +87,7 @@ router.get('/correlations/:childId', async (req: AuthRequest, res) => {
   }
 });
 
-// Compare twins
+// Compare children
 router.get('/compare', async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.id;
@@ -95,11 +95,11 @@ router.get('/compare', async (req: AuthRequest, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     const days = parseInt(req.query.days as string) || 7;
-    const comparison = await analyticsService.compareTwins(days, userId);
+    const comparison = await analyticsService.compareChildren(days, userId);
     res.json(comparison);
   } catch (error) {
-    console.error('Error comparing twins:', error);
-    res.status(500).json({ error: 'Failed to compare twins' });
+    console.error('Error comparing children:', error);
+    res.status(500).json({ error: 'Failed to compare children' });
   }
 });
 

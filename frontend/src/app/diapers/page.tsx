@@ -147,7 +147,7 @@ export default function DiapersPage() {
                 : 'bg-gray-100 text-gray-700'
             }`}
           >
-            Both Twins
+            All Children
           </button>
           {children?.map((child: any) => (
             <button

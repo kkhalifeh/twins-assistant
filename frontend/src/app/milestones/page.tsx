@@ -78,7 +78,7 @@ export default function MilestonesPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Developmental Milestones</h1>
-          <p className="text-gray-600 mt-1">Track and celebrate your twins' achievements</p>
+          <p className="text-gray-600 mt-1">Track and celebrate your children's achievements</p>
         </div>
         <button className="btn-primary flex items-center space-x-2">
           <Camera className="w-5 h-5" />

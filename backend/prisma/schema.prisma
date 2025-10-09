@@ -16,7 +16,7 @@ model User {
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   children     Child[]
   feedingLogs  FeedingLog[]
@@ -24,6 +24,7 @@ model User {
   diaperLogs   DiaperLog[]
   healthLogs   HealthLog[]
   schedules    Schedule[]
+  inventory    Inventory[]
 }
 
 model Child {
@@ -146,6 +147,7 @@ model Schedule {
 
 model Inventory {
   id               String   @id @default(cuid())
+  userId           String
   category         ItemCategory
   brand            String?
   itemName         String
@@ -158,8 +160,11 @@ model Inventory {
   notes            String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  
-  @@index([category])
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, category])
 }
 
 model Milestone {

@@ -18,6 +18,7 @@ import analyticsRoutes from './routes/analytics.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import chatRoutes from './routes/chat.routes';
 import journalRoutes from './routes/journal.routes';
+import inventoryRoutes from './routes/inventory.routes';
 
 // Initialize Prisma Client
 export const prisma = new PrismaClient();
@@ -58,10 +59,11 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/journal', journalRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Base API route
 app.get('/api', (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     message: 'Twin Parenting Assistant API',
     version: '1.0.0',
     endpoints: {
@@ -71,7 +73,8 @@ app.get('/api', (req: Request, res: Response) => {
       sleep: '/api/sleep',
       diapers: '/api/diapers',
       health: '/api/health',
-      analytics: '/api/analytics'
+      analytics: '/api/analytics',
+      inventory: '/api/inventory'
     }
   });
 });
