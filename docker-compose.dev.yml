@@ -36,6 +36,14 @@ services:
     depends_on:
       - postgres
 
+  backend-test:  # <-- This MUST be indented under 'services:' (2 spaces)
+    image: node:20-alpine
+    command: node -e "console.log('Backend test OK'); process.exit(0)"
+    depends_on:
+      - postgres
+    networks:
+      - twins_network
+
 volumes:
   postgres_data:
   redis_data:

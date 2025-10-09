@@ -1,0 +1,55 @@
+name: Deploy to ATMATA Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.ATMATA_SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 209.250.253.59 >> ~/.ssh/known_hosts
+
+      - name: Deploy to ATMATA server
+        run: |
+          git remote add production ssh://www-data@209.250.253.59/opt/git/parenting-assistant.git || true
+          git push production main --force
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 30
+
+          # Check if site is accessible
+          if curl -sSf https://parenting.atmata.ai/health > /dev/null; then
+            echo "✅ Deployment successful! Site is accessible."
+          else
+            echo "⚠️ Warning: Site health check failed. Please check logs."
+            exit 1
+          fi
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "🎉 Deployment to parenting.atmata.ai completed successfully!"
+          else
+            echo "❌ Deployment failed. Check logs for details."
+          fi
