@@ -4,14 +4,45 @@ import { subDays, differenceInHours, differenceInMinutes, format, startOfDay, en
 const prisma = new PrismaClient();
 
 export class AnalyticsService {
+  // Helper method to verify child belongs to user's account and get account's child IDs
+  private async getAccountChildIds(userId: string): Promise<string[]> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      throw new Error('User not part of an account');
+    }
+
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
+      select: { id: true }
+    });
+
+    return children.map(c => c.id);
+  }
+
+  // Helper method to verify a specific child belongs to user's account
+  private async verifyChildAccess(childId: string, userId: string): Promise<void> {
+    const childIds = await this.getAccountChildIds(userId);
+    if (!childIds.includes(childId)) {
+      throw new Error('Child not found or access denied');
+    }
+  }
+
   // Analyze feeding patterns
   async analyzeFeedingPatterns(childId: string, days: number = 7, userId: string) {
+    await this.verifyChildAccess(childId, userId);
     const since = subDays(new Date(), days);
 
     const feedingLogs = await prisma.feedingLog.findMany({
       where: {
         childId,
-        userId,
         startTime: { gte: since }
       },
       orderBy: { startTime: 'asc' }
@@ -48,12 +79,12 @@ export class AnalyticsService {
 
   // Analyze sleep patterns
   async analyzeSleepPatterns(childId: string, days: number = 7, userId: string) {
+    await this.verifyChildAccess(childId, userId);
     const since = subDays(new Date(), days);
 
     const sleepLogs = await prisma.sleepLog.findMany({
       where: {
         childId,
-        userId,
         startTime: { gte: since },
         endTime: { not: null }
       }
@@ -118,21 +149,22 @@ export class AnalyticsService {
 
   // Detect correlations between activities
   async detectCorrelations(childId: string, days: number = 14, userId: string) {
+    await this.verifyChildAccess(childId, userId);
     const since = subDays(new Date(), days);
     const correlations: any[] = [];
 
     // Get all activity logs
     const [feedingLogs, sleepLogs, diaperLogs] = await Promise.all([
       prisma.feedingLog.findMany({
-        where: { childId, userId, startTime: { gte: since } },
+        where: { childId, startTime: { gte: since } },
         orderBy: { startTime: 'asc' }
       }),
       prisma.sleepLog.findMany({
-        where: { childId, userId, startTime: { gte: since } },
+        where: { childId, startTime: { gte: since } },
         orderBy: { startTime: 'asc' }
       }),
       prisma.diaperLog.findMany({
-        where: { childId, userId, timestamp: { gte: since } },
+        where: { childId, timestamp: { gte: since } },
         orderBy: { timestamp: 'asc' }
       })
     ]);
@@ -184,8 +216,21 @@ export class AnalyticsService {
 
   // Compare children patterns
   async compareChildren(days: number = 7, userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      throw new Error('User not part of an account');
+    }
+
     const children = await prisma.child.findMany({
-      where: { userId }
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      }
     });
     if (children.length < 2) return null;
 
@@ -229,16 +274,16 @@ export class AnalyticsService {
     if (type === 'feeding') {
       const [child1Logs, child2Logs] = await Promise.all([
         prisma.feedingLog.findMany({
-          where: { childId: child1Id, userId, startTime: { gte: since } }
+          where: { childId: child1Id, startTime: { gte: since } }
         }),
         prisma.feedingLog.findMany({
-          where: { childId: child2Id, userId, startTime: { gte: since } }
+          where: { childId: child2Id, startTime: { gte: since } }
         })
       ]);
 
       let synchronized = 0;
       for (const log1 of child1Logs) {
-        const closeLog = child2Logs.find(log2 => 
+        const closeLog = child2Logs.find(log2 =>
           Math.abs(differenceInMinutes(log1.startTime, log2.startTime)) < 30
         );
         if (closeLog) synchronized++;
@@ -248,16 +293,16 @@ export class AnalyticsService {
     } else {
       const [child1Logs, child2Logs] = await Promise.all([
         prisma.sleepLog.findMany({
-          where: { childId: child1Id, userId, startTime: { gte: since } }
+          where: { childId: child1Id, startTime: { gte: since } }
         }),
         prisma.sleepLog.findMany({
-          where: { childId: child2Id, userId, startTime: { gte: since } }
+          where: { childId: child2Id, startTime: { gte: since } }
         })
       ]);
 
       let synchronized = 0;
       for (const log1 of child1Logs) {
-        const closeLog = child2Logs.find(log2 => 
+        const closeLog = child2Logs.find(log2 =>
           Math.abs(differenceInMinutes(log1.startTime, log2.startTime)) < 30
         );
         if (closeLog) synchronized++;
@@ -269,8 +314,21 @@ export class AnalyticsService {
 
   // Generate AI insights
   async generateInsights(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      throw new Error('User not part of an account');
+    }
+
     const children = await prisma.child.findMany({
-      where: { userId }
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      }
     });
     const insights: any[] = [];
 
@@ -331,7 +389,6 @@ export class AnalyticsService {
     if (comparison) {
       const feedingSync = comparison.feeding.synchronization;
       const sleepSync = comparison.sleep.synchronization;
-      const children = await prisma.child.findMany({ where: { userId } });
 
       insights.push({
         type: 'comparison',
@@ -349,8 +406,21 @@ export class AnalyticsService {
 
   // Generate predictions
   async generatePredictions(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      throw new Error('User not part of an account');
+    }
+
     const children = await prisma.child.findMany({
-      where: { userId }
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      }
     });
     const predictions: any[] = [];
 
@@ -368,7 +438,7 @@ export class AnalyticsService {
 
       // Predict nap time based on wake windows
       const lastSleep = await prisma.sleepLog.findFirst({
-        where: { childId: child.id, userId, endTime: { not: null } },
+        where: { childId: child.id, endTime: { not: null } },
         orderBy: { endTime: 'desc' }
       });
 
@@ -387,7 +457,7 @@ export class AnalyticsService {
 
       // Predict diaper change
       const lastDiaper = await prisma.diaperLog.findFirst({
-        where: { childId: child.id, userId },
+        where: { childId: child.id },
         orderBy: { timestamp: 'desc' }
       });
 

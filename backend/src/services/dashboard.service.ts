@@ -18,10 +18,31 @@ const prisma = new PrismaClient();
 
 export class DashboardService {
   async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day', userId: string) {
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      throw new Error('User not part of an account');
+    }
+
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      }
+    });
+
+    const childIds = children.map(c => c.id);
+
     // Get date range based on view mode
     let startDate: Date;
     let endDate: Date;
-    
+
     switch (viewMode) {
       case 'day':
         startDate = startOfDay(date);
@@ -37,13 +58,10 @@ export class DashboardService {
         break;
     }
 
-    const [children, feedingLogs, sleepLogs, diaperLogs] = await Promise.all([
-      prisma.child.findMany({
-        where: { userId }
-      }),
+    const [feedingLogs, sleepLogs, diaperLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
-          userId,
+          childId: { in: childIds },
           startTime: {
             gte: startDate,
             lte: endDate
@@ -54,7 +72,7 @@ export class DashboardService {
       }),
       prisma.sleepLog.findMany({
         where: {
-          userId,
+          childId: { in: childIds },
           startTime: {
             gte: startDate,
             lte: endDate
@@ -65,7 +83,7 @@ export class DashboardService {
       }),
       prisma.diaperLog.findMany({
         where: {
-          userId,
+          childId: { in: childIds },
           timestamp: {
             gte: startDate,
             lte: endDate
@@ -79,7 +97,7 @@ export class DashboardService {
     // Get active sleep sessions
     const activeSleepSessions = await prisma.sleepLog.findMany({
       where: {
-        userId,
+        childId: { in: childIds },
         endTime: null
       },
       include: { child: true }
@@ -93,8 +111,8 @@ export class DashboardService {
       activeSleepSessions: activeSleepSessions.length,
       avgFeedingInterval: this.calculateAvgFeedingInterval(feedingLogs),
       totalSleepHours: this.calculateTotalSleepHours(sleepLogs),
-      lastFeedings: await this.getLastFeedingsPerChild(userId),
-      lastDiaperChanges: await this.getLastDiaperChangesPerChild(userId)
+      lastFeedings: await this.getLastFeedingsPerChild(children),
+      lastDiaperChanges: await this.getLastDiaperChangesPerChild(children)
     };
 
     // Generate real-time insights
@@ -149,17 +167,13 @@ export class DashboardService {
     return Math.round((totalMinutes / 60) * 10) / 10;
   }
 
-  private async getLastFeedingsPerChild(userId: string) {
-    const children = await prisma.child.findMany({
-      where: { userId }
-    });
+  private async getLastFeedingsPerChild(children: any[]) {
     const lastFeedings: Record<string, any> = {};
 
     for (const child of children) {
       const lastFeeding = await prisma.feedingLog.findFirst({
         where: {
-          childId: child.id,
-          userId
+          childId: child.id
         },
         orderBy: { startTime: 'desc' }
       });
@@ -169,17 +183,13 @@ export class DashboardService {
     return lastFeedings;
   }
 
-  private async getLastDiaperChangesPerChild(userId: string) {
-    const children = await prisma.child.findMany({
-      where: { userId }
-    });
+  private async getLastDiaperChangesPerChild(children: any[]) {
     const lastChanges: Record<string, any> = {};
 
     for (const child of children) {
       const lastChange = await prisma.diaperLog.findFirst({
         where: {
-          childId: child.id,
-          userId
+          childId: child.id
         },
         orderBy: { timestamp: 'desc' }
       });

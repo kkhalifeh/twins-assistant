@@ -11,7 +11,33 @@ export const getHealthLogs = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const where: any = { userId };
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
+      select: { id: true }
+    });
+
+    const childIds = children.map(c => c.id);
+
+    if (childIds.length === 0) {
+      return res.json([]);
+    }
+
+    const where: any = { childId: { in: childIds } };
     if (childId) where.childId = childId as string;
     if (type) where.type = type as string;
 
@@ -30,8 +56,8 @@ export const getHealthLogs = async (req: AuthRequest, res: Response) => {
     res.json(logs);
   } catch (error) {
     console.error('Get health logs error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch health logs' 
+    res.status(500).json({
+      error: 'Failed to fetch health logs'
     });
   }
 };
@@ -93,22 +119,46 @@ export const getLatestVitals = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Verify child belongs to someone in the same account
+    const child = await prisma.child.findFirst({
+      where: {
+        id: childId,
+        user: {
+          accountId: user.accountId
+        }
+      }
+    });
+
+    if (!child) {
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
     // Get latest of each vital type
     const temperature = await prisma.healthLog.findFirst({
-      where: { childId, userId, type: 'TEMPERATURE' },
+      where: { childId, type: 'TEMPERATURE' },
       orderBy: { timestamp: 'desc' }
     });
 
     const weight = await prisma.healthLog.findFirst({
-      where: { childId, userId, type: 'WEIGHT' },
+      where: { childId, type: 'WEIGHT' },
       orderBy: { timestamp: 'desc' }
     });
 
     const height = await prisma.healthLog.findFirst({
-      where: { childId, userId, type: 'HEIGHT' },
+      where: { childId, type: 'HEIGHT' },
       orderBy: { timestamp: 'desc' }
     });
-    
+
     res.json({
       temperature,
       weight,
@@ -116,8 +166,8 @@ export const getLatestVitals = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Get latest vitals error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch latest vitals' 
+    res.status(500).json({
+      error: 'Failed to fetch latest vitals'
     });
   }
 };

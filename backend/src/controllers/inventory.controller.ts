@@ -11,7 +11,25 @@ export const getInventoryItems = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const where: any = { userId };
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
+    const where: any = { userId: { in: userIds } };
     if (category) where.category = category as string;
 
     const items = await prisma.inventory.findMany({
@@ -36,10 +54,28 @@ export const getInventoryItem = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
     const item = await prisma.inventory.findFirst({
       where: {
         id,
-        userId
+        userId: { in: userIds }
       }
     });
 
@@ -123,6 +159,24 @@ export const updateInventoryItem = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
     const {
       category,
       brand,
@@ -147,7 +201,12 @@ export const updateInventoryItem = async (req: AuthRequest, res: Response) => {
 
     // Recalculate next reorder date if relevant fields changed
     if (currentStock !== undefined || minimumStock !== undefined || consumptionRate !== undefined) {
-      const item = await prisma.inventory.findFirst({ where: { id, userId } });
+      const item = await prisma.inventory.findFirst({
+        where: {
+          id,
+          userId: { in: userIds }
+        }
+      });
       if (item) {
         const newStock = currentStock !== undefined ? parseFloatSafe(currentStock) || 0 : item.currentStock;
         const newMinStock = minimumStock !== undefined ? parseFloatSafe(minimumStock) || 0 : item.minimumStock;
@@ -162,11 +221,20 @@ export const updateInventoryItem = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const item = await prisma.inventory.update({
+    // Verify item belongs to account before updating
+    const existingItem = await prisma.inventory.findFirst({
       where: {
         id,
-        userId
-      },
+        userId: { in: userIds }
+      }
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+
+    const item = await prisma.inventory.update({
+      where: { id },
       data: updateData
     });
 
@@ -187,11 +255,38 @@ export const deleteInventoryItem = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    await prisma.inventory.delete({
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
+    // Verify item belongs to account before deleting
+    const existingItem = await prisma.inventory.findFirst({
       where: {
         id,
-        userId
+        userId: { in: userIds }
       }
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+
+    await prisma.inventory.delete({
+      where: { id }
     });
 
     res.json({ message: 'Inventory item deleted successfully' });
@@ -211,10 +306,28 @@ export const getLowStockItems = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
     // Find items where current stock is at or below minimum stock
     const items = await prisma.inventory.findMany({
       where: {
-        userId,
+        userId: { in: userIds },
         currentStock: {
           lte: prisma.inventory.fields.minimumStock
         }
@@ -246,9 +359,30 @@ export const restockItem = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Valid quantity is required' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
     // Get current item
     const currentItem = await prisma.inventory.findFirst({
-      where: { id, userId }
+      where: {
+        id,
+        userId: { in: userIds }
+      }
     });
 
     if (!currentItem) {
@@ -268,7 +402,7 @@ export const restockItem = async (req: AuthRequest, res: Response) => {
     }
 
     const item = await prisma.inventory.update({
-      where: { id, userId },
+      where: { id },
       data: {
         currentStock: newStock,
         lastRestocked: new Date(),
@@ -300,9 +434,30 @@ export const decreaseStock = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Valid quantity is required' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all user IDs in the same account
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
     // Get current item
     const currentItem = await prisma.inventory.findFirst({
-      where: { id, userId }
+      where: {
+        id,
+        userId: { in: userIds }
+      }
     });
 
     if (!currentItem) {
@@ -320,7 +475,7 @@ export const decreaseStock = async (req: AuthRequest, res: Response) => {
     }
 
     const item = await prisma.inventory.update({
-      where: { id, userId },
+      where: { id },
       data: {
         currentStock: newStock,
         nextReorderDate
