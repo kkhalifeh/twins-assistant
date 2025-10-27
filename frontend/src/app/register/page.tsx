@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Heart } from 'lucide-react'
 import { authAPI } from '@/lib/api'
 
 export default function Register() {
@@ -59,14 +60,20 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12 px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Create Your Account</h2>
-          <p className="mt-2 text-gray-600">Join Twin Parenting Assistant</p>
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Heart className="w-8 h-8 text-white fill-white" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Create Your Account</h2>
+          <p className="mt-2 text-gray-600">Join TwinCare</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleRegister}>
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <form className="space-y-6" onSubmit={handleRegister}>
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -148,27 +155,28 @@ export default function Register() {
             </div>
           </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
+            {error && (
+              <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">{error}</div>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-          >
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-all duration-200"
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </button>
 
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500">
-                Sign in
-              </Link>
-            </span>
-          </div>
-        </form>
+            <div className="text-center">
+              <span className="text-sm text-gray-600">
+                Already have an account?{' '}
+                <Link href="/login" className="font-medium text-primary-600 hover:text-primary-700 transition-colors">
+                  Sign in
+                </Link>
+              </span>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )

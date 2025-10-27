@@ -10,14 +10,14 @@
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200;
   }
-  
+
   .btn-primary {
-    @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors;
+    @apply bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-2 rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-sm hover:shadow;
   }
-  
+
   .btn-secondary {
-    @apply bg-secondary-600 text-white px-4 py-2 rounded-lg hover:bg-secondary-700 transition-colors;
+    @apply bg-gradient-to-r from-secondary-600 to-secondary-700 text-white px-4 py-2 rounded-lg hover:from-secondary-700 hover:to-secondary-800 transition-all duration-200 shadow-sm hover:shadow;
   }
 }

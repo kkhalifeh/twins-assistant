@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { childrenAPI, diaperAPI, authAPI } from '@/lib/api'
 import { format, isWithinInterval, parseISO, startOfDay } from 'date-fns'
-import { Baby, Plus, Droplets, AlertTriangle, Edit2, Trash2 } from 'lucide-react'
+import { Baby, Plus, Droplets, AlertTriangle, Edit2, Trash2, Image as ImageIcon, X } from 'lucide-react'
 import DiaperModal from '@/components/modals/DiaperModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
@@ -15,6 +15,7 @@ export default function DiapersPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
   const [editingLog, setEditingLog] = useState<any | null>(null)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState({
     start: new Date(),
     end: new Date()
@@ -316,7 +317,7 @@ export default function DiapersPage() {
                       log.type === 'DIRTY' ? 'text-amber-600' : 'text-green-600'
                     }`} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium">{log.child?.name}</p>
                     <p className="text-sm text-gray-600">
                       {log.type} {log.consistency && `(${log.consistency.toLowerCase()})`}
@@ -325,6 +326,21 @@ export default function DiapersPage() {
                       <p className="text-xs text-gray-500 mt-1">{log.notes}</p>
                     )}
                   </div>
+                  {log.imageUrl && (
+                    <div
+                      onClick={() => setSelectedImage(log.imageUrl)}
+                      className="cursor-pointer group relative"
+                    >
+                      <img
+                        src={log.imageUrl}
+                        alt="Diaper change"
+                        className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200 group-hover:border-primary-400 transition-all"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-right">
@@ -363,6 +379,29 @@ export default function DiapersPage() {
           </div>
         )}
       </div>
+
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img
+              src={selectedImage}
+              alt="Diaper change full size"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
 
       {showModal && children && (
         <DiaperModal

@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import {
   Home, Activity, Moon, Baby, Heart, Trophy,
   Package, Brain, Settings, Menu, X, LogOut,
-  MessageSquare, Calendar
+  MessageSquare, Calendar, Sparkles
 } from 'lucide-react'
 import { authAPI } from '@/lib/api'
 
@@ -50,11 +50,11 @@ function UserSection({ handleLogout }: { handleLogout: () => void }) {
   const userRole = currentUser?.role || 'Parent'
 
   return (
-    <div className="border-t p-4">
+    <div className="border-t p-4 bg-gradient-to-r from-primary-50/50 to-secondary-50/50">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-            <span className="text-gray-600 font-medium">{userInitial}</span>
+          <div className="w-10 h-10 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-full flex items-center justify-center ring-2 ring-primary-200/50">
+            <span className="text-primary-700 font-semibold">{userInitial}</span>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900">{userName}</p>
@@ -63,7 +63,7 @@ function UserSection({ handleLogout }: { handleLogout: () => void }) {
         </div>
         <button
           onClick={handleLogout}
-          className="p-2 text-gray-500 hover:text-red-600 transition-colors"
+          className="p-2 text-gray-400 hover:text-primary-600 transition-colors rounded-lg hover:bg-white"
           title="Logout"
         >
           <LogOut className="w-5 h-5" />
@@ -131,11 +131,14 @@ export default function RootLayout({
               <div className="flex h-full flex-col">
                 {/* Logo */}
                 <div className="flex h-16 items-center justify-between px-6 border-b">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-xl">T</span>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative w-9 h-9 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-sm">
+                      <Heart className="w-5 h-5 text-white fill-white" />
                     </div>
-                    <span className="text-xl font-bold text-gray-900">TwinCare</span>
+                    <div>
+                      <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">TwinCare</span>
+                      <p className="text-[10px] text-gray-500 -mt-1">Parenting Assistant</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => setSidebarOpen(false)}
@@ -155,13 +158,13 @@ export default function RootLayout({
                           <Link
                             href={item.href}
                             onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                            className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                               isActive
-                                ? 'bg-primary-50 text-primary-600'
-                                : 'text-gray-700 hover:bg-gray-50'
+                                ? 'bg-gradient-to-r from-primary-50 to-secondary-50 text-primary-700 shadow-sm'
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                             }`}
                           >
-                            <item.icon className="w-5 h-5" />
+                            <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-600' : ''}`} />
                             <span className="font-medium">{item.name}</span>
                           </Link>
                         </li>
@@ -185,7 +188,12 @@ export default function RootLayout({
                 >
                   <Menu className="w-6 h-6" />
                 </button>
-                <span className="font-semibold text-gray-900">TwinCare</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-7 h-7 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <Heart className="w-4 h-4 text-white fill-white" />
+                  </div>
+                  <span className="font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">TwinCare</span>
+                </div>
                 <div className="w-10" />
               </div>
 
