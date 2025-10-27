@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../index';
+import { AuthRequest } from '../utils/auth';
 
-export const deleteAllData = async (req: Request, res: Response) => {
+export const deleteAllData = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -89,9 +90,9 @@ export const deleteAllData = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteDataByType = async (req: Request, res: Response) => {
+export const deleteDataByType = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.id;
     const { type } = req.params;
 
     if (!userId) {

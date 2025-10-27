@@ -21,8 +21,43 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     const startDate = startOfDay(targetDate);
     const endDate = endOfDay(targetDate);
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
+      select: { id: true }
+    });
+
+    const childIds = children.map(c => c.id);
+
+    if (childIds.length === 0) {
+      return res.json({
+        date: targetDate.toISOString(),
+        activities: [],
+        stats: {
+          totalFeedings: 0,
+          totalSleepHours: 0,
+          totalDiaperChanges: 0,
+          healthChecks: 0
+        }
+      });
+    }
+
     // Build where clause
-    const whereClause: any = { userId };
+    const whereClause: any = { childId: { in: childIds } };
     if (childId && childId !== 'all') {
       whereClause.childId = childId as string;
     }
