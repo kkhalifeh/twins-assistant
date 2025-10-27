@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { deleteAllData, deleteDataByType } from '../controllers/data.controller';
-import { authMiddleware } from '../utils/auth';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authMiddleware);
+// Note: authMiddleware is already applied in index.ts when mounting these routes
+// No need to apply it again here
 
 // Delete all data
 router.delete('/all', deleteAllData);

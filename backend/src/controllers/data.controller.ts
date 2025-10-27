@@ -9,11 +9,25 @@ export const deleteAllData = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Get user's account
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
     // Delete all user data in a transaction
     await prisma.$transaction(async (tx) => {
-      // Get all children IDs for the user
+      // Get all children IDs for users in the same account
       const children = await tx.child.findMany({
-        where: { userId },
+        where: {
+          user: {
+            accountId: user.accountId
+          }
+        },
         select: { id: true }
       });
 
@@ -46,14 +60,22 @@ export const deleteAllData = async (req: Request, res: Response) => {
         });
       }
 
-      // Delete inventory items
+      // Delete inventory items for all users in the account
       await tx.inventory.deleteMany({
-        where: { userId }
+        where: {
+          user: {
+            accountId: user.accountId
+          }
+        }
       });
 
-      // Delete children
+      // Delete children for all users in the account
       await tx.child.deleteMany({
-        where: { userId }
+        where: {
+          user: {
+            accountId: user.accountId
+          }
+        }
       });
     });
 
@@ -76,20 +98,27 @@ export const deleteDataByType = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Get all children IDs for the user
+    // Get user's account
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children IDs for users in the same account
     const children = await prisma.child.findMany({
-      where: { userId },
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
       select: { id: true }
     });
 
     const childIds = children.map(c => c.id);
-
-    if (childIds.length === 0) {
-      return res.json({
-        message: 'No data to delete',
-        success: true
-      });
-    }
 
     // Delete data based on type
     switch (type) {
@@ -125,7 +154,11 @@ export const deleteDataByType = async (req: Request, res: Response) => {
 
       case 'inventory':
         await prisma.inventory.deleteMany({
-          where: { userId }
+          where: {
+            user: {
+              accountId: user.accountId
+            }
+          }
         });
         break;
 
