@@ -9,8 +9,23 @@ export const getChildren = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children for users in the same account
     const children = await prisma.child.findMany({
-      where: { userId },
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
       orderBy: { name: 'asc' }
     });
 
@@ -31,10 +46,23 @@ export const getChild = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get child if it belongs to someone in the same account
     const child = await prisma.child.findFirst({
       where: {
         id,
-        userId // Ensure user can only access their own children
+        user: {
+          accountId: user.accountId
+        }
       },
       include: {
         _count: {
@@ -106,9 +134,24 @@ export const updateChild = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // First verify the child belongs to the user
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Verify the child belongs to someone in the same account
     const existingChild = await prisma.child.findFirst({
-      where: { id, userId }
+      where: {
+        id,
+        user: {
+          accountId: user.accountId
+        }
+      }
     });
 
     if (!existingChild) {
