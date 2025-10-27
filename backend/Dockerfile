@@ -18,6 +18,9 @@ RUN npx prisma generate
 # Build TypeScript
 RUN npm run build
 
+# Create uploads directory
+RUN mkdir -p uploads/diapers
+
 # Expose port
 EXPOSE 3001
 

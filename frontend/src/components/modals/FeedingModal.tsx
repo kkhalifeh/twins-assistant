@@ -14,6 +14,7 @@ export default function FeedingModal({ childId, onClose }: FeedingModalProps) {
   const queryClient = useQueryClient()
   const [type, setType] = useState('BOTTLE')
   const [amount, setAmount] = useState('')
+  const [duration, setDuration] = useState('')
   const [notes, setNotes] = useState('')
 
   const mutation = useMutation({
@@ -30,7 +31,8 @@ export default function FeedingModal({ childId, onClose }: FeedingModalProps) {
       childId,
       startTime: new Date().toISOString(),
       type,
-      amount: parseFloat(amount),
+      amount: amount ? parseFloat(amount) : undefined,
+      duration: duration ? parseInt(duration) : undefined,
       notes,
     })
   }
@@ -61,16 +63,31 @@ export default function FeedingModal({ childId, onClose }: FeedingModalProps) {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount (ml)</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              placeholder="120"
-            />
-          </div>
+          {type !== 'BREAST' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount (ml)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="120"
+              />
+            </div>
+          )}
+
+          {type === 'BREAST' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes) - Optional</label>
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="15"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>

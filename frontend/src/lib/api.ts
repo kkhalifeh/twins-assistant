@@ -61,9 +61,20 @@ export const authAPI = {
     window.location.href = '/login';
   },
   getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
+    const response = await api.get('/users/me');
     return response.data;
   },
+};
+
+// User Management API
+export const userAPI = {
+  getTeamMembers: () => api.get('/users/team').then(res => res.data),
+  inviteTeamMember: (data: { email: string; name: string; role: string; password: string }) =>
+    api.post('/users/team/invite', data).then(res => res.data),
+  updateMemberRole: (memberId: string, role: string) =>
+    api.put(`/users/team/${memberId}/role`, { role }).then(res => res.data),
+  removeMember: (memberId: string) =>
+    api.delete(`/users/team/${memberId}`).then(res => res.data),
 };
 
 // Children API

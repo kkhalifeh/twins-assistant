@@ -48,15 +48,15 @@ export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
 
 export const createDiaperLog = async (req: AuthRequest, res: Response) => {
   try {
-    const { 
-      childId, 
-      timestamp, 
-      type, 
-      consistency, 
-      color, 
-      notes 
+    const {
+      childId,
+      timestamp,
+      type,
+      consistency,
+      color,
+      notes
     } = req.body;
-    
+
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -67,7 +67,10 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
         error: 'Child ID and type are required'
       });
     }
-    
+
+    // Get image URL if file was uploaded
+    const imageUrl = (req as any).file ? `/uploads/diapers/${(req as any).file.filename}` : null;
+
     const log = await prisma.diaperLog.create({
       data: {
         childId,
@@ -76,6 +79,7 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
         type,
         consistency,
         color,
+        imageUrl,
         notes
       },
       include: {
@@ -85,12 +89,12 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
         }
       }
     });
-    
+
     res.status(201).json(log);
   } catch (error) {
     console.error('Create diaper log error:', error);
-    res.status(500).json({ 
-      error: 'Failed to create diaper log' 
+    res.status(500).json({
+      error: 'Failed to create diaper log'
     });
   }
 };

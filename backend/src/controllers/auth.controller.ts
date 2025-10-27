@@ -42,8 +42,11 @@ export const register = async (req: Request, res: Response) => {
       });
     }
     
-    // Create user
+    // Create user and account - simplified approach
     const hashedPassword = await hashPassword(password);
+    console.log('[Registration] Step 1: Creating user...');
+
+    // Create user first (without account)
     const user = await prisma.user.create({
       data: {
         email,
@@ -53,24 +56,53 @@ export const register = async (req: Request, res: Response) => {
         role: 'PARENT'
       }
     });
-    
+    console.log('[Registration] Step 1 complete: User created with ID:', user.id);
+
+    console.log('[Registration] Step 2: Creating account...');
+    console.log('[Registration] Account data:', { name: `${name}'s Family`, ownerId: user.id });
+
+    // Create account with user as owner
+    const account = await prisma.account.create({
+      data: {
+        name: `${name}'s Family`,
+        ownerId: user.id
+      }
+    });
+    console.log('[Registration] Step 2 complete: Account created with ID:', account.id);
+
+    console.log('[Registration] Step 3: Updating user with accountId...');
+    // Update user with accountId
+    const result = await prisma.user.update({
+      where: { id: user.id },
+      data: { accountId: account.id }
+    });
+    console.log('[Registration] Step 3 complete: User updated with accountId:', result.accountId);
+    console.log('[Registration] All steps completed successfully!');
+
     // Generate token
-    const token = generateToken(user.id);
-    
+    const token = generateToken(result.id);
+
     res.status(201).json({
       message: 'User registered successfully',
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        role: result.role
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Register error:', error);
-    res.status(500).json({ 
-      error: 'Failed to register user' 
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    });
+    res.status(500).json({
+      error: 'Failed to register user',
+      details: error.message
     });
   }
 };

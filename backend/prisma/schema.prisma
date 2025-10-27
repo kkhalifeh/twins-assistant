@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id        String   @id @default(cuid())
+  name      String   // Account/family name
+  ownerId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner   User   @relation("AccountOwner", fields: [ownerId], references: [id])
+  members User[]
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -14,10 +26,13 @@ model User {
   password  String
   role      UserRole @default(PARENT)
   phone     String?
+  accountId String?  // Reference to Account
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
+  account      Account?     @relation(fields: [accountId], references: [id])
+  ownedAccount Account?     @relation("AccountOwner")
   children     Child[]
   feedingLogs  FeedingLog[]
   sleepLogs    SleepLog[]
@@ -25,6 +40,8 @@ model User {
   healthLogs   HealthLog[]
   schedules    Schedule[]
   inventory    Inventory[]
+
+  @@index([accountId])
 }
 
 model Child {
@@ -97,13 +114,14 @@ model DiaperLog {
   type        DiaperType
   consistency Consistency?
   color       String?
+  imageUrl    String?       // Image upload for diaper
   notes       String?
   createdAt   DateTime      @default(now())
-  
+
   // Relations
   child Child @relation(fields: [childId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
-  
+
   @@index([childId, timestamp])
 }
 
@@ -203,7 +221,7 @@ model Insight {
 // Enums
 enum UserRole {
   PARENT
-  CAREGIVER
+  NANNY
   VIEWER
 }
 

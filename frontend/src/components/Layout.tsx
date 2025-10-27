@@ -17,38 +17,50 @@ import {
   X
 } from 'lucide-react'
 import { useState } from 'react'
-import { childrenAPI } from '@/lib/api'
+import { childrenAPI, authAPI } from '@/lib/api'
 
-const menuItems = [
-  { icon: Home, label: 'Overview', href: '/' },
-  { icon: Milk, label: 'Feeding', href: '/feeding' },
-  { icon: Moon, label: 'Sleep', href: '/sleep' },
-  { icon: Baby, label: 'Diapers', href: '/diapers' },
-  { icon: Heart, label: 'Health', href: '/health' },
-  { icon: Trophy, label: 'Milestones', href: '/milestones' },
-  { icon: Package, label: 'Inventory', href: '/inventory' },
-  { icon: Brain, label: 'Insights', href: '/insights' },
-  { icon: Settings, label: 'Settings', href: '/settings' },
+const allMenuItems = [
+  { icon: Home, label: 'Overview', href: '/', roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { icon: Milk, label: 'Feeding', href: '/feeding', roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { icon: Moon, label: 'Sleep', href: '/sleep', roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { icon: Baby, label: 'Diapers', href: '/diapers', roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { icon: Heart, label: 'Health', href: '/health', roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { icon: Trophy, label: 'Milestones', href: '/milestones', roles: ['PARENT', 'VIEWER'] },
+  { icon: Package, label: 'Inventory', href: '/inventory', roles: ['PARENT', 'VIEWER'] },
+  { icon: Brain, label: 'Insights', href: '/insights', roles: ['PARENT', 'VIEWER'] },
+  { icon: Settings, label: 'Settings', href: '/settings', roles: ['PARENT', 'NANNY', 'VIEWER'] },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Fetch current user data
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: authAPI.getCurrentUser,
+    retry: false,
+  })
+
   // Fetch children data
-  const { data: children = [] } = useQuery({
+  const { data: childrenData = [] } = useQuery({
     queryKey: ['children'],
     queryFn: childrenAPI.getAll,
     retry: false,
   })
 
+  // Filter menu items based on user role
+  const menuItems = allMenuItems.filter((item) =>
+    item.roles.includes(currentUser?.role || 'VIEWER')
+  )
+
   // Generate children names for display
-  const childrenNames = children.length > 0
-    ? children.map((child: any) => child.name).join(' & ')
+  const childrenNames = childrenData.length > 0
+    ? childrenData.map((child: any) => child.name).join(' & ')
     : 'Your Children'
 
-  // Don't show sidebar on login page
-  if (pathname === '/login') {
+  // Don't show sidebar on login/register pages
+  if (pathname === '/login' || pathname === '/register' || pathname === '/onboarding') {
     return <>{children}</>
   }
 

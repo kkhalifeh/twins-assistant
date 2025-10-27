@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import {
   User, Bell, Shield, Smartphone, Database,
-  Globe, Save, Camera, Check, Trash2, AlertTriangle
+  Globe, Save, Camera, Check, Trash2, AlertTriangle, Users, UserPlus
 } from 'lucide-react'
-import { childrenAPI, authAPI } from '@/lib/api'
+import { childrenAPI, authAPI, userAPI } from '@/lib/api'
 import api from '@/lib/api'
 
 export default function SettingsPage() {
@@ -14,6 +14,13 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    name: '',
+    role: 'NANNY',
+    password: ''
+  })
   const queryClient = useQueryClient()
 
   const [profile, setProfile] = useState({
@@ -34,6 +41,51 @@ export default function SettingsPage() {
     queryKey: ['children'],
     queryFn: childrenAPI.getAll,
   })
+
+  // Fetch team members
+  const { data: teamMembers = [], isLoading: teamLoading } = useQuery({
+    queryKey: ['teamMembers'],
+    queryFn: userAPI.getTeamMembers,
+  })
+
+  // Invite team member mutation
+  const inviteMutation = useMutation({
+    mutationFn: userAPI.inviteTeamMember,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] })
+      setShowInviteModal(false)
+      setInviteForm({ email: '', name: '', role: 'NANNY', password: '' })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ memberId, role }: { memberId: string; role: string }) =>
+      userAPI.updateMemberRole(memberId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  // Remove member mutation
+  const removeMemberMutation = useMutation({
+    mutationFn: userAPI.removeMember,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] })
+      setShowDeleteConfirm(null)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    inviteMutation.mutate(inviteForm)
+  }
 
   // Update profile state when user data loads
   useEffect(() => {
@@ -90,6 +142,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'team', label: 'Team', icon: Users },
     { id: 'children', label: 'Children', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'whatsapp', label: 'WhatsApp', icon: Smartphone },
@@ -178,6 +231,130 @@ export default function SettingsPage() {
                 <button onClick={handleSave} className="btn-primary">
                   Save Changes
                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'team' && (
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Team Management</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage team members and their roles
+                  </p>
+                </div>
+                {currentUser?.role === 'PARENT' && (
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="btn-primary flex items-center space-x-2"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Invite Member</span>
+                  </button>
+                )}
+              </div>
+
+              {teamLoading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-16 bg-gray-200 rounded"></div>
+                  <div className="h-16 bg-gray-200 rounded"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {teamMembers.map((member: any) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                          <User className="w-6 h-6 text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-gray-600">{member.email}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-700">Role:</span>
+                          {currentUser?.role === 'PARENT' && !member.isOwner ? (
+                            <select
+                              value={member.role}
+                              onChange={(e) =>
+                                updateRoleMutation.mutate({
+                                  memberId: member.id,
+                                  role: e.target.value,
+                                })
+                              }
+                              className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                              disabled={updateRoleMutation.isPending}
+                            >
+                              <option value="PARENT">Parent</option>
+                              <option value="NANNY">Nanny</option>
+                              <option value="VIEWER">Viewer</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                member.role === 'PARENT'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : member.role === 'NANNY'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              {member.role}
+                            </span>
+                          )}
+                        </div>
+
+                        {member.isOwner && (
+                          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                            Owner
+                          </span>
+                        )}
+
+                        {currentUser?.role === 'PARENT' &&
+                          !member.isOwner &&
+                          member.id !== currentUser?.id && (
+                            <button
+                              onClick={() => setShowDeleteConfirm(`member-${member.id}`)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded"
+                              title="Remove member"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {teamMembers.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p>No team members yet</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-medium text-blue-900 mb-2">Role Permissions</h3>
+                <ul className="space-y-2 text-sm text-blue-800">
+                  <li>
+                    <strong>Parent:</strong> Full access to all features and settings
+                  </li>
+                  <li>
+                    <strong>Nanny:</strong> Can log activities (feeding, sleep, diapers, health)
+                    only
+                  </li>
+                  <li>
+                    <strong>Viewer:</strong> Read-only access to view all data
+                  </li>
+                </ul>
               </div>
             </div>
           )}
@@ -464,6 +641,98 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Invite Team Member Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Invite Team Member</h3>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInviteSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={inviteForm.name}
+                  onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="John Doe"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="john@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={inviteForm.password}
+                  onChange={(e) =>
+                    setInviteForm({ ...inviteForm, password: e.target.value })
+                  }
+                  required
+                  minLength={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Minimum 6 characters"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={inviteForm.role}
+                  onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="PARENT">Parent - Full Access</option>
+                  <option value="NANNY">Nanny - Logging Only</option>
+                  <option value="VIEWER">Viewer - Read Only</option>
+                </select>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviteMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {inviteMutation.isPending ? 'Inviting...' : 'Invite'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -480,6 +749,8 @@ export default function SettingsPage() {
                 ? 'Are you sure you want to delete your account? This will permanently remove all your data and cannot be undone.'
                 : showDeleteConfirm === 'all'
                 ? 'Are you sure you want to delete all your data? This will remove all feeding, sleep, diaper, and health records but keep your account active.'
+                : showDeleteConfirm.startsWith('member-')
+                ? 'Are you sure you want to remove this team member? They will lose access to the account.'
                 : `Are you sure you want to delete all ${showDeleteConfirm} data? This action cannot be undone.`
               }
             </p>
@@ -487,21 +758,26 @@ export default function SettingsPage() {
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                disabled={deleteLoading}
+                disabled={deleteLoading || removeMemberMutation.isPending}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() =>
-                  showDeleteConfirm === 'account'
-                    ? handleDeleteAccount()
-                    : handleDeleteData(showDeleteConfirm)
-                }
-                disabled={deleteLoading}
+                onClick={() => {
+                  if (showDeleteConfirm === 'account') {
+                    handleDeleteAccount()
+                  } else if (showDeleteConfirm.startsWith('member-')) {
+                    const memberId = showDeleteConfirm.replace('member-', '')
+                    removeMemberMutation.mutate(memberId)
+                  } else {
+                    handleDeleteData(showDeleteConfirm)
+                  }
+                }}
+                disabled={deleteLoading || removeMemberMutation.isPending}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
               >
-                {deleteLoading ? 'Deleting...' : 'Delete'}
+                {deleteLoading || removeMemberMutation.isPending ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

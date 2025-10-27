@@ -15,24 +15,56 @@ export default function DiaperModal({ childId, onClose }: DiaperModalProps) {
   const [type, setType] = useState('WET')
   const [consistency, setConsistency] = useState('')
   const [notes, setNotes] = useState('')
+  const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const mutation = useMutation({
-    mutationFn: diaperAPI.create,
+    mutationFn: async (data: FormData) => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/diapers`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: data,
+      })
+      if (!response.ok) throw new Error('Failed to create diaper log')
+      return response.json()
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diapers'] })
       onClose()
     },
   })
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImage(null)
+    setImagePreview(null)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    mutation.mutate({
-      childId,
-      timestamp: new Date().toISOString(),
-      type,
-      consistency: consistency || undefined,
-      notes,
-    })
+
+    const formData = new FormData()
+    formData.append('childId', childId)
+    formData.append('timestamp', new Date().toISOString())
+    formData.append('type', type)
+    if (consistency) formData.append('consistency', consistency)
+    if (notes) formData.append('notes', notes)
+    if (image) formData.append('image', image)
+
+    mutation.mutate(formData)
   }
 
   return (
@@ -74,6 +106,38 @@ export default function DiaperModal({ childId, onClose }: DiaperModalProps) {
               </select>
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Photo (Optional)</label>
+            {!imagePreview ? (
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-1">Upload a photo of the diaper</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Diaper preview"
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>

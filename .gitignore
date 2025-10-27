@@ -45,3 +45,4 @@ venv/
 
 # Docker volumes
 volumes/
+backend/uploads/
