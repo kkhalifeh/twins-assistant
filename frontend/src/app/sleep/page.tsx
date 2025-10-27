@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { childrenAPI, sleepAPI } from '@/lib/api'
+import { childrenAPI, sleepAPI, authAPI } from '@/lib/api'
 import { format, isWithinInterval, parseISO, differenceInMinutes } from 'date-fns'
-import { Moon, Plus, Sun, Clock, AlertCircle } from 'lucide-react'
+import { Moon, Plus, Sun, Clock, AlertCircle, Edit2, Trash2 } from 'lucide-react'
 import SleepModal from '@/components/modals/SleepModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -14,12 +14,18 @@ export default function SleepPage() {
   const [selectedChild, setSelectedChild] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
+  const [editingLog, setEditingLog] = useState<any | null>(null)
   const [dateRange, setDateRange] = useState({
     start: new Date(),
     end: new Date()
   })
   const [endingSession, setEndingSession] = useState<string | null>(null)
   const [endSessionError, setEndSessionError] = useState<string | null>(null)
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: authAPI.getCurrentUser,
+  })
 
   const { data: children } = useQuery({
     queryKey: ['children'],
@@ -76,11 +82,31 @@ export default function SleepPage() {
     }
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: sleepAPI.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sleep'] })
+    },
+  })
+
   const handleEndSleep = async (sessionId: string) => {
     setEndingSession(sessionId)
     setEndSessionError(null)
     endSleepMutation.mutate(sessionId)
   }
+
+  const handleEdit = (log: any) => {
+    setEditingLog(log)
+    setShowModal(true)
+  }
+
+  const handleDelete = (logId: string) => {
+    if (confirm('Are you sure you want to delete this sleep log?')) {
+      deleteMutation.mutate(logId)
+    }
+  }
+
+  const isParent = currentUser?.role === 'PARENT'
 
   const getDailySleepData = () => {
     if (!children || children.length === 0) return []
@@ -151,6 +177,7 @@ export default function SleepPage() {
         <button
           onClick={() => {
             setModalChildId(children?.[0]?.id || '')
+            setEditingLog(null)
             setShowModal(true)
           }}
           className="btn-primary flex items-center space-x-2"
@@ -316,7 +343,7 @@ export default function SleepPage() {
               
               return (
                 <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 flex-1">
                     <div className={`p-2 rounded-full ${
                       log.type === 'NAP' ? 'bg-amber-100' : 'bg-indigo-100'
                     }`}>
@@ -326,7 +353,7 @@ export default function SleepPage() {
                         <Moon className="w-5 h-5 text-indigo-600" />
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{log.child?.name}</p>
                       <p className="text-sm text-gray-600">
                         {log.type} - {hours > 0 ? `${hours}h ` : ''}{minutes}m
@@ -343,19 +370,39 @@ export default function SleepPage() {
                       {log.notes && <p className="text-xs text-gray-500 mt-1">{log.notes}</p>}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {format(new Date(log.startTime), 'h:mm a')}
-                      {log.endTime && (
-                        <span className="text-gray-500">
-                          {' - '}
-                          {format(new Date(log.endTime), 'h:mm a')}
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {format(new Date(log.startTime), 'MMM d')}
-                    </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {format(new Date(log.startTime), 'h:mm a')}
+                        {log.endTime && (
+                          <span className="text-gray-500">
+                            {' - '}
+                            {format(new Date(log.endTime), 'h:mm a')}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {format(new Date(log.startTime), 'MMM d')}
+                      </p>
+                    </div>
+                    {isParent && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEdit(log)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(log.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -368,10 +415,15 @@ export default function SleepPage() {
         )}
       </div>
 
-      {showModal && (
+      {showModal && children && (
         <SleepModal
           childId={modalChildId}
-          onClose={() => setShowModal(false)}
+          children={children}
+          editingLog={editingLog}
+          onClose={() => {
+            setShowModal(false)
+            setEditingLog(null)
+          }}
         />
       )}
     </div>

@@ -7,29 +7,34 @@ import { X } from 'lucide-react'
 
 interface DiaperModalProps {
   childId: string
+  children: any[]
   onClose: () => void
+  editingLog?: any
 }
 
-export default function DiaperModal({ childId, onClose }: DiaperModalProps) {
+export default function DiaperModal({ childId: initialChildId, children, onClose, editingLog }: DiaperModalProps) {
   const queryClient = useQueryClient()
-  const [type, setType] = useState('WET')
-  const [consistency, setConsistency] = useState('')
-  const [notes, setNotes] = useState('')
+  const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
+  const [type, setType] = useState(editingLog?.type || 'WET')
+  const [consistency, setConsistency] = useState(editingLog?.consistency || '')
+  const [notes, setNotes] = useState(editingLog?.notes || '')
+  const [timestamp, setTimestamp] = useState(
+    editingLog?.changedAt ? new Date(editingLog.changedAt).toISOString().slice(0, 16) : ''
+  )
   const [image, setImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(editingLog?.imageUrl || null)
+  const [removeExistingImage, setRemoveExistingImage] = useState(false)
 
-  const mutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/diapers`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: data,
-      })
-      if (!response.ok) throw new Error('Failed to create diaper log')
-      return response.json()
+  const createMutation = useMutation({
+    mutationFn: diaperAPI.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diapers'] })
+      onClose()
     },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => diaperAPI.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diapers'] })
       onClose()
@@ -40,6 +45,7 @@ export default function DiaperModal({ childId, onClose }: DiaperModalProps) {
     const file = e.target.files?.[0]
     if (file) {
       setImage(file)
+      setRemoveExistingImage(false)
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
@@ -51,33 +57,72 @@ export default function DiaperModal({ childId, onClose }: DiaperModalProps) {
   const handleRemoveImage = () => {
     setImage(null)
     setImagePreview(null)
+    if (editingLog?.imageUrl) {
+      setRemoveExistingImage(true)
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const formData = new FormData()
-    formData.append('childId', childId)
-    formData.append('timestamp', new Date().toISOString())
-    formData.append('type', type)
-    if (consistency) formData.append('consistency', consistency)
-    if (notes) formData.append('notes', notes)
-    if (image) formData.append('image', image)
+    const data = {
+      childId,
+      changedAt: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
+      type,
+      consistency: consistency || undefined,
+      notes: notes || undefined,
+      imageUrl: !removeExistingImage && editingLog?.imageUrl ? editingLog.imageUrl : undefined,
+    }
 
-    mutation.mutate(formData)
+    if (editingLog) {
+      updateMutation.mutate({ id: editingLog.id, data })
+    } else {
+      createMutation.mutate(data)
+    }
   }
+
+  const isLoading = createMutation.isPending || updateMutation.isPending
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Log Diaper Change</h2>
+          <h2 className="text-xl font-semibold">{editingLog ? 'Edit Diaper Change' : 'Log Diaper Change'}</h2>
           <button onClick={onClose}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Child</label>
+            <select
+              value={childId}
+              onChange={(e) => setChildId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            >
+              {children.map((child) => (
+                <option key={child.id} value={child.id}>
+                  {child.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {editingLog && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Time Changed</label>
+              <input
+                type="datetime-local"
+                value={timestamp}
+                onChange={(e) => setTimestamp(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select
@@ -159,10 +204,10 @@ export default function DiaperModal({ childId, onClose }: DiaperModalProps) {
             </button>
             <button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={isLoading}
               className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
             >
-              {mutation.isPending ? 'Saving...' : 'Save'}
+              {isLoading ? 'Saving...' : editingLog ? 'Update' : 'Save'}
             </button>
           </div>
         </form>
