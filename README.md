@@ -282,3 +282,4 @@ Private - All rights reserved
 ## Support
 
 For issues and questions, refer to CLAUDE.md for development guidelines.
+# Test automation
