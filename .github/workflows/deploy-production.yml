@@ -1,0 +1,47 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 209.250.253.59 >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          ssh root@209.250.253.59 'bash -s' < scripts/auto-deploy.sh
+
+      - name: Verify deployment
+        run: |
+          ssh root@209.250.253.59 << 'EOF'
+            echo "Checking backend health..."
+            curl -f http://localhost:3001/health || exit 1
+
+            echo "Checking frontend..."
+            curl -f http://localhost:3000 > /dev/null || exit 1
+
+            echo "✅ Deployment verified!"
+          EOF
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check the logs."
