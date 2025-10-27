@@ -21,6 +21,7 @@ import dashboardRoutes from './routes/dashboard.routes';
 import chatRoutes from './routes/chat.routes';
 import journalRoutes from './routes/journal.routes';
 import inventoryRoutes from './routes/inventory.routes';
+import dataRoutes from './routes/data.routes';
 import { checkResourceAccess } from './middleware/rbac.middleware';
 import { authMiddleware } from './utils/auth';
 
@@ -70,6 +71,7 @@ app.use('/api/dashboard', authMiddleware, checkResourceAccess, dashboardRoutes);
 app.use('/api/chat', authMiddleware, checkResourceAccess, chatRoutes);
 app.use('/api/journal', authMiddleware, checkResourceAccess, journalRoutes);
 app.use('/api/inventory', authMiddleware, checkResourceAccess, inventoryRoutes);
+app.use('/api/data', authMiddleware, checkResourceAccess, dataRoutes);
 
 // Base API route
 app.get('/api', (req: Request, res: Response) => {
