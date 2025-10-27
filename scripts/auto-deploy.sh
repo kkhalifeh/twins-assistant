@@ -71,18 +71,21 @@ docker exec parenting_backend npx prisma migrate deploy || {
 echo -e "${YELLOW}🔄 Restarting backend container...${NC}"
 docker restart parenting_backend
 
-# Wait for backend to start
+# Wait for backend to start with retry
 echo -e "${YELLOW}⏳ Waiting for backend to start...${NC}"
-sleep 5
-
-# Check backend health
-if curl -f http://localhost:3001/health > /dev/null 2>&1; then
-  echo -e "${GREEN}✅ Backend is healthy${NC}"
-else
-  echo -e "${RED}❌ Backend health check failed${NC}"
-  docker logs parenting_backend --tail 50
-  exit 1
-fi
+RETRY_COUNT=0
+MAX_RETRIES=12
+until curl -f http://localhost:3001/health > /dev/null 2>&1; do
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+    echo -e "${RED}❌ Backend health check failed after ${MAX_RETRIES} attempts${NC}"
+    docker logs parenting_backend --tail 50
+    exit 1
+  fi
+  echo "   Attempt $RETRY_COUNT/$MAX_RETRIES - waiting 5 seconds..."
+  sleep 5
+done
+echo -e "${GREEN}✅ Backend is healthy${NC}"
 
 # Frontend deployment
 echo -e "${YELLOW}🎨 Deploying frontend...${NC}"
@@ -99,18 +102,21 @@ npm run build
 echo -e "${YELLOW}🔄 Restarting frontend container...${NC}"
 docker restart parenting_frontend
 
-# Wait for frontend to start
+# Wait for frontend to start with retry
 echo -e "${YELLOW}⏳ Waiting for frontend to start...${NC}"
-sleep 5
-
-# Check frontend health
-if curl -f http://localhost:3000 > /dev/null 2>&1; then
-  echo -e "${GREEN}✅ Frontend is healthy${NC}"
-else
-  echo -e "${RED}❌ Frontend health check failed${NC}"
-  docker logs parenting_frontend --tail 50
-  exit 1
-fi
+RETRY_COUNT=0
+MAX_RETRIES=12
+until curl -f http://localhost:3000 > /dev/null 2>&1; do
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+    echo -e "${RED}❌ Frontend health check failed after ${MAX_RETRIES} attempts${NC}"
+    docker logs parenting_frontend --tail 50
+    exit 1
+  fi
+  echo "   Attempt $RETRY_COUNT/$MAX_RETRIES - waiting 5 seconds..."
+  sleep 5
+done
+echo -e "${GREEN}✅ Frontend is healthy${NC}"
 
 # Final verification
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
