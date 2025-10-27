@@ -90,6 +90,8 @@ export const childrenAPI = {
 export const feedingAPI = {
   getAll: (params?: any) => api.get('/feeding', { params }).then(res => res.data),
   create: (data: any) => api.post('/feeding', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/feeding/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/feeding/${id}`).then(res => res.data),
   endFeeding: (id: string) => api.put(`/feeding/${id}/end`).then(res => res.data),
 };
 
@@ -97,6 +99,8 @@ export const feedingAPI = {
 export const sleepAPI = {
   getAll: (params?: any) => api.get('/sleep', { params }).then(res => res.data),
   create: (data: any) => api.post('/sleep', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/sleep/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/sleep/${id}`).then(res => res.data),
   endSleep: (id: string) => api.put(`/sleep/${id}/end`).then(res => res.data),
 };
 
@@ -104,12 +108,16 @@ export const sleepAPI = {
 export const diaperAPI = {
   getAll: (params?: any) => api.get('/diapers', { params }).then(res => res.data),
   create: (data: any) => api.post('/diapers', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/diapers/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/diapers/${id}`).then(res => res.data),
 };
 
 // Health API
 export const healthAPI = {
   getAll: (params?: any) => api.get('/health', { params }).then(res => res.data),
   create: (data: any) => api.post('/health', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/health/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/health/${id}`).then(res => res.data),
   getVitals: (childId: string) => api.get(`/health/vitals/${childId}`).then(res => res.data),
 };
 

@@ -21,6 +21,8 @@ export default function SettingsPage() {
     role: 'NANNY',
     password: ''
   })
+  const [editingChild, setEditingChild] = useState<any | null>(null)
+  const [showEditChildModal, setShowEditChildModal] = useState(false)
   const queryClient = useQueryClient()
 
   const [profile, setProfile] = useState({
@@ -82,9 +84,47 @@ export default function SettingsPage() {
     },
   })
 
+  // Update child mutation
+  const updateChildMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => childrenAPI.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['children'] })
+      setShowEditChildModal(false)
+      setEditingChild(null)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
   const handleInviteSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     inviteMutation.mutate(inviteForm)
+  }
+
+  const handleEditChild = (child: any) => {
+    setEditingChild({
+      id: child.id,
+      name: child.name,
+      dateOfBirth: child.dateOfBirth,
+      gender: child.gender,
+      medicalNotes: child.medicalNotes || ''
+    })
+    setShowEditChildModal(true)
+  }
+
+  const handleUpdateChild = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (editingChild) {
+      updateChildMutation.mutate({
+        id: editingChild.id,
+        data: {
+          name: editingChild.name,
+          dateOfBirth: editingChild.dateOfBirth,
+          gender: editingChild.gender,
+          medicalNotes: editingChild.medicalNotes || null
+        }
+      })
+    }
   }
 
   // Update profile state when user data loads
@@ -369,36 +409,50 @@ export default function SettingsPage() {
                   </div>
                 </div>
               ) : children.length > 0 ? (
-                children.map((child: any, index: number) => (
-                  <div key={child.id} className="card">
-                    <div className="flex items-start space-x-4">
-                      <div className={`w-20 h-20 rounded-full flex items-center justify-center ${
-                        child.gender === 'FEMALE' ? 'bg-pink-100' : 'bg-blue-100'
-                      }`}>
-                        <span className="text-2xl">
-                          {child.gender === 'FEMALE' ? '👧' : '👦'}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold">{child.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          Born: {new Date(child.dateOfBirth).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Gender: {child.gender === 'FEMALE' ? 'Female' : 'Male'}
-                        </p>
-                        {child.medicalNotes && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            Notes: {child.medicalNotes}
+                <>
+                  {children.map((child: any, index: number) => (
+                    <div key={child.id} className="card">
+                      <div className="flex items-start space-x-4">
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center ${
+                          child.gender === 'FEMALE' ? 'bg-pink-100' : 'bg-blue-100'
+                        }`}>
+                          <span className="text-2xl">
+                            {child.gender === 'FEMALE' ? '👧' : '👦'}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">{child.name}</h3>
+                          <p className="text-sm text-gray-600">
+                            Born: {new Date(child.dateOfBirth).toLocaleDateString()}
                           </p>
-                        )}
-                        <button className="mt-2 text-sm text-primary-600 hover:text-primary-700">
-                          Edit Profile
-                        </button>
+                          <p className="text-sm text-gray-600">
+                            Gender: {child.gender === 'FEMALE' ? 'Female' : 'Male'}
+                          </p>
+                          {child.medicalNotes && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              Notes: {child.medicalNotes}
+                            </p>
+                          )}
+                          <button
+                            onClick={() => handleEditChild(child)}
+                            className="mt-2 text-sm text-primary-600 hover:text-primary-700"
+                          >
+                            Edit Profile
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                  <div className="card text-center py-8">
+                    <button
+                      onClick={() => window.location.href = '/onboarding'}
+                      className="btn-primary flex items-center space-x-2 mx-auto"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Another Child</span>
+                    </button>
                   </div>
-                ))
+                </>
               ) : (
                 <div className="card">
                   <div className="text-center py-8">
@@ -726,6 +780,123 @@ export default function SettingsPage() {
                   className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
                 >
                   {inviteMutation.isPending ? 'Inviting...' : 'Invite'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Child Modal */}
+      {showEditChildModal && editingChild && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Child Profile</h3>
+              <button
+                onClick={() => {
+                  setShowEditChildModal(false)
+                  setEditingChild(null)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateChild} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Child's Name
+                </label>
+                <input
+                  type="text"
+                  value={editingChild.name}
+                  onChange={(e) => setEditingChild({ ...editingChild, name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={editingChild.dateOfBirth}
+                  onChange={(e) => setEditingChild({ ...editingChild, dateOfBirth: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditingChild({ ...editingChild, gender: 'FEMALE' })}
+                    className={`p-3 rounded-lg border-2 transition-colors ${
+                      editingChild.gender === 'FEMALE'
+                        ? 'border-pink-300 bg-pink-50 text-pink-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <span className="text-2xl mb-1 block">👧</span>
+                      <span className="text-sm font-medium">Girl</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingChild({ ...editingChild, gender: 'MALE' })}
+                    className={`p-3 rounded-lg border-2 transition-colors ${
+                      editingChild.gender === 'MALE'
+                        ? 'border-blue-300 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <span className="text-2xl mb-1 block">👦</span>
+                      <span className="text-sm font-medium">Boy</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Medical Notes (Optional)
+                </label>
+                <textarea
+                  value={editingChild.medicalNotes}
+                  onChange={(e) => setEditingChild({ ...editingChild, medicalNotes: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Any medical conditions, allergies, or notes..."
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditChildModal(false)
+                    setEditingChild(null)
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateChildMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {updateChildMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
