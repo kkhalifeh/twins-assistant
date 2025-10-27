@@ -16,6 +16,7 @@ async function resetDatabase() {
     await prisma.schedule.deleteMany();
     await prisma.inventory.deleteMany();
     await prisma.child.deleteMany();
+    await prisma.account.deleteMany(); // Delete accounts before users
     await prisma.user.deleteMany();
 
     console.log('✅ Database completely cleaned!');

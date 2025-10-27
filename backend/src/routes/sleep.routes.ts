@@ -202,7 +202,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
       where: { id }
     });
 
-    res.status(204).send();
+    res.json({ message: 'Sleep log deleted successfully' });
   } catch (error) {
     console.error('Error deleting sleep log:', error);
     res.status(500).json({ error: 'Failed to delete sleep log' });

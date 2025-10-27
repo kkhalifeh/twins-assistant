@@ -19,8 +19,8 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canWrite: ['*']   // Can create, update, delete
   },
   [UserRole.NANNY]: {
-    canAccess: ['feeding', 'sleep', 'diaper', 'health', 'children'], // Only logging modules + children to see who to log for
-    canWrite: ['feeding', 'sleep', 'diaper', 'health'] // Can only write to logging endpoints
+    canAccess: ['feeding', 'sleep', 'diapers', 'health', 'children'], // Only logging modules + children to see who to log for
+    canWrite: ['feeding', 'sleep', 'diapers', 'health'] // Can only write to logging endpoints
   },
   [UserRole.VIEWER]: {
     canAccess: ['*'], // Can view all resources
