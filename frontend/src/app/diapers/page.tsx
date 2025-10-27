@@ -1,21 +1,28 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { childrenAPI, diaperAPI } from '@/lib/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { childrenAPI, diaperAPI, authAPI } from '@/lib/api'
 import { format, isWithinInterval, parseISO, startOfDay } from 'date-fns'
-import { Baby, Plus, Droplets, AlertTriangle } from 'lucide-react'
+import { Baby, Plus, Droplets, AlertTriangle, Edit2, Trash2 } from 'lucide-react'
 import DiaperModal from '@/components/modals/DiaperModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 
 export default function DiapersPage() {
+  const queryClient = useQueryClient()
   const [selectedChild, setSelectedChild] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
+  const [editingLog, setEditingLog] = useState<any | null>(null)
   const [dateRange, setDateRange] = useState({
     start: new Date(),
     end: new Date()
+  })
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: authAPI.getCurrentUser,
   })
 
   const { data: children } = useQuery({
@@ -29,6 +36,26 @@ export default function DiapersPage() {
       selectedChild === 'all' ? {} : { childId: selectedChild }
     ),
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: diaperAPI.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diapers'] })
+    },
+  })
+
+  const handleEdit = (log: any) => {
+    setEditingLog(log)
+    setShowModal(true)
+  }
+
+  const handleDelete = (logId: string) => {
+    if (confirm('Are you sure you want to delete this diaper log?')) {
+      deleteMutation.mutate(logId)
+    }
+  }
+
+  const isParent = currentUser?.role === 'PARENT'
 
   // Filter logs based on date range
   const filteredLogs = useMemo(() => {
@@ -122,6 +149,7 @@ export default function DiapersPage() {
         <button
           onClick={() => {
             setModalChildId(children?.[0]?.id || '')
+            setEditingLog(null)
             setShowModal(true)
           }}
           className="btn-primary flex items-center space-x-2"
@@ -278,7 +306,7 @@ export default function DiapersPage() {
           <div className="space-y-3">
             {filteredLogs.slice(0, 20).map((log: any) => (
               <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 flex-1">
                   <div className={`p-2 rounded-full ${
                     log.type === 'WET' ? 'bg-blue-100' :
                     log.type === 'DIRTY' ? 'bg-amber-100' : 'bg-green-100'
@@ -298,13 +326,33 @@ export default function DiapersPage() {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">
-                    {format(new Date(log.timestamp), 'h:mm a')}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    {format(new Date(log.timestamp), 'MMM d')}
-                  </p>
+                <div className="flex items-center space-x-3">
+                  <div className="text-right">
+                    <p className="text-sm font-medium">
+                      {format(new Date(log.timestamp), 'h:mm a')}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {format(new Date(log.timestamp), 'MMM d')}
+                    </p>
+                  </div>
+                  {isParent && (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(log)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(log.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -316,10 +364,15 @@ export default function DiapersPage() {
         )}
       </div>
 
-      {showModal && (
+      {showModal && children && (
         <DiaperModal
           childId={modalChildId}
-          onClose={() => setShowModal(false)}
+          children={children}
+          editingLog={editingLog}
+          onClose={() => {
+            setShowModal(false)
+            setEditingLog(null)
+          }}
         />
       )}
     </div>
