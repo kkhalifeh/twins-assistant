@@ -1,286 +1,185 @@
 # Parenting AI Assistant
 
-AI-powered assistant for managing child care with comprehensive web dashboard. Supports any number of children with dynamic, personalized tracking.
+AI-powered web application for managing child care with comprehensive tracking, multi-child support, and natural language interface.
+
+🌐 **Live**: https://parenting.atmata.ai
+
+---
 
 ## Features
 
-- 📊 **Dashboard**: Real-time overview of all children's activities
-- 🍼 **Feeding Tracker**: Log bottles, breastfeeding, and solid foods
-- 😴 **Sleep Monitor**: Track naps and nighttime sleep patterns
-- 🚼 **Diaper Log**: Record diaper changes with types
-- 🏥 **Health Records**: Temperature, weight, and medical notes
-- 📦 **Inventory Management**: Track supplies and restock alerts
-- 🤖 **AI Chat**: Natural language interface for logging activities
-- 📈 **Analytics**: Insights and pattern recognition
-- 👥 **Multi-Child Support**: Fully dynamic for 1+ children
+- 📊 **Real-time Dashboard** - Overview of all children's activities
+- 🍼 **Feeding Tracker** - Bottles, breastfeeding with duration, solid foods
+- 😴 **Sleep Monitor** - Track naps and nighttime sleep patterns
+- 🚼 **Diaper Log** - Record changes with optional photo upload
+- 🏥 **Health Records** - Temperature, weight, medical notes
+- 📦 **Inventory Management** - Track supplies with restock alerts
+- 🤖 **AI Chat Interface** - Natural language logging
+- 👥 **Multi-Child Support** - Dynamic tracking for unlimited children
+- 🔐 **Role-Based Access** - PARENT, NANNY, and VIEWER roles
+- 📈 **Analytics & Insights** - Pattern recognition and comparisons
+
+---
 
 ## Tech Stack
 
-- **Backend**: Node.js + TypeScript + Express
-- **Database**: PostgreSQL + Prisma ORM
+- **Backend**: Node.js 18 + TypeScript + Express + Prisma ORM
+- **Database**: PostgreSQL 14+
 - **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **AI Service**: Python + FastAPI + LangChain + OpenAI
-- **WhatsApp**: Meta Business API (optional)
+- **AI Service**: Python 3.9+ + FastAPI + LangChain + OpenAI
 - **Infrastructure**: Docker + Redis
+- **CI/CD**: GitHub Actions (auto-deploy on push)
+
+---
 
 ## Quick Start
 
 ### Prerequisites
-
 - Node.js 18+
 - PostgreSQL 14+
-- Python 3.9+ (for AI service)
-- Docker & Docker Compose (optional)
+- Docker (optional)
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd twins-assistant
-   ```
+```bash
+# Clone repository
+git clone <repository-url>
+cd twins-assistant
 
-2. **Install dependencies**
-   ```bash
-   npm run setup
-   ```
+# Install dependencies
+npm run setup
 
-3. **Configure environment variables**
+# Configure environment
+cd backend && cp .env.example .env
+cd ../frontend && cp .env.example .env
+# Edit .env files with your configuration
 
-   Backend (`backend/.env`):
-   ```bash
-   cp backend/.env.example backend/.env
-   # Edit backend/.env with your configuration
-   ```
+# Setup database
+cd backend
+npm run prisma:migrate
+npm run prisma:generate
 
-   Frontend (`frontend/.env`):
-   ```bash
-   cp frontend/.env.example frontend/.env
-   # Edit frontend/.env with your API URL
-   ```
+# Start development servers
+npm run dev
+```
 
-4. **Setup database**
-   ```bash
-   cd backend
-   npm run prisma:migrate
-   npm run prisma:generate
-   ```
+### Access
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
 
-5. **Start services**
+---
 
-   Using Docker:
-   ```bash
-   npm run dev
-   ```
+## Development
 
-   Or individually:
-   ```bash
-   # Terminal 1 - Backend
-   cd backend && npm run dev
+```bash
+# Start all services
+npm run dev
 
-   # Terminal 2 - Frontend
-   cd frontend && npm run dev
+# Backend only
+cd backend && npm run dev
 
-   # Terminal 3 - AI Service (optional)
-   cd ai-service && python src/main.py
-   ```
+# Frontend only
+cd frontend && npm run dev
 
-6. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:3001
-   - AI Service: http://localhost:8000
+# Database GUI
+cd backend && npm run prisma:studio
+```
+
+---
 
 ## Production Deployment
 
-### Environment Configuration
-
-1. **Backend Environment Variables**
-   ```env
-   DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
-   JWT_SECRET="your-secure-random-secret-key"
-   JWT_EXPIRE="7d"
-   PORT=3001
-   NODE_ENV=production
-   OPENAI_API_KEY="sk-your-openai-api-key"
-   REDIS_URL="redis://host:6379"
-   ```
-
-2. **Frontend Environment Variables**
-   ```env
-   NEXT_PUBLIC_API_URL=https://your-api-domain.com/api
-   ```
-
-### Deployment Steps
-
-1. **Database Setup**
-   ```bash
-   cd backend
-   DATABASE_URL="your-production-db-url" npx prisma migrate deploy
-   DATABASE_URL="your-production-db-url" npx prisma generate
-   ```
-
-2. **Build Backend**
-   ```bash
-   cd backend
-   npm install --production
-   npm run build
-   npm start
-   ```
-
-3. **Build Frontend**
-   ```bash
-   cd frontend
-   npm install --production
-   npm run build
-   npm start
-   ```
-
-4. **Setup Process Manager** (PM2 recommended)
-   ```bash
-   npm install -g pm2
-
-   # Backend
-   cd backend
-   pm2 start dist/index.js --name "parenting-assistant-api"
-
-   # Frontend
-   cd frontend
-   pm2 start npm --name "parenting-assistant-web" -- start
-
-   pm2 save
-   pm2 startup
-   ```
-
-### Docker Deployment
+**Fully automated** - Just push to main:
 
 ```bash
-# Build and run with Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
+git add .
+git commit -m "Your changes"
+git push origin main
+
+# ✅ Auto-deploys to production in ~3-4 minutes
 ```
+
+### Production Management
+
+```bash
+# Check status
+./scripts/production-cli.sh status
+
+# View logs
+./scripts/production-cli.sh logs backend
+
+# Delete data
+./scripts/production-cli.sh data:delete-all
+
+# Restart services
+./scripts/production-cli.sh restart all
+
+# See all commands
+./scripts/production-cli.sh help
+```
+
+---
+
+## Documentation
+
+📖 **[MASTER.md](MASTER.md)** - Complete documentation including:
+- Architecture details
+- Recent features and implementation
+- Database schema
+- CI/CD automation
+- Production configuration
+- Troubleshooting guide
+
+📝 **[CLAUDE.md](CLAUDE.md)** - Development guidelines for Claude Code
+
+---
 
 ## Project Structure
 
 ```
 twins-assistant/
-├── backend/                 # Node.js API server
-│   ├── src/
-│   │   ├── controllers/    # Request handlers
-│   │   ├── routes/         # API routes
-│   │   ├── services/       # Business logic
-│   │   ├── middleware/     # Auth, validation, etc.
-│   │   └── index.ts        # Server entry
-│   └── prisma/
-│       ├── schema.prisma   # Database schema
-│       └── migrations/     # DB migrations
-├── frontend/               # Next.js web app
-│   ├── src/
-│   │   ├── app/           # App router pages
-│   │   ├── components/    # React components
-│   │   └── lib/          # Utilities, API client
-├── ai-service/            # Python AI service
-│   └── src/
-│       ├── main.py       # FastAPI server
-│       ├── webhook_handler.py
-│       └── message_processor.py
-└── docker-compose.*.yml   # Docker configs
+├── backend/           # Node.js API (Express + Prisma)
+├── frontend/          # Next.js web app
+├── ai-service/        # Python AI service (FastAPI)
+├── scripts/           # Automation scripts
+│   ├── auto-deploy.sh         # Server-side deployment
+│   └── production-cli.sh      # Local production management
+└── .github/workflows/ # CI/CD automation
 ```
 
-## API Documentation
+---
 
-### Authentication
-All endpoints (except `/auth/register` and `/auth/login`) require JWT authentication via `Authorization: Bearer <token>` header.
-
-### Core Endpoints
-
-- `POST /api/auth/register` - Create new account
-- `POST /api/auth/login` - Login user
-- `GET /api/children` - Get user's children
-- `POST /api/children` - Add new child
-- `GET /api/feeding` - Get feeding logs
-- `POST /api/feeding` - Log feeding
-- `GET /api/sleep` - Get sleep logs
-- `POST /api/sleep` - Log sleep
-- `GET /api/diapers` - Get diaper changes
-- `POST /api/diapers` - Log diaper change
-- `GET /api/health` - Get health records
-- `POST /api/health` - Log health data
-- `GET /api/inventory` - Get inventory items
-- `POST /api/inventory` - Add inventory item
-- `PUT /api/inventory/:id/restock` - Restock item
-- `GET /api/dashboard` - Get dashboard data
-- `GET /api/analytics/insights` - Get AI insights
-- `GET /api/analytics/compare` - Compare children
-- `POST /api/chat/message` - Send AI chat message
-
-## Development
-
-### Backend Development
-```bash
-cd backend
-npm run dev           # Start with nodemon
-npm run prisma:studio # Open Prisma Studio (DB GUI)
-```
-
-### Frontend Development
-```bash
-cd frontend
-npm run dev          # Start Next.js dev server
-npm run lint         # Run ESLint
-```
-
-### Database Migrations
-```bash
-cd backend
-npm run prisma:migrate   # Create and apply migration
-```
-
-## Testing
-
-The application has been thoroughly tested with:
-- Single child scenarios
-- Multiple children scenarios (3+ children)
-- All CRUD operations across all modules
-- AI natural language processing
-- User data isolation
-- Dashboard aggregations
-
-**Test Coverage**: 98% (42/43 tests passing)
-
-## Security Features
+## Security
 
 - JWT-based authentication
-- Password hashing with bcrypt
-- User data isolation (all queries scoped by userId)
-- Input validation
+- Password hashing (bcrypt)
+- Role-based access control
+- User data isolation
 - CORS configuration
-- Helmet security headers
-- Rate limiting ready
+- Input validation
 
-## Production Readiness
+---
 
-**Status**: ✅ **APPROVED FOR PRODUCTION DEPLOYMENT**
+## Status
 
-**Readiness Score**: 9.0/10
+✅ **Production-ready and deployed**
 
-**Strengths**:
-- All core modules functional and tested
-- Dynamic architecture supporting unlimited children
-- Strong data isolation and security
-- Clean, maintainable codebase
-- Comprehensive error handling
+- All core features working
+- CI/CD fully automated
+- Role-based access control
+- Multi-child dynamic support
+- Comprehensive testing completed
 
-**Optional Enhancements**:
-- Add monitoring and logging infrastructure
-- Implement rate limiting
-- Add automated tests
-- Setup CI/CD pipeline
+---
 
 ## License
 
 Private - All rights reserved
 
+---
+
 ## Support
 
-For issues and questions, refer to CLAUDE.md for development guidelines.
-# Test automation
-# Automation test
+For detailed documentation, see [MASTER.md](MASTER.md)
+
+For development guidelines, see [CLAUDE.md](CLAUDE.md)
