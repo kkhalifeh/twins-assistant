@@ -305,6 +305,9 @@ export default function DashboardPage() {
                   <div>
                     <p className="font-medium text-sm">{activity.childName}</p>
                     <p className="text-xs text-gray-600">{activity.description}</p>
+                    {activity.userName && (
+                      <p className="text-xs text-gray-500">Logged by {activity.userName}</p>
+                    )}
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">

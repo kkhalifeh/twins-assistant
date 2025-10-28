@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { childrenAPI, diaperAPI, authAPI } from '@/lib/api'
+import { childrenAPI, diaperAPI, authAPI, getImageUrl } from '@/lib/api'
 import { format, isWithinInterval, parseISO, startOfDay } from 'date-fns'
 import { Baby, Plus, Droplets, AlertTriangle, Edit2, Trash2, Image as ImageIcon, X } from 'lucide-react'
 import DiaperModal from '@/components/modals/DiaperModal'
@@ -331,11 +331,11 @@ export default function DiapersPage() {
                   </div>
                   {log.imageUrl && (
                     <div
-                      onClick={() => setSelectedImage(log.imageUrl)}
+                      onClick={() => setSelectedImage(getImageUrl(log.imageUrl))}
                       className="cursor-pointer group relative"
                     >
                       <img
-                        src={log.imageUrl}
+                        src={getImageUrl(log.imageUrl) || ''}
                         alt="Diaper change"
                         className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200 group-hover:border-primary-400 transition-all"
                       />

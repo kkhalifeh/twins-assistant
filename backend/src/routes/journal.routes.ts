@@ -72,7 +72,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { startTime: 'desc' }
       }),
       prisma.sleepLog.findMany({
@@ -83,7 +88,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { startTime: 'desc' }
       }),
       prisma.diaperLog.findMany({
@@ -94,7 +104,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { timestamp: 'desc' }
       }),
       prisma.healthLog.findMany({
@@ -105,7 +120,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { timestamp: 'desc' }
       })
     ]);
@@ -117,6 +137,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         childName: log.child.name,
         description: `${log.amount || 0}ml ${log.type?.toLowerCase() || 'feeding'}`,
         timestamp: log.startTime,
+        userName: log.user?.name,
         notes: log.notes,
         duration: log.duration ? `${log.duration}min` : null
       })),
@@ -127,6 +148,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
           `${log.type?.toLowerCase() || 'sleep'} - ${log.duration || 0}min` :
           `Started ${log.type?.toLowerCase() || 'sleep'}`,
         timestamp: log.startTime,
+        userName: log.user?.name,
         notes: log.notes,
         duration: log.duration ? `${log.duration}min` : null
       })),
@@ -135,6 +157,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         childName: log.child.name,
         description: log.type?.toLowerCase() || 'diaper change',
         timestamp: log.timestamp,
+        userName: log.user?.name,
         notes: log.notes,
         duration: null
       })),
@@ -143,6 +166,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         childName: log.child.name,
         description: `${log.type?.toLowerCase() || 'health check'}: ${log.value}${log.unit ? log.unit : ''}`,
         timestamp: log.timestamp,
+        userName: log.user?.name,
         notes: log.notes,
         duration: null
       }))

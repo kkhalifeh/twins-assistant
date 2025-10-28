@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
+export const API_SERVER_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3003';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,6 +9,13 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Helper function to get full image URL
+export const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${API_SERVER_URL}${imagePath}`;
+};
 
 // Add auth interceptor
 api.interceptors.request.use(

@@ -67,7 +67,12 @@ export class DashboardService {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { startTime: 'desc' }
       }),
       prisma.sleepLog.findMany({
@@ -78,7 +83,12 @@ export class DashboardService {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { startTime: 'desc' }
       }),
       prisma.diaperLog.findMany({
@@ -89,7 +99,12 @@ export class DashboardService {
             lte: endDate
           }
         },
-        include: { child: true },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
         orderBy: { timestamp: 'desc' }
       })
     ]);
@@ -380,16 +395,18 @@ export class DashboardService {
         childName: log.child.name,
         description: `${log.amount}ml ${log.type.toLowerCase()}`,
         timestamp: log.startTime,
+        userName: log.user?.name,
         icon: 'bottle',
         color: 'blue'
       })),
       ...sleepLogs.map(log => ({
         type: 'sleep',
         childName: log.child.name,
-        description: log.endTime ? 
-          `${log.type} - ${log.duration}min` : 
+        description: log.endTime ?
+          `${log.type} - ${log.duration}min` :
           `Started ${log.type.toLowerCase()}`,
         timestamp: log.startTime,
+        userName: log.user?.name,
         icon: log.type === 'NAP' ? 'sun' : 'moon',
         color: 'purple'
       })),
@@ -398,6 +415,7 @@ export class DashboardService {
         childName: log.child.name,
         description: log.type.toLowerCase(),
         timestamp: log.timestamp,
+        userName: log.user?.name,
         icon: 'baby',
         color: 'green'
       }))
