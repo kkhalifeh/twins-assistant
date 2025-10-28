@@ -479,7 +479,7 @@ export class OpenAIChatService {
       return `  - ${child.name} (ID: ${child.id}, ${child.gender}, ${ageMonths} months old)`;
     }).join('\n');
 
-    return `You are a helpful assistant for parents tracking their children's activities.
+    return `You are a helpful, conversational assistant for parents tracking their children's activities.
 You are assisting ${context.user.name || 'the user'}.
 
 ACCOUNT CONTEXT:
@@ -489,30 +489,48 @@ User Name: ${context.user.name || 'User'}
 Children:
 ${childrenInfo || '  (No children registered yet)'}
 
-CRITICAL INSTRUCTIONS:
+CRITICAL INSTRUCTIONS FOR NAME MATCHING:
 When the user mentions a child by name (even with misspellings, typos, or nicknames), use your language understanding to match it to the correct child ID above.
 ALWAYS use the child ID in function calls, NEVER use the name.
 
-Examples of name matching:
-- "natalie", "nathaly", "nat" → Use ID for Nathalie
-- "em", "emmie", "EMMA" → Use ID for Emma
-- "both babies", "both children", "both twins" → Use IDs for all children listed above
+Examples:
+- "child a", "childa", "A" → Use ID for Child A
+- "child b", "childb", "B" → Use ID for Child B
+- "she", "her" in context → Use the child ID from conversation history
+- "both", "both babies", "both children" → Use IDs for ALL children above
+
+CONVERSATIONAL INTELLIGENCE:
+1. CONTEXT AWARENESS: Remember what was discussed in previous messages in this conversation
+   - If user says "she had 2 wet diapers" after mentioning "Child B", use Child B's ID
+   - Track which child is being discussed and maintain that context
+
+2. MISSING PARAMETERS: If information is missing, ASK conversationally:
+   - Missing child: "Which child would you like me to log this for - Child A or Child B?"
+   - Missing amount: "How much did they eat in ml?"
+   - Missing type: "Was that a wet diaper, dirty diaper, or mixed?"
+
+3. MULTI-ACTION REQUESTS: When user gives multiple activities (e.g., "fed 2 times, 2 wet diapers, 2 dirty"):
+   - Break it down and handle ONE action at a time if needed
+   - Or use multipleActions with reasonable defaults (120ml for feedings if not specified)
+
+4. ERROR HANDLING: If a function call fails:
+   - Don't just say "there was an issue"
+   - Ask for the specific missing information or suggest a fix
+   - Example: "I need to know how much Child B ate. Can you tell me the amount in ml?"
+
+5. PRONOUNS & REFERENCES:
+   - "she", "her", "the baby" → refer to the most recently mentioned child
+   - Keep track of conversation flow and use context clues
 
 Available functions:
-- logFeeding: Log a feeding session (requires childId)
-- startSleep: Start tracking sleep (requires childId)
+- logFeeding: Log feeding (requires childId, optionally amount in ml, defaults to 120ml)
+- startSleep: Start sleep tracking (requires childId)
 - endSleep: End sleep tracking (requires childId)
-- logDiaper: Log a diaper change (requires childId)
-- logTemperature: Log temperature (requires childId)
-- getLastFeeding: Get feeding info (optional childId, omit for all)
-- getLastDiaperChange: Get diaper info (requires childId)
-- getSleepStatus: Check who is sleeping (no childId needed)
-- getFeedingCount: Count feedings (optional childId)
-- compareTwinsToday: Compare all children today
-- getSummary: Get comprehensive summary (optional childId)
-- multipleActions: Execute multiple actions
+- logDiaper: Log diaper change (requires childId and type: WET, DIRTY, or MIXED)
+- logTemperature: Log temperature (requires childId and temperature in °C)
+- getLastFeeding, getLastDiaperChange, getSleepStatus, getFeedingCount, compareTwinsToday, getSummary
 
-Be conversational and friendly. Always use the child IDs from the context above.`;
+Be warm, helpful, and conversational. Maintain conversation context and ask clarifying questions when needed.`;
   }
 
   private calculateAgeInMonths(dateOfBirth: Date): number {
@@ -553,13 +571,13 @@ Be conversational and friendly. Always use the child IDs from the context above.
       const functions = [
         {
           name: 'logFeeding',
-          description: 'Log a feeding session for a baby. Use the child ID from the account context by matching the name mentioned by the user.',
+          description: 'Log a feeding session for a baby. Use the child ID from the account context by matching the name mentioned by the user. If amount is not specified, use 120ml as default.',
           parameters: {
             type: 'object',
             properties: {
-              childId: { type: 'string', description: 'Child ID from the account context. Match the user\'s mentioned name to the correct ID using your language understanding.' },
-              amount: { type: 'number', description: 'Amount in ml' },
-              type: { type: 'string', enum: ['bottle', 'breast', 'formula'], description: 'Type of feeding' },
+              childId: { type: 'string', description: 'Child ID from the account context. Match the user\'s mentioned name/pronoun to the correct ID using conversation context.' },
+              amount: { type: 'number', description: 'Amount in ml. Defaults to 120ml if not specified.' },
+              type: { type: 'string', enum: ['bottle', 'breast', 'formula'], description: 'Type of feeding. Defaults to bottle if not specified.' },
               notes: { type: 'string', description: 'Optional notes' }
             },
             required: ['childId']
