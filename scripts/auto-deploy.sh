@@ -20,9 +20,12 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}📦 Stashing production configs...${NC}"
 git stash push -m "Auto-deploy: production configs $(date +%Y%m%d_%H%M%S)"
 
-# Pull latest changes
-echo -e "${YELLOW}⬇️  Pulling latest changes...${NC}"
-git pull origin main
+# Fetch latest changes and reset to origin/main (handles divergent branches)
+echo -e "${YELLOW}⬇️  Fetching latest changes...${NC}"
+git fetch origin main
+
+echo -e "${YELLOW}🔄 Resetting to origin/main...${NC}"
+git reset --hard origin/main
 
 # Restore critical production configurations
 echo -e "${YELLOW}🔧 Restoring production configurations...${NC}"
