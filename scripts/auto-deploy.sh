@@ -92,18 +92,22 @@ echo -e "${GREEN}✅ Backend is healthy${NC}"
 
 # Frontend deployment
 echo -e "${YELLOW}🎨 Deploying frontend...${NC}"
-cd ../frontend
+cd ..
 
-# Install/update dependencies
-npm install
+# Build and start frontend using docker-compose
+echo -e "${YELLOW}🏗️  Building frontend container...${NC}"
+docker-compose -f docker-compose.prod.yml build frontend
 
-# Build production bundle
-echo -e "${YELLOW}🏗️  Building frontend...${NC}"
-npm run build
+# Check if frontend container exists and stop it if needed
+if docker ps -a | grep -q parenting_frontend; then
+  echo -e "${YELLOW}🔄 Stopping existing frontend container...${NC}"
+  docker stop parenting_frontend || true
+  docker rm parenting_frontend || true
+fi
 
-# Restart frontend
-echo -e "${YELLOW}🔄 Restarting frontend container...${NC}"
-docker restart parenting_frontend
+# Start frontend container
+echo -e "${YELLOW}🚀 Starting frontend container...${NC}"
+docker-compose -f docker-compose.prod.yml up -d frontend
 
 # Wait for frontend to start with retry
 echo -e "${YELLOW}⏳ Waiting for frontend to start...${NC}"
