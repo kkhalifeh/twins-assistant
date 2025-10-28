@@ -4,7 +4,7 @@ import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, differen
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
+  apiKey: (process.env.OPENAI_API_KEY || '').trim(),
 });
 
 // Store conversation history per user
