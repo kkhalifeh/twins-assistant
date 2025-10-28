@@ -240,6 +240,11 @@ export default function JournalPage() {
                       <p className="text-sm text-gray-700 mb-1">
                         {activity.description}
                       </p>
+                      {(activity.userName || activity.user?.name) && (
+                        <p className="text-xs text-gray-500">
+                          Logged by {activity.userName || activity.user?.name}
+                        </p>
+                      )}
                       {activity.notes && (
                         <p className="text-xs text-gray-600">
                           Notes: {activity.notes}

@@ -358,6 +358,9 @@ export default function SleepPage() {
                       <p className="text-sm text-gray-600">
                         {log.type} - {hours > 0 ? `${hours}h ` : ''}{minutes}m
                       </p>
+                      {log.user && (
+                        <p className="text-xs text-gray-500">Logged by {log.user.name}</p>
+                      )}
                       {log.quality && (
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           log.quality === 'DEEP' ? 'bg-green-100 text-green-700' :

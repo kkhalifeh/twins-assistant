@@ -322,6 +322,9 @@ export default function DiapersPage() {
                     <p className="text-sm text-gray-600">
                       {log.type} {log.consistency && `(${log.consistency.toLowerCase()})`}
                     </p>
+                    {log.user && (
+                      <p className="text-xs text-gray-500">Logged by {log.user.name}</p>
+                    )}
                     {log.notes && (
                       <p className="text-xs text-gray-500 mt-1">{log.notes}</p>
                     )}

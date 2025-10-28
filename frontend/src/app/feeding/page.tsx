@@ -281,6 +281,9 @@ export default function FeedingPage() {
                       {log.amount ? `${log.amount}ml` : ''} {log.type.toLowerCase()}
                       {log.breastDuration ? ` (${log.breastDuration} min)` : ''}
                     </p>
+                    {log.user && (
+                      <p className="text-xs text-gray-500">Logged by {log.user.name}</p>
+                    )}
                     {log.notes && <p className="text-xs text-gray-500">{log.notes}</p>}
                   </div>
                 </div>

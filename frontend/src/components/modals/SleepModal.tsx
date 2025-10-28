@@ -17,6 +17,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
   const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
   const [type, setType] = useState(editingLog?.type || 'NAP')
   const [notes, setNotes] = useState(editingLog?.notes || '')
+  const [logMode, setLogMode] = useState<'new' | 'past'>(editingLog ? 'past' : 'new')
   const [startTime, setStartTime] = useState(
     editingLog?.startTime ? new Date(editingLog.startTime).toISOString().slice(0, 16) : ''
   )
@@ -42,20 +43,32 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const data = {
-      childId,
-      type,
-      notes,
-      startTime: startTime ? new Date(startTime).toISOString() : undefined,
-      endTime: endTime ? new Date(endTime).toISOString() : undefined,
-    }
 
     if (editingLog) {
+      const data = {
+        childId,
+        type,
+        notes,
+        startTime: startTime ? new Date(startTime).toISOString() : undefined,
+        endTime: endTime ? new Date(endTime).toISOString() : undefined,
+      }
       updateMutation.mutate({ id: editingLog.id, data })
-    } else {
+    } else if (logMode === 'new') {
+      // Start new sleep session (current time, no end time)
       createMutation.mutate({
-        ...data,
+        childId,
+        type,
+        notes,
         startTime: new Date().toISOString(),
+      })
+    } else {
+      // Log past sleep (with start and end time)
+      createMutation.mutate({
+        childId,
+        type,
+        notes,
+        startTime: new Date(startTime).toISOString(),
+        endTime: endTime ? new Date(endTime).toISOString() : undefined,
       })
     }
   }
@@ -73,6 +86,33 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!editingLog && (
+            <div className="flex space-x-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setLogMode('new')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  logMode === 'new'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Start New Sleep
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogMode('past')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  logMode === 'past'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Log Past Sleep
+              </button>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Child</label>
             <select
@@ -101,7 +141,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
             </select>
           </div>
 
-          {editingLog && (
+          {(editingLog || logMode === 'past') && (
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
@@ -115,7 +155,9 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Time (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Time {logMode === 'past' && !editingLog ? '(Optional)' : '(Optional)'}
+                </label>
                 <input
                   type="datetime-local"
                   value={endTime}
@@ -149,7 +191,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
               disabled={isLoading}
               className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
             >
-              {isLoading ? 'Saving...' : editingLog ? 'Update' : 'Start Sleep'}
+              {isLoading ? 'Saving...' : editingLog ? 'Update' : logMode === 'new' ? 'Start Sleep' : 'Save Sleep'}
             </button>
           </div>
         </form>
