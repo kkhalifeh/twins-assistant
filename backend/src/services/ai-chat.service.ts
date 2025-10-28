@@ -270,8 +270,8 @@ export class AIChatService {
       return "❌ Sorry, there was an error logging this activity. Please try again.";
     }
 
-    const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
-    const exampleName = children.length > 0 ? children[0].name : '[child name]';
+    const userChildren = await prisma.child.findMany({ where: { userId: this.context.userId } });
+    const exampleName = userChildren.length > 0 ? userChildren[0].name : '[child name]';
     return `I understood you want to log an activity. Could you be more specific? For example: 'Fed ${exampleName} 120ml', '${exampleName} is sleeping', or 'Restocked diapers 50 pieces'.`;
   }
 
