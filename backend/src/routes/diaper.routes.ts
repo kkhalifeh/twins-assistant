@@ -7,7 +7,7 @@ import {
   getLastDiaperChange
 } from '../controllers/diaper.controller';
 import { authMiddleware } from '../utils/auth';
-import { uploadDiaperImage } from '../utils/upload';
+import { uploadDiaperImage } from '../services/storage.service';
 
 const router = Router();
 

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../index';
 import { AuthRequest } from '../utils/auth';
 import { parseIntSafe } from '../utils/validation';
+import { getFileUrl } from '../services/storage.service';
 
 export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
   try {
@@ -95,7 +96,13 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
     }
 
     // Get image URL if file was uploaded
-    const imageUrl = (req as any).file ? `/uploads/diapers/${(req as any).file.filename}` : null;
+    let imageUrl: string | null = null;
+    if ((req as any).file) {
+      const file = (req as any).file;
+      // Handle both local storage (filename) and cloud storage (key)
+      const fileKey = file.key || file.filename;
+      imageUrl = getFileUrl(fileKey);
+    }
 
     const log = await prisma.diaperLog.create({
       data: {
