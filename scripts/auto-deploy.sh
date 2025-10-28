@@ -92,22 +92,30 @@ echo -e "${GREEN}✅ Backend is healthy${NC}"
 
 # Frontend deployment
 echo -e "${YELLOW}🎨 Deploying frontend...${NC}"
-cd ..
+cd ../frontend
 
-# Build and start frontend using docker-compose
-echo -e "${YELLOW}🏗️  Building frontend container...${NC}"
-docker-compose -f docker-compose.prod.yml build frontend
+# Install/update dependencies
+npm install
 
-# Check if frontend container exists and stop it if needed
-if docker ps -a | grep -q parenting_frontend; then
-  echo -e "${YELLOW}🔄 Stopping existing frontend container...${NC}"
-  docker stop parenting_frontend || true
-  docker rm parenting_frontend || true
+# Build production bundle
+echo -e "${YELLOW}🏗️  Building frontend...${NC}"
+npm run build
+
+# Kill any existing frontend process
+echo -e "${YELLOW}🔄 Stopping existing frontend process...${NC}"
+pkill -f "next start" || true
+pkill -f "node.*frontend" || true
+
+# Start frontend in background using PM2 or nohup
+echo -e "${YELLOW}🚀 Starting frontend...${NC}"
+if command -v pm2 &> /dev/null; then
+  pm2 delete parenting-frontend 2>/dev/null || true
+  pm2 start npm --name "parenting-frontend" -- start
+  pm2 save
+else
+  nohup npm start > /tmp/frontend.log 2>&1 &
+  echo $! > /tmp/frontend.pid
 fi
-
-# Start frontend container
-echo -e "${YELLOW}🚀 Starting frontend container...${NC}"
-docker-compose -f docker-compose.prod.yml up -d frontend
 
 # Wait for frontend to start with retry
 echo -e "${YELLOW}⏳ Waiting for frontend to start...${NC}"
@@ -117,7 +125,9 @@ until curl -f http://localhost:3000 > /dev/null 2>&1; do
   RETRY_COUNT=$((RETRY_COUNT + 1))
   if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
     echo -e "${RED}❌ Frontend health check failed after ${MAX_RETRIES} attempts${NC}"
-    docker logs parenting_frontend --tail 50
+    if [ -f /tmp/frontend.log ]; then
+      tail -50 /tmp/frontend.log
+    fi
     exit 1
   fi
   echo "   Attempt $RETRY_COUNT/$MAX_RETRIES - waiting 5 seconds..."
