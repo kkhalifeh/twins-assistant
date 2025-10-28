@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../utils/auth';
 import { openAIChatService } from '../services/ai-chat-openai.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const router = Router();
 
@@ -24,16 +27,42 @@ router.post('/message', async (req: Request, res: Response) => {
     }
     
     console.log(`Processing message from user ${userId}: ${message}`);
-    
+
     // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
       console.error('OpenAI API key not configured');
-      return res.status(500).json({ 
-        error: 'AI service not configured. Please set OPENAI_API_KEY in environment variables.' 
+      return res.status(500).json({
+        error: 'AI service not configured. Please set OPENAI_API_KEY in environment variables.'
       });
     }
-    
-    const response = await openAIChatService.processMessage(message, userId);
+
+    // Fetch account context upfront
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const children = await prisma.child.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        dateOfBirth: true,
+        gender: true
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    // Pass context to AI service
+    const response = await openAIChatService.processMessage(message, {
+      userId,
+      user,
+      children
+    });
     
     res.json({ 
       message: response,

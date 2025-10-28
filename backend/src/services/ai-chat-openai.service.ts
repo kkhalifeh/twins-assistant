@@ -10,108 +10,105 @@ const openai = new OpenAI({
 // Store conversation history per user
 const conversationHistory = new Map<string, any[]>();
 
+// AI Chat Context Interface
+interface AIChatContext {
+  userId: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  children: Array<{
+    id: string;
+    name: string;
+    dateOfBirth: Date;
+    gender: string;
+  }>;
+}
+
 // Define available functions for OpenAI to call
 const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   logFeeding: async (args: any): Promise<string> => {
-    const { childName, amount, type, notes, userId } = args;
-    const child = await prisma.child.findFirst({
-      where: {
-        name: { contains: childName, mode: 'insensitive' },
-        userId
-      }
-    });
-    
-    if (!child) throw new Error(`Child ${childName} not found`);
-    
-    // Map common terms to valid enum values
-    const feedingType = type?.toUpperCase() === 'MILK' ? 'BOTTLE' : 
+    const { childId, amount, type, notes, userId } = args;
+
+    // Direct insert using childId, no lookup needed
+    const feedingType = type?.toUpperCase() === 'MILK' ? 'BOTTLE' :
                        type?.toUpperCase() || 'BOTTLE';
-    
+
     const feeding = await prisma.feedingLog.create({
       data: {
-        childId: child.id,
-        userId: args.userId,
+        childId,
+        userId,
         startTime: new Date(),
         endTime: new Date(),
         type: feedingType as any,
         amount: amount || 120,
         duration: 20,
         notes: notes || `Logged via AI chat`
-      }
+      },
+      include: { child: true }
     });
-    
+
     const todayCount = await prisma.feedingLog.count({
       where: {
-        childId: child.id,
+        childId,
         userId,
         startTime: { gte: startOfDay(new Date()) }
       }
     });
-    
-    return `✅ Logged feeding for ${child.name}: ${amount}ml ${feedingType.toLowerCase()}. Total feedings today: ${todayCount}`;
+
+    return `✅ Logged feeding for ${feeding.child.name}: ${amount}ml ${feedingType.toLowerCase()}. Total feedings today: ${todayCount}`;
   },
   
   startSleep: async (args: any): Promise<string> => {
-    const { childName, type, userId } = args;
-    const child = await prisma.child.findFirst({
-      where: {
-        name: { contains: childName, mode: 'insensitive' },
-        userId
-      }
-    });
-    
-    if (!child) throw new Error(`Child ${childName} not found`);
-    
+    const { childId, type, userId } = args;
+
     // Check if already sleeping
     const activeSleep = await prisma.sleepLog.findFirst({
       where: {
-        childId: child.id,
+        childId,
         userId,
         endTime: null
-      }
+      },
+      include: { child: true }
     });
 
     if (activeSleep) {
-      return `${child.name} is already sleeping (started ${format(activeSleep.startTime, 'h:mm a')})`;
+      return `${activeSleep.child.name} is already sleeping (started ${format(activeSleep.startTime, 'h:mm a')})`;
     }
-    
-    await prisma.sleepLog.create({
+
+    const sleepLog = await prisma.sleepLog.create({
       data: {
-        childId: child.id,
-        userId: args.userId,
+        childId,
+        userId,
         startTime: new Date(),
         type: type?.toUpperCase() || 'NAP'
-      }
+      },
+      include: { child: true }
     });
-    
-    return `✅ Started ${type || 'sleep'} tracking for ${child.name}`;
+
+    return `✅ Started ${type || 'sleep'} tracking for ${sleepLog.child.name}`;
   },
   
   endSleep: async (args: any): Promise<string> => {
-    const { childName, userId } = args;
-    const child = await prisma.child.findFirst({
-      where: {
-        name: { contains: childName, mode: 'insensitive' },
-        userId
-      }
-    });
-    
-    if (!child) throw new Error(`Child ${childName} not found`);
-    
+    const { childId, userId } = args;
+
     const activeSleep = await prisma.sleepLog.findFirst({
       where: {
-        childId: child.id,
+        childId,
         userId,
         endTime: null
-      }
+      },
+      include: { child: true }
     });
 
     if (!activeSleep) {
-      return `${child.name} is not currently sleeping`;
+      const child = await prisma.child.findUnique({ where: { id: childId } });
+      return `${child?.name || 'Child'} is not currently sleeping`;
     }
-    
+
     const duration = differenceInMinutes(new Date(), activeSleep.startTime);
-    
+
     await prisma.sleepLog.update({
       where: { id: activeSleep.id },
       data: {
@@ -119,100 +116,81 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
         duration
       }
     });
-    
+
     const hours = Math.floor(duration / 60);
     const minutes = duration % 60;
-    
-    return `✅ ${child.name} woke up! Slept for ${hours > 0 ? `${hours}h ` : ''}${minutes}m`;
+
+    return `✅ ${activeSleep.child.name} woke up! Slept for ${hours > 0 ? `${hours}h ` : ''}${minutes}m`;
   },
   
   logDiaper: async (args: any): Promise<string> => {
-    const { childName, type, userId } = args;
-    const child = await prisma.child.findFirst({
-      where: {
-        name: { contains: childName, mode: 'insensitive' },
-        userId
-      }
-    });
-    
-    if (!child) throw new Error(`Child ${childName} not found`);
-    
-    await prisma.diaperLog.create({
+    const { childId, type, userId } = args;
+
+    const diaperLog = await prisma.diaperLog.create({
       data: {
-        childId: child.id,
-        userId: args.userId,
+        childId,
+        userId,
         timestamp: new Date(),
         type: type?.toUpperCase() || 'WET'
-      }
+      },
+      include: { child: true }
     });
-    
+
     const todayCount = await prisma.diaperLog.count({
       where: {
-        childId: child.id,
+        childId,
         userId,
         timestamp: { gte: startOfDay(new Date()) }
       }
     });
-    
-    return `✅ Logged ${type} diaper change for ${child.name}. Total changes today: ${todayCount}`;
+
+    return `✅ Logged ${type} diaper change for ${diaperLog.child.name}. Total changes today: ${todayCount}`;
   },
   
   logTemperature: async (args: any): Promise<string> => {
-    const { childName, temperature, userId } = args;
-    const child = await prisma.child.findFirst({
-      where: {
-        name: { contains: childName, mode: 'insensitive' },
-        userId
-      }
-    });
-    
-    if (!child) throw new Error(`Child ${childName} not found`);
-    
-    await prisma.healthLog.create({
+    const { childId, temperature, userId } = args;
+
+    const healthLog = await prisma.healthLog.create({
       data: {
-        childId: child.id,
-        userId: args.userId,
+        childId,
+        userId,
         timestamp: new Date(),
         type: 'TEMPERATURE',
         value: temperature.toString(),
         unit: '°C'
-      }
+      },
+      include: { child: true }
     });
-    
+
     const assessment = temperature > 37.5 ? "⚠️ That's a bit high. Monitor closely." :
                       temperature < 36.5 ? "⚠️ That's a bit low. Keep baby warm." :
                       "👍 Temperature is normal.";
-    
-    return `✅ Logged temperature for ${child.name}: ${temperature}°C. ${assessment}`;
+
+    return `✅ Logged temperature for ${healthLog.child.name}: ${temperature}°C. ${assessment}`;
   },
   
   getLastFeeding: async (args: any): Promise<string> => {
-    const { childName, userId } = args;
+    const { childId, userId } = args;
 
-    if (childName) {
-      const child = await prisma.child.findFirst({
-        where: {
-          name: { contains: childName, mode: 'insensitive' },
-          userId
-        }
-      });
-      
-      if (!child) throw new Error(`Child ${childName} not found`);
-      
+    if (childId) {
       const lastFeeding = await prisma.feedingLog.findFirst({
         where: {
-          childId: child.id,
+          childId,
           userId
         },
-        orderBy: { startTime: 'desc' }
+        orderBy: { startTime: 'desc' },
+        include: { child: true }
       });
-      
-      if (!lastFeeding) return `No feeding records found for ${child.name}`;
-      
+
+      if (!lastFeeding) {
+        const child = await prisma.child.findUnique({ where: { id: childId } });
+        return `No feeding records found for ${child?.name || 'this child'}`;
+      }
+
       const hoursAgo = differenceInHours(new Date(), lastFeeding.startTime);
       const minutesAgo = differenceInMinutes(new Date(), lastFeeding.startTime) % 60;
-      
-      return `${child.name} was last fed ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml ${lastFeeding.type.toLowerCase()}) at ${format(lastFeeding.startTime, 'h:mm a')}`;
+
+      return `${lastFeeding.child.name} was last fed ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml ${lastFeeding.type.toLowerCase()}) at ${format(lastFeeding.startTime, 'h:mm a')}`;
     } else {
       // Get for all children
       const children = await prisma.child.findMany({
@@ -228,44 +206,39 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
           },
           orderBy: { startTime: 'desc' }
         });
-        
+
         if (lastFeeding) {
           const hoursAgo = differenceInHours(new Date(), lastFeeding.startTime);
           const minutesAgo = differenceInMinutes(new Date(), lastFeeding.startTime) % 60;
           results.push(`${child.name}: ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml) at ${format(lastFeeding.startTime, 'h:mm a')}`);
         }
       }
-      
+
       return results.join('\n');
     }
   },
   
   getLastDiaperChange: async (args: any): Promise<string> => {
-    const { childName, userId } = args;
+    const { childId, userId } = args;
 
-    const child = await prisma.child.findFirst({
-      where: {
-        name: { contains: childName, mode: 'insensitive' },
-        userId
-      }
-    });
-    
-    if (!child) throw new Error(`Child ${childName} not found`);
-    
     const lastDiaper = await prisma.diaperLog.findFirst({
       where: {
-        childId: child.id,
+        childId,
         userId
       },
-      orderBy: { timestamp: 'desc' }
+      orderBy: { timestamp: 'desc' },
+      include: { child: true }
     });
-    
-    if (!lastDiaper) return `No diaper change records found for ${child.name}`;
-    
+
+    if (!lastDiaper) {
+      const child = await prisma.child.findUnique({ where: { id: childId } });
+      return `No diaper change records found for ${child?.name || 'this child'}`;
+    }
+
     const hoursAgo = differenceInHours(new Date(), lastDiaper.timestamp);
     const minutesAgo = differenceInMinutes(new Date(), lastDiaper.timestamp) % 60;
-    
-    return `${child.name}'s last diaper change was ${hoursAgo}h ${minutesAgo}m ago (${lastDiaper.type.toLowerCase()}) at ${format(lastDiaper.timestamp, 'h:mm a')}`;
+
+    return `${lastDiaper.child.name}'s last diaper change was ${hoursAgo}h ${minutesAgo}m ago (${lastDiaper.type.toLowerCase()}) at ${format(lastDiaper.timestamp, 'h:mm a')}`;
   },
   
   getSleepStatus: async (args: any): Promise<string> => {
@@ -291,8 +264,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getFeedingCount: async (args: any): Promise<string> => {
-    const { childName, timeframe = 'today', userId } = args;
-    
+    const { childId, timeframe = 'today', userId } = args;
+
     let startDate: Date;
     if (timeframe === 'week') {
       startDate = startOfWeek(new Date());
@@ -301,26 +274,18 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     } else {
       startDate = startOfDay(new Date());
     }
-    
-    if (childName) {
-      const child = await prisma.child.findFirst({
-        where: {
-          name: { contains: childName, mode: 'insensitive' },
-          userId
-        }
-      });
 
-      if (!child) throw new Error(`Child ${childName} not found`);
-
+    if (childId) {
       const count = await prisma.feedingLog.count({
         where: {
-          childId: child.id,
+          childId,
           userId,
           startTime: { gte: startDate }
         }
       });
-      
-      return `${child.name} has had ${count} feedings this ${timeframe}`;
+
+      const child = await prisma.child.findUnique({ where: { id: childId } });
+      return `${child?.name || 'Child'} has had ${count} feedings this ${timeframe}`;
     } else {
       const children = await prisma.child.findMany({
         where: { userId }
@@ -337,7 +302,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
         });
         results.push(`${child.name}: ${count} feedings`);
       }
-      
+
       return `Feedings this ${timeframe}:\n${results.join('\n')}`;
     }
   },
@@ -424,8 +389,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getSummary: async (args: any): Promise<string> => {
-    const { timeframe = 'today', childName, userId } = args;
-    
+    const { timeframe = 'today', childId, userId } = args;
+
     let startDate: Date;
     if (timeframe === 'week') {
       startDate = startOfWeek(new Date());
@@ -434,11 +399,11 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     } else {
       startDate = startOfDay(new Date());
     }
-    
-    const children = childName
+
+    const children = childId
       ? await prisma.child.findMany({
           where: {
-            name: { contains: childName, mode: 'insensitive' },
+            id: childId,
             userId
           }
         })
@@ -508,47 +473,78 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
 };
 
 export class OpenAIChatService {
-  private systemPrompt = `You are a helpful assistant for parents tracking their children's activities.
-You can help log activities (feeding, sleep, diapers, health) and answer questions about the children's patterns.
+  private buildSystemPrompt(context: AIChatContext): string {
+    const childrenInfo = context.children.map(child => {
+      const ageMonths = this.calculateAgeInMonths(child.dateOfBirth);
+      return `  - ${child.name} (ID: ${child.id}, ${child.gender}, ${ageMonths} months old)`;
+    }).join('\n');
 
-When the user wants to log an activity or asks a question, use the appropriate function.
-Be conversational and friendly. If you're not sure which child they're referring to, ask for clarification.
+    return `You are a helpful assistant for parents tracking their children's activities.
+You are assisting ${context.user.name || 'the user'}.
 
-IMPORTANT:
-- For multiple activities in one message, use the multipleActions function
-- When comparing twins, use compareTwinsToday for today's comparison
-- Always include specific times when reporting last activities
-- Remember conversation context - if user asks "what time" after a previous query, they're referring to the time mentioned in your last response
-- Handle common typos and variations in child names
+ACCOUNT CONTEXT:
+User ID: ${context.user.id}
+User Name: ${context.user.name || 'User'}
+
+Children:
+${childrenInfo || '  (No children registered yet)'}
+
+CRITICAL INSTRUCTIONS:
+When the user mentions a child by name (even with misspellings, typos, or nicknames), use your language understanding to match it to the correct child ID above.
+ALWAYS use the child ID in function calls, NEVER use the name.
+
+Examples of name matching:
+- "natalie", "nathaly", "nat" → Use ID for Nathalie
+- "em", "emmie", "EMMA" → Use ID for Emma
+- "both babies", "both children", "both twins" → Use IDs for all children listed above
 
 Available functions:
-- logFeeding: Log a feeding session
-- startSleep: Start tracking sleep
-- endSleep: End sleep tracking (baby woke up)
-- logDiaper: Log a diaper change
-- logTemperature: Log temperature
-- getLastFeeding: Get information about last feeding
-- getLastDiaperChange: Get last diaper change time
-- getSleepStatus: Check who is currently sleeping
-- getFeedingCount: Count feedings in a timeframe
-- compareTwinsToday: Compare both twins' activities today
-- getSummary: Get a comprehensive summary
-- multipleActions: Execute multiple actions in sequence`;
+- logFeeding: Log a feeding session (requires childId)
+- startSleep: Start tracking sleep (requires childId)
+- endSleep: End sleep tracking (requires childId)
+- logDiaper: Log a diaper change (requires childId)
+- logTemperature: Log temperature (requires childId)
+- getLastFeeding: Get feeding info (optional childId, omit for all)
+- getLastDiaperChange: Get diaper info (requires childId)
+- getSleepStatus: Check who is sleeping (no childId needed)
+- getFeedingCount: Count feedings (optional childId)
+- compareTwinsToday: Compare all children today
+- getSummary: Get comprehensive summary (optional childId)
+- multipleActions: Execute multiple actions
 
-  async processMessage(message: string, userId: string): Promise<string> {
+Be conversational and friendly. Always use the child IDs from the context above.`;
+  }
+
+  private calculateAgeInMonths(dateOfBirth: Date): number {
+    const now = new Date();
+    const months = (now.getFullYear() - dateOfBirth.getFullYear()) * 12
+                   + (now.getMonth() - dateOfBirth.getMonth());
+    return Math.max(0, months);
+  }
+
+  async processMessage(message: string, context: AIChatContext): Promise<string> {
     try {
+      const userId = context.userId;
+
+      // Build dynamic system prompt with account context
+      const systemPrompt = this.buildSystemPrompt(context);
+
       // Get or create conversation history for this user
       if (!conversationHistory.has(userId)) {
         conversationHistory.set(userId, [
-          { role: 'system', content: this.systemPrompt }
+          { role: 'system', content: systemPrompt }
         ]);
+      } else {
+        // Update system prompt in existing history (in case children changed)
+        const history = conversationHistory.get(userId)!;
+        history[0] = { role: 'system', content: systemPrompt };
       }
-      
+
       const history = conversationHistory.get(userId)!;
-      
+
       // Add user message to history
       history.push({ role: 'user', content: message });
-      
+
       // Keep only last 10 messages to avoid token limits
       if (history.length > 11) {
         history.splice(1, history.length - 11);
@@ -557,84 +553,84 @@ Available functions:
       const functions = [
         {
           name: 'logFeeding',
-          description: 'Log a feeding session for a baby',
+          description: 'Log a feeding session for a baby. Use the child ID from the account context by matching the name mentioned by the user.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child' },
+              childId: { type: 'string', description: 'Child ID from the account context. Match the user\'s mentioned name to the correct ID using your language understanding.' },
               amount: { type: 'number', description: 'Amount in ml' },
               type: { type: 'string', enum: ['bottle', 'breast', 'formula'], description: 'Type of feeding' },
               notes: { type: 'string', description: 'Optional notes' }
             },
-            required: ['childName']
+            required: ['childId']
           }
         },
         {
           name: 'startSleep',
-          description: 'Start tracking sleep for a baby',
+          description: 'Start tracking sleep for a baby. Use the child ID from the account context.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child' },
+              childId: { type: 'string', description: 'Child ID from account context' },
               type: { type: 'string', enum: ['nap', 'night'], description: 'Type of sleep' }
             },
-            required: ['childName']
+            required: ['childId']
           }
         },
         {
           name: 'endSleep',
-          description: 'End sleep tracking (baby woke up)',
+          description: 'End sleep tracking (baby woke up). Use the child ID from the account context.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child' }
+              childId: { type: 'string', description: 'Child ID from account context' }
             },
-            required: ['childName']
+            required: ['childId']
           }
         },
         {
           name: 'logDiaper',
-          description: 'Log a diaper change',
+          description: 'Log a diaper change. Use the child ID from the account context.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child' },
+              childId: { type: 'string', description: 'Child ID from account context' },
               type: { type: 'string', enum: ['wet', 'dirty', 'mixed'], description: 'Type of diaper' }
             },
-            required: ['childName', 'type']
+            required: ['childId', 'type']
           }
         },
         {
           name: 'logTemperature',
-          description: 'Log temperature reading',
+          description: 'Log temperature reading. Use the child ID from the account context.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child' },
+              childId: { type: 'string', description: 'Child ID from account context' },
               temperature: { type: 'number', description: 'Temperature in Celsius' }
             },
-            required: ['childName', 'temperature']
+            required: ['childId', 'temperature']
           }
         },
         {
           name: 'getLastFeeding',
-          description: 'Get information about the last feeding',
+          description: 'Get information about the last feeding. Optionally specify childId, or omit for all children.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child (optional, omit for all)' }
+              childId: { type: 'string', description: 'Child ID from account context (optional, omit for all)' }
             }
           }
         },
         {
           name: 'getLastDiaperChange',
-          description: 'Get information about the last diaper change',
+          description: 'Get information about the last diaper change. Use the child ID from the account context.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child' }
+              childId: { type: 'string', description: 'Child ID from account context' }
             },
-            required: ['childName']
+            required: ['childId']
           }
         },
         {
@@ -647,18 +643,18 @@ Available functions:
         },
         {
           name: 'getFeedingCount',
-          description: 'Count feedings in a timeframe',
+          description: 'Count feedings in a timeframe. Optionally specify childId, or omit for all children.',
           parameters: {
             type: 'object',
             properties: {
-              childName: { type: 'string', description: 'Name of the child (optional)' },
+              childId: { type: 'string', description: 'Child ID from account context (optional)' },
               timeframe: { type: 'string', enum: ['today', 'week', 'month'], description: 'Time period' }
             }
           }
         },
         {
           name: 'compareTwinsToday',
-          description: 'Compare both twins activities today',
+          description: 'Compare all children\'s activities today',
           parameters: {
             type: 'object',
             properties: {}
@@ -666,12 +662,12 @@ Available functions:
         },
         {
           name: 'getSummary',
-          description: 'Get a comprehensive summary of activities',
+          description: 'Get a comprehensive summary of activities. Optionally specify childId, or omit for all children.',
           parameters: {
             type: 'object',
             properties: {
               timeframe: { type: 'string', enum: ['today', 'week', 'month'], description: 'Time period' },
-              childName: { type: 'string', description: 'Name of the child (optional)' }
+              childId: { type: 'string', description: 'Child ID from account context (optional)' }
             }
           }
         },
