@@ -423,7 +423,7 @@ export default function SettingsPage() {
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold">{child.name}</h3>
                           <p className="text-sm text-gray-600">
-                            Born: {new Date(child.dateOfBirth).toLocaleDateString()}
+                            Born: {child.dateOfBirth.split('T')[0]}
                           </p>
                           <p className="text-sm text-gray-600">
                             Gender: {child.gender === 'FEMALE' ? 'Female' : 'Male'}
