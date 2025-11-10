@@ -93,7 +93,9 @@ export default function DiapersPage() {
 
   const getHealthAlerts = () => {
     const alerts = []
-    const today = startOfDay(new Date())
+    // Use UTC midnight for consistent day boundaries across timezones
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
     const todayLogs = filteredLogs.filter((l: any) => {
       const logDate = new Date(l.timestamp)
       return logDate >= today

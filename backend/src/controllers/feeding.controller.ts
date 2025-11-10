@@ -41,9 +41,9 @@ export const getFeedingLogs = async (req: AuthRequest, res: Response) => {
     if (childId) where.childId = childId as string;
     if (date) {
       const startDate = new Date(date as string);
-      startDate.setHours(0, 0, 0, 0);
+      startDate.setUTCHours(0, 0, 0, 0);
       const endDate = new Date(date as string);
-      endDate.setHours(23, 59, 59, 999);
+      endDate.setUTCHours(23, 59, 59, 999);
 
       where.startTime = {
         gte: startDate,
