@@ -106,11 +106,13 @@ export const createChild = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // For date-only fields (no time component), store the date string directly
+    // This prevents timezone conversion issues
     const child = await prisma.child.create({
       data: {
         userId, // Associate child with authenticated user
         name,
-        dateOfBirth: new Date(dateOfBirth),
+        dateOfBirth: new Date(dateOfBirth + 'T00:00:00.000Z'), // Force UTC midnight to avoid timezone shifts
         gender,
         medicalNotes
       }
@@ -162,7 +164,7 @@ export const updateChild = async (req: AuthRequest, res: Response) => {
       where: { id },
       data: {
         ...(name && { name }),
-        ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
+        ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth + 'T00:00:00.000Z') }),
         ...(gender && { gender }),
         ...(medicalNotes !== undefined && { medicalNotes }),
         ...(photoUrl !== undefined && { photoUrl })
