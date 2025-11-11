@@ -265,9 +265,10 @@ export default function InsightsPage() {
               </div>
               {comparison.feeding && Object.keys(comparison.feeding).filter(key => key !== 'synchronization').map((childName, index) => {
                 const child = comparison.feeding[childName]
+                if (!child) return null
                 return (
                   <div key={childName} className="text-sm text-gray-600">
-                    <p>{childName}: Every {child.averageInterval}h</p>
+                    <p>{childName}: Every {child.averageInterval || 'N/A'}h</p>
                   </div>
                 )
               })}
@@ -291,9 +292,10 @@ export default function InsightsPage() {
               </div>
               {comparison.sleep && Object.keys(comparison.sleep).filter(key => key !== 'synchronization').map((childName, index) => {
                 const child = comparison.sleep[childName]
+                if (!child) return null
                 return (
                   <div key={childName} className="text-sm text-gray-600">
-                    <p>{childName}: {child.totalSleepHours}h/day</p>
+                    <p>{childName}: {child.totalSleepHours || 'N/A'}h/day</p>
                   </div>
                 )
               })}
