@@ -20,8 +20,8 @@ export default function RecentActivity({
     ...(sleepLogs || []).map(log => ({ ...log, activityType: 'sleep' })),
     ...(diaperLogs || []).map(log => ({ ...log, activityType: 'diaper' })),
   ].sort((a, b) => {
-    const dateA = new Date(a.timestamp || a.startTime || a.createdAt)
-    const dateB = new Date(b.timestamp || b.startTime || b.createdAt)
+    const dateA = new Date((a as any).timestamp || (a as any).startTime || (a as any).createdAt)
+    const dateB = new Date((b as any).timestamp || (b as any).startTime || (b as any).createdAt)
     return dateB.getTime() - dateA.getTime()
   }).slice(0, 10)
 

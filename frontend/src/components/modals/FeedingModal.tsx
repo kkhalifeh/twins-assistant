@@ -19,6 +19,11 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
   const [amount, setAmount] = useState(editingLog?.amount?.toString() || '')
   const [duration, setDuration] = useState(editingLog?.breastDuration?.toString() || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
+  const [timestamp, setTimestamp] = useState(
+    editingLog?.startTime
+      ? new Date(editingLog.startTime).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16)
+  )
 
   const createMutation = useMutation({
     mutationFn: feedingAPI.create,
@@ -44,15 +49,13 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
       amount: amount ? parseFloat(amount) : undefined,
       breastDuration: duration ? parseInt(duration) : undefined,
       notes,
+      startTime: new Date(timestamp).toISOString(),
     }
 
     if (editingLog) {
       updateMutation.mutate({ id: editingLog.id, data })
     } else {
-      createMutation.mutate({
-        ...data,
-        startTime: new Date().toISOString(),
-      })
+      createMutation.mutate(data)
     }
   }
 
@@ -83,6 +86,17 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+            <input
+              type="datetime-local"
+              value={timestamp}
+              onChange={(e) => setTimestamp(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            />
           </div>
 
           <div>

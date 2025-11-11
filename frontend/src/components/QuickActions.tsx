@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { feedingAPI, sleepAPI, diaperAPI } from '@/lib/api'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { feedingAPI, sleepAPI, diaperAPI, childrenAPI } from '@/lib/api'
 import { Milk, Moon, Baby, Plus } from 'lucide-react'
 import FeedingModal from './modals/FeedingModal'
 import SleepModal from './modals/SleepModal'
@@ -17,6 +17,11 @@ export default function QuickActions({ childId }: QuickActionsProps) {
   const [showFeedingModal, setShowFeedingModal] = useState(false)
   const [showSleepModal, setShowSleepModal] = useState(false)
   const [showDiaperModal, setShowDiaperModal] = useState(false)
+
+  const { data: children } = useQuery({
+    queryKey: ['children'],
+    queryFn: childrenAPI.getAll,
+  })
 
   const actions = [
     {
@@ -59,23 +64,26 @@ export default function QuickActions({ childId }: QuickActionsProps) {
         </div>
       </div>
 
-      {showFeedingModal && (
+      {showFeedingModal && children && (
         <FeedingModal
           childId={childId}
+          children={children}
           onClose={() => setShowFeedingModal(false)}
         />
       )}
-      
-      {showSleepModal && (
+
+      {showSleepModal && children && (
         <SleepModal
           childId={childId}
+          children={children}
           onClose={() => setShowSleepModal(false)}
         />
       )}
       
-      {showDiaperModal && (
+      {showDiaperModal && children && (
         <DiaperModal
           childId={childId}
+          children={children}
           onClose={() => setShowDiaperModal(false)}
         />
       )}

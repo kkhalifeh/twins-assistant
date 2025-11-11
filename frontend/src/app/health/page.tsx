@@ -20,7 +20,7 @@ export default function HealthPage() {
   const [healthValue, setHealthValue] = useState('')
   const [healthUnit, setHealthUnit] = useState('°C')
   const [healthNotes, setHealthNotes] = useState('')
-  const [timestamp, setTimestamp] = useState('')
+  const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16))
   const [dateRange, setDateRange] = useState({
     start: new Date(),
     end: new Date()
@@ -91,7 +91,7 @@ export default function HealthPage() {
       setEditingLog(null)
       setHealthValue('')
       setHealthNotes('')
-      setTimestamp('')
+      setTimestamp(new Date().toISOString().slice(0, 16))
     },
   })
 
@@ -182,7 +182,7 @@ export default function HealthPage() {
             setEditingLog(null)
             setHealthValue('')
             setHealthNotes('')
-            setTimestamp('')
+            setTimestamp(new Date().toISOString().slice(0, 16))
             setShowModal(true)
           }}
           className="btn-primary flex items-center space-x-2"
@@ -456,20 +456,18 @@ export default function HealthPage() {
                 </select>
               </div>
 
-              {editingLog && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Timestamp
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={timestamp}
-                    onChange={(e) => setTimestamp(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date & Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={timestamp}
+                  onChange={(e) => setTimestamp(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

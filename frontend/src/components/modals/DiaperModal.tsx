@@ -25,7 +25,9 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
   const [consistency, setConsistency] = useState(editingLog?.consistency || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
   const [timestamp, setTimestamp] = useState(
-    editingLog?.changedAt ? new Date(editingLog.changedAt).toISOString().slice(0, 16) : ''
+    editingLog?.timestamp
+      ? new Date(editingLog.timestamp).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16)
   )
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(editingLog?.imageUrl || null)
@@ -186,18 +188,16 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
             </select>
           </div>
 
-          {editingLog && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time Changed</label>
-              <input
-                type="datetime-local"
-                value={timestamp}
-                onChange={(e) => setTimestamp(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+            <input
+              type="datetime-local"
+              value={timestamp}
+              onChange={(e) => setTimestamp(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
