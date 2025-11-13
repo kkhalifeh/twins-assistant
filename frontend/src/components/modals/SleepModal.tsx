@@ -18,12 +18,20 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
   const [type, setType] = useState(editingLog?.type || 'NAP')
   const [notes, setNotes] = useState(editingLog?.notes || '')
   const [logMode, setLogMode] = useState<'new' | 'past'>(editingLog ? 'past' : 'new')
-  const [startTime, setStartTime] = useState(
-    editingLog?.startTime ? new Date(editingLog.startTime).toISOString().slice(0, 16) : ''
-  )
-  const [endTime, setEndTime] = useState(
-    editingLog?.endTime ? new Date(editingLog.endTime).toISOString().slice(0, 16) : ''
-  )
+  const [startTime, setStartTime] = useState(() => {
+    if (editingLog?.startTime) {
+      const date = new Date(editingLog.startTime)
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    }
+    return ''
+  })
+  const [endTime, setEndTime] = useState(() => {
+    if (editingLog?.endTime) {
+      const date = new Date(editingLog.endTime)
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    }
+    return ''
+  })
 
   const createMutation = useMutation({
     mutationFn: sleepAPI.create,
