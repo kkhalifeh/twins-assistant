@@ -20,7 +20,10 @@ export default function HealthPage() {
   const [healthValue, setHealthValue] = useState('')
   const [healthUnit, setHealthUnit] = useState('°C')
   const [healthNotes, setHealthNotes] = useState('')
-  const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16))
+  const [timestamp, setTimestamp] = useState(() => {
+    const now = new Date()
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  })
   const [dateRange, setDateRange] = useState({
     start: new Date(),
     end: new Date()
@@ -91,7 +94,8 @@ export default function HealthPage() {
       setEditingLog(null)
       setHealthValue('')
       setHealthNotes('')
-      setTimestamp(new Date().toISOString().slice(0, 16))
+      const now = new Date()
+      setTimestamp(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16))
     },
   })
 
@@ -130,7 +134,8 @@ export default function HealthPage() {
     setHealthValue(log.value)
     setHealthUnit(log.unit)
     setHealthNotes(log.notes || '')
-    setTimestamp(new Date(log.timestamp).toISOString().slice(0, 16))
+    const logDate = new Date(log.timestamp)
+    setTimestamp(new Date(logDate.getTime() - logDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16))
     setShowModal(true)
   }
 
@@ -182,7 +187,8 @@ export default function HealthPage() {
             setEditingLog(null)
             setHealthValue('')
             setHealthNotes('')
-            setTimestamp(new Date().toISOString().slice(0, 16))
+            const now = new Date()
+      setTimestamp(new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16))
             setShowModal(true)
           }}
           className="btn-primary flex items-center space-x-2"

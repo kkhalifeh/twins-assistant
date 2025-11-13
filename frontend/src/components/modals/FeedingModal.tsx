@@ -19,11 +19,14 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
   const [amount, setAmount] = useState(editingLog?.amount?.toString() || '')
   const [duration, setDuration] = useState(editingLog?.breastDuration?.toString() || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
-  const [timestamp, setTimestamp] = useState(
-    editingLog?.startTime
-      ? new Date(editingLog.startTime).toISOString().slice(0, 16)
-      : new Date().toISOString().slice(0, 16)
-  )
+  const [timestamp, setTimestamp] = useState(() => {
+    if (editingLog?.startTime) {
+      const date = new Date(editingLog.startTime)
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    }
+    const now = new Date()
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  })
 
   const createMutation = useMutation({
     mutationFn: feedingAPI.create,
