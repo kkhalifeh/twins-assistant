@@ -19,17 +19,19 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
 
     // Parse date string (YYYY-MM-DD format) accounting for user's timezone
     // timezoneOffset is in minutes (e.g., -300 for EST which is UTC-5)
+    // Negative offset means timezone is behind UTC (e.g., EST = UTC-5 = -300)
     const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string) : 0;
     let startDate: Date;
     let endDate: Date;
 
     if (date) {
       // Parse date as YYYY-MM-DD in user's timezone
-      // Convert to UTC by adding the timezone offset
+      // Convert to UTC by subtracting the timezone offset
       const [year, month, day] = (date as string).split('-').map(Number);
-      // User's midnight in UTC = midnight local + offset in minutes
-      const startMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) + (tzOffset * 60 * 1000);
-      const endMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999) + (tzOffset * 60 * 1000);
+      // User's midnight in UTC = midnight local - offset in minutes
+      // For EST (-300): Nov 13 00:00 EST = Nov 13 00:00 - (-300 min) = Nov 13 05:00 UTC
+      const startMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - (tzOffset * 60 * 1000);
+      const endMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999) - (tzOffset * 60 * 1000);
       startDate = new Date(startMs);
       endDate = new Date(endMs);
     } else {
@@ -38,8 +40,8 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       const localYear = now.getUTCFullYear();
       const localMonth = now.getUTCMonth();
       const localDay = now.getUTCDate();
-      const startMs = Date.UTC(localYear, localMonth, localDay, 0, 0, 0, 0) + (tzOffset * 60 * 1000);
-      const endMs = Date.UTC(localYear, localMonth, localDay, 23, 59, 59, 999) + (tzOffset * 60 * 1000);
+      const startMs = Date.UTC(localYear, localMonth, localDay, 0, 0, 0, 0) - (tzOffset * 60 * 1000);
+      const endMs = Date.UTC(localYear, localMonth, localDay, 23, 59, 59, 999) - (tzOffset * 60 * 1000);
       startDate = new Date(startMs);
       endDate = new Date(endMs);
     }
