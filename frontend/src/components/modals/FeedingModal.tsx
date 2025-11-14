@@ -17,7 +17,7 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
   const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
   const [type, setType] = useState(editingLog?.type || 'BOTTLE')
   const [amount, setAmount] = useState(editingLog?.amount?.toString() || '')
-  const [duration, setDuration] = useState(editingLog?.breastDuration?.toString() || '')
+  const [duration, setDuration] = useState(editingLog?.duration?.toString() || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
   const [timestamp, setTimestamp] = useState(() => {
     if (editingLog?.startTime) {
@@ -50,7 +50,7 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
       childId,
       type,
       amount: amount ? parseFloat(amount) : undefined,
-      breastDuration: duration ? parseInt(duration) : undefined,
+      duration: duration ? parseInt(duration) : undefined,
       notes,
       startTime: new Date(timestamp).toISOString(),
     }

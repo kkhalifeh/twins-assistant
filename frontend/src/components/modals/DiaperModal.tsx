@@ -112,7 +112,7 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
         // Update existing log
         const data = {
           childId,
-          changedAt: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
+          timestamp: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
           type,
           consistency: consistency || undefined,
           notes: notes || undefined,
