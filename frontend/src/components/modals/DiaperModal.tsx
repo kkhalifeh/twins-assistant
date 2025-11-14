@@ -42,6 +42,8 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
     mutationFn: diaperAPI.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diapers'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
   })
@@ -50,6 +52,8 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
     mutationFn: ({ id, data }: { id: string; data: any }) => diaperAPI.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diapers'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
   })

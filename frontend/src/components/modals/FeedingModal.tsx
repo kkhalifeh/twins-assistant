@@ -32,6 +32,8 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
     mutationFn: feedingAPI.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feeding'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
   })
@@ -40,6 +42,8 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
     mutationFn: ({ id, data }: { id: string; data: any }) => feedingAPI.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feeding'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
   })

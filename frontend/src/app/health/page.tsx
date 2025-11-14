@@ -78,6 +78,8 @@ export default function HealthPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health'] })
       queryClient.invalidateQueries({ queryKey: ['vitals'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       setShowModal(false)
       setHealthValue('')
       setHealthNotes('')
@@ -90,6 +92,8 @@ export default function HealthPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health'] })
       queryClient.invalidateQueries({ queryKey: ['vitals'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       setShowModal(false)
       setEditingLog(null)
       setHealthValue('')
@@ -104,6 +108,8 @@ export default function HealthPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health'] })
       queryClient.invalidateQueries({ queryKey: ['vitals'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 

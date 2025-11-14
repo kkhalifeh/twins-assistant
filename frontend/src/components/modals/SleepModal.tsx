@@ -37,6 +37,8 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
     mutationFn: sleepAPI.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sleep'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
   })
@@ -45,6 +47,8 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
     mutationFn: ({ id, data }: { id: string; data: any }) => sleepAPI.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sleep'] })
+      queryClient.invalidateQueries({ queryKey: ['journal'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
   })
