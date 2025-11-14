@@ -81,6 +81,7 @@ export const createSleepLog = async (req: AuthRequest, res: Response) => {
       endTime,
       type,
       quality,
+      headTilt,
       notes,
       timezone
     } = req.body;
@@ -126,6 +127,7 @@ export const createSleepLog = async (req: AuthRequest, res: Response) => {
         duration,
         type,
         quality,
+        headTilt,
         notes,
         entryTimezone
       },
@@ -159,6 +161,7 @@ export const updateSleepLog = async (req: AuthRequest, res: Response) => {
       endTime,
       type,
       quality,
+      headTilt,
       notes
     } = req.body;
 
@@ -211,7 +214,8 @@ export const updateSleepLog = async (req: AuthRequest, res: Response) => {
         ...(endTime !== undefined && { endTime: endTime ? new Date(endTime) : null }),
         ...(duration !== undefined && { duration }),
         ...(type && { type }),
-        ...(quality && { quality }),
+        ...(quality !== undefined && { quality }),
+        ...(headTilt !== undefined && { headTilt }),
         ...(notes !== undefined && { notes })
       },
       include: {

@@ -18,6 +18,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
   const { getUserTimezone } = useTimezone()
   const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
   const [type, setType] = useState(editingLog?.type || 'NAP')
+  const [headTilt, setHeadTilt] = useState(editingLog?.headTilt || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
   const [logMode, setLogMode] = useState<'new' | 'past'>(editingLog ? 'past' : 'new')
   const [startTime, setStartTime] = useState(() => {
@@ -62,6 +63,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
       const data = {
         childId,
         type,
+        headTilt: headTilt || undefined,
         notes,
         startTime: startTime ? new Date(startTime).toISOString() : undefined,
         endTime: endTime ? new Date(endTime).toISOString() : undefined,
@@ -73,6 +75,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
       createMutation.mutate({
         childId,
         type,
+        headTilt: headTilt || undefined,
         notes,
         startTime: new Date().toISOString(),
         timezone: getUserTimezone(),
@@ -82,6 +85,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
       createMutation.mutate({
         childId,
         type,
+        headTilt: headTilt || undefined,
         notes,
         startTime: new Date(startTime).toISOString(),
         endTime: endTime ? new Date(endTime).toISOString() : undefined,
@@ -155,6 +159,20 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
             >
               <option value="NAP">Nap</option>
               <option value="NIGHT">Night Sleep</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Head Tilt</label>
+            <select
+              value={headTilt}
+              onChange={(e) => setHeadTilt(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">Select...</option>
+              <option value="LEFT">Left</option>
+              <option value="RIGHT">Right</option>
+              <option value="STRAIGHT">Straight</option>
             </select>
           </div>
 

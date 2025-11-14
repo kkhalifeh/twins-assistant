@@ -361,15 +361,22 @@ export default function SleepPage() {
                       {log.user && (
                         <p className="text-xs text-gray-500">Logged by {log.user.name}</p>
                       )}
-                      {log.quality && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          log.quality === 'DEEP' ? 'bg-green-100 text-green-700' :
-                          log.quality === 'RESTLESS' ? 'bg-amber-100 text-amber-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {log.quality.toLowerCase()}
-                        </span>
-                      )}
+                      <div className="flex gap-2 mt-1">
+                        {log.quality && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            log.quality === 'DEEP' ? 'bg-green-100 text-green-700' :
+                            log.quality === 'RESTLESS' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {log.quality.toLowerCase()}
+                          </span>
+                        )}
+                        {log.headTilt && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            Head: {log.headTilt.toLowerCase()}
+                          </span>
+                        )}
+                      </div>
                       {log.notes && <p className="text-xs text-gray-500 mt-1">{log.notes}</p>}
                     </div>
                   </div>
