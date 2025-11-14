@@ -27,8 +27,9 @@ RUN npm ci --only=production
 
 # Copy built application from builder
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./
+# Copy public folder if it exists
+RUN mkdir -p public
 
 # Expose port
 EXPOSE 3000
