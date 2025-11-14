@@ -17,7 +17,7 @@ import {
 const prisma = new PrismaClient();
 
 export class DashboardService {
-  async getDashboardData(date: Date | { year: number; month: number; day: number }, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, timezoneOffset: number = 0) {
+  async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, timezoneOffset: number = 0) {
     // Get user's accountId
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -45,52 +45,28 @@ export class DashboardService {
     let startDate: Date;
     let endDate: Date;
 
-    // Handle date parameter - can be Date object or date components
-    let year: number, month: number, day: number;
-    if ('year' in date) {
-      year = date.year;
-      month = date.month - 1; // month is 1-indexed from route, need 0-indexed for Date.UTC
-      day = date.day;
-    } else {
-      year = date.getUTCFullYear();
-      month = date.getUTCMonth();
-      day = date.getUTCDate();
-    }
-
     switch (viewMode) {
       case 'day':
         // Get day boundaries in user's local timezone
-        // Date components represent user's local date (e.g., "Nov 13" in EST)
         // Convert to UTC by subtracting the timezone offset
-        // For EST (offset = -300): Nov 13 00:00 EST = Nov 13 00:00 + 5 hours = Nov 13 05:00 UTC
-        const dayStartMs = Date.UTC(year, month, day, 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const dayEndMs = Date.UTC(year, month, day, 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
-        console.log('[Dashboard] Date calc:', {
-          year, month, day,
-          timezoneOffset,
-          dayStartMs,
-          dayEndMs,
-          startDate: new Date(dayStartMs).toISOString(),
-          endDate: new Date(dayEndMs).toISOString()
-        });
+        const dayStartMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const dayEndMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(dayStartMs);
         endDate = new Date(dayEndMs);
         break;
       case 'week':
-        const refDate = new Date(Date.UTC(year, month, day));
-        const weekStart = startOfWeek(refDate, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(refDate, { weekStartsOn: 0 });
-        const weekStartMs = Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const weekEndMs = Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        const weekStart = startOfWeek(date, { weekStartsOn: 0 });
+        const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
+        const weekStartMs = Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const weekEndMs = Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(weekStartMs);
         endDate = new Date(weekEndMs);
         break;
       case 'month':
-        const refDate2 = new Date(Date.UTC(year, month, day));
-        const monthStart = startOfMonth(refDate2);
-        const monthEnd = endOfMonth(refDate2);
-        const monthStartMs = Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), monthStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const monthEndMs = Date.UTC(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        const monthStart = startOfMonth(date);
+        const monthEnd = endOfMonth(date);
+        const monthStartMs = Date.UTC(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const monthEndMs = Date.UTC(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(monthStartMs);
         endDate = new Date(monthEndMs);
         break;
@@ -180,7 +156,7 @@ export class DashboardService {
     );
 
     return {
-      date: 'year' in date ? `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}` : date.toISOString(),
+      date: date.toISOString(),
       viewMode,
       dateRange: {
         start: startDate.toISOString(),
@@ -258,19 +234,16 @@ export class DashboardService {
     sleepLogs: any[],
     diaperLogs: any[],
     activeSleepSessions: any[],
-    date: Date | { year: number; month: number; day: number },
+    date: Date,
     viewMode: string
   ): Promise<any[]> {
     const insights: any[] = [];
     const now = new Date();
 
-    // Convert date to Date object if needed for date-fns functions
-    const dateObj = 'year' in date ? new Date(Date.UTC(date.year, date.month - 1, date.day)) : date;
-
     // Check if viewing today's data
-    const isCurrentPeriod = viewMode === 'day' ? isToday(dateObj) :
-                           viewMode === 'week' ? (now >= startOfWeek(dateObj) && now <= endOfWeek(dateObj)) :
-                           (now >= startOfMonth(dateObj) && now <= endOfMonth(dateObj));
+    const isCurrentPeriod = viewMode === 'day' ? isToday(date) : 
+                           viewMode === 'week' ? (now >= startOfWeek(date) && now <= endOfWeek(date)) :
+                           (now >= startOfMonth(date) && now <= endOfMonth(date));
 
     for (const child of children) {
       const childFeedings = feedingLogs.filter(f => f.childId === child.id);
@@ -310,7 +283,7 @@ export class DashboardService {
         const totalSleepToday = childSleepLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
         
         // Compare with yesterday if viewing today
-        if (isToday(dateObj)) {
+        if (isToday(date)) {
           const yesterdayStart = startOfDay(subDays(now, 1));
           const yesterdayEnd = endOfDay(subDays(now, 1));
           

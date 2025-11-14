@@ -18,11 +18,10 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }
 
     // Parse date string (YYYY-MM-DD format) or use current date
-    // Date string represents a date in user's timezone, pass components directly
-    let targetDate: { year: number; month: number; day: number } | Date;
+    let targetDate: Date;
     if (date && typeof date === 'string') {
       const [year, month, day] = date.split('-').map(Number);
-      targetDate = { year, month, day };
+      targetDate = new Date(year, month - 1, day);
     } else {
       targetDate = new Date();
     }
