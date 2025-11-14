@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, differenceInMinutes, differenceInHours } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
@@ -171,7 +172,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getLastFeeding: async (args: any): Promise<string> => {
-    const { childId, userId } = args;
+    const { childId, userId, timezone = 'America/New_York' } = args;
 
     if (childId) {
       const lastFeeding = await prisma.feedingLog.findFirst({
@@ -190,8 +191,9 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
 
       const hoursAgo = differenceInHours(new Date(), lastFeeding.startTime);
       const minutesAgo = differenceInMinutes(new Date(), lastFeeding.startTime) % 60;
+      const timeStr = formatInTimeZone(lastFeeding.startTime, timezone, 'h:mm a');
 
-      return `${lastFeeding.child.name} was last fed ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml ${lastFeeding.type.toLowerCase()}) at ${format(lastFeeding.startTime, 'h:mm a')}`;
+      return `${lastFeeding.child.name} was last fed ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml ${lastFeeding.type.toLowerCase()}) at ${timeStr}`;
     } else {
       // Get for all children
       const children = await prisma.child.findMany({
@@ -211,7 +213,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
         if (lastFeeding) {
           const hoursAgo = differenceInHours(new Date(), lastFeeding.startTime);
           const minutesAgo = differenceInMinutes(new Date(), lastFeeding.startTime) % 60;
-          results.push(`${child.name}: ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml) at ${format(lastFeeding.startTime, 'h:mm a')}`);
+          const timeStr = formatInTimeZone(lastFeeding.startTime, timezone, 'h:mm a');
+          results.push(`${child.name}: ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml) at ${timeStr}`);
         }
       }
 
@@ -220,7 +223,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   getLastDiaperChange: async (args: any): Promise<string> => {
-    const { childId, userId } = args;
+    const { childId, userId, timezone = 'America/New_York' } = args;
 
     const lastDiaper = await prisma.diaperLog.findFirst({
       where: {
@@ -238,12 +241,13 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
 
     const hoursAgo = differenceInHours(new Date(), lastDiaper.timestamp);
     const minutesAgo = differenceInMinutes(new Date(), lastDiaper.timestamp) % 60;
+    const timeStr = formatInTimeZone(lastDiaper.timestamp, timezone, 'h:mm a');
 
-    return `${lastDiaper.child.name}'s last diaper change was ${hoursAgo}h ${minutesAgo}m ago (${lastDiaper.type.toLowerCase()}) at ${format(lastDiaper.timestamp, 'h:mm a')}`;
+    return `${lastDiaper.child.name}'s last diaper change was ${hoursAgo}h ${minutesAgo}m ago (${lastDiaper.type.toLowerCase()}) at ${timeStr}`;
   },
   
   getSleepStatus: async (args: any): Promise<string> => {
-    const { userId } = args;
+    const { userId, timezone = 'America/New_York' } = args;
     const activeSleeps = await prisma.sleepLog.findMany({
       where: {
         endTime: null,
@@ -251,16 +255,17 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       },
       include: { child: true }
     });
-    
+
     if (activeSleeps.length === 0) {
       return "No one is sleeping right now";
     }
-    
+
     const results = activeSleeps.map(sleep => {
       const duration = differenceInMinutes(new Date(), sleep.startTime);
-      return `${sleep.child.name} - sleeping for ${duration} minutes (${sleep.type}) since ${format(sleep.startTime, 'h:mm a')}`;
+      const timeStr = formatInTimeZone(sleep.startTime, timezone, 'h:mm a');
+      return `${sleep.child.name} - sleeping for ${duration} minutes (${sleep.type}) since ${timeStr}`;
     });
-    
+
     return results.join('\n');
   },
   
@@ -735,9 +740,10 @@ Be warm, helpful, and conversational. Maintain conversation context and ask clar
         const functionName = responseMessage.function_call.name;
         const functionArgs = JSON.parse(responseMessage.function_call.arguments);
         
-        // Add userId to args
+        // Add userId and timezone to args
         functionArgs.userId = userId;
-        
+        functionArgs.timezone = context.user.timezone || 'America/New_York';
+
         console.log(`Calling function: ${functionName}`, functionArgs);
         
         // Execute the function
