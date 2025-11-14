@@ -10,17 +10,26 @@ router.use(authMiddleware);
 // Get dashboard data
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { date, viewMode = 'day' } = req.query;
+    const { date, viewMode = 'day', timezoneOffset } = req.query;
     const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const targetDate = date ? parseISO(date as string) : new Date();
-    const mode = viewMode as 'day' | 'week' | 'month';
+    // Parse date string (YYYY-MM-DD format) or use current date
+    let targetDate: Date;
+    if (date && typeof date === 'string') {
+      const [year, month, day] = date.split('-').map(Number);
+      targetDate = new Date(year, month - 1, day);
+    } else {
+      targetDate = new Date();
+    }
 
-    const dashboardData = await dashboardService.getDashboardData(targetDate, mode, userId);
+    const mode = viewMode as 'day' | 'week' | 'month';
+    const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string) : 0;
+
+    const dashboardData = await dashboardService.getDashboardData(targetDate, mode, userId, tzOffset);
 
     res.json(dashboardData);
   } catch (error) {

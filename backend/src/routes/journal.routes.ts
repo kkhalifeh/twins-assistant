@@ -10,25 +10,41 @@ router.use(authMiddleware);
 // Get daily journal data
 router.get('/daily', async (req: AuthRequest, res: Response) => {
   try {
-    const { date, childId } = req.query;
+    const { date, childId, timezoneOffset } = req.query;
     const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Parse date string (YYYY-MM-DD format) to avoid timezone issues
-    let targetDate: Date;
+    // Parse date string (YYYY-MM-DD format) accounting for user's timezone
+    // timezoneOffset is in minutes (e.g., -300 for EST which is UTC-5)
+    const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string) : 0;
+    let startDate: Date;
+    let endDate: Date;
+
     if (date) {
-      // Create date in UTC to avoid timezone conversion issues
+      // Parse date as YYYY-MM-DD in user's timezone
+      // Convert to UTC by adding the timezone offset
       const [year, month, day] = (date as string).split('-').map(Number);
-      targetDate = new Date(Date.UTC(year, month - 1, day));
+      // User's midnight in UTC = midnight local + offset in minutes
+      const startMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) + (tzOffset * 60 * 1000);
+      const endMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999) + (tzOffset * 60 * 1000);
+      startDate = new Date(startMs);
+      endDate = new Date(endMs);
     } else {
-      targetDate = new Date();
+      // For "today", use current date in user's timezone
+      const now = new Date();
+      const localYear = now.getUTCFullYear();
+      const localMonth = now.getUTCMonth();
+      const localDay = now.getUTCDate();
+      const startMs = Date.UTC(localYear, localMonth, localDay, 0, 0, 0, 0) + (tzOffset * 60 * 1000);
+      const endMs = Date.UTC(localYear, localMonth, localDay, 23, 59, 59, 999) + (tzOffset * 60 * 1000);
+      startDate = new Date(startMs);
+      endDate = new Date(endMs);
     }
 
-    const startDate = startOfDay(targetDate);
-    const endDate = endOfDay(targetDate);
+    const targetDate = startDate;
 
     // Get user's accountId
     const user = await prisma.user.findUnique({

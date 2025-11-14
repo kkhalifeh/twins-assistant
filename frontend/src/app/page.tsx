@@ -19,9 +19,13 @@ export default function DashboardPage() {
   const { data: dashboardData, isLoading, error, refetch } = useQuery({
     queryKey: ['dashboard', currentDate.toISOString(), viewMode],
     queryFn: async () => {
+      // Send date with timezone offset to avoid timezone issues
+      const dateStr = format(currentDate, 'yyyy-MM-dd')
+      const timezoneOffset = currentDate.getTimezoneOffset() // in minutes
       const response = await api.get('/dashboard', {
         params: {
-          date: currentDate.toISOString(),
+          date: dateStr,
+          timezoneOffset: timezoneOffset,
           viewMode
         }
       })

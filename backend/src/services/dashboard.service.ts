@@ -17,7 +17,7 @@ import {
 const prisma = new PrismaClient();
 
 export class DashboardService {
-  async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day', userId: string) {
+  async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, timezoneOffset: number = 0) {
     // Get user's accountId
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -39,22 +39,33 @@ export class DashboardService {
 
     const childIds = children.map(c => c.id);
 
-    // Get date range based on view mode
+    // Get date range based on view mode, accounting for user's timezone
     let startDate: Date;
     let endDate: Date;
 
     switch (viewMode) {
       case 'day':
-        startDate = startOfDay(date);
-        endDate = endOfDay(date);
+        // Get day boundaries in user's local timezone
+        const dayStartMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0) + (timezoneOffset * 60 * 1000);
+        const dayEndMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999) + (timezoneOffset * 60 * 1000);
+        startDate = new Date(dayStartMs);
+        endDate = new Date(dayEndMs);
         break;
       case 'week':
-        startDate = startOfWeek(date, { weekStartsOn: 0 });
-        endDate = endOfWeek(date, { weekStartsOn: 0 });
+        const weekStart = startOfWeek(date, { weekStartsOn: 0 });
+        const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
+        const weekStartMs = Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0) + (timezoneOffset * 60 * 1000);
+        const weekEndMs = Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999) + (timezoneOffset * 60 * 1000);
+        startDate = new Date(weekStartMs);
+        endDate = new Date(weekEndMs);
         break;
       case 'month':
-        startDate = startOfMonth(date);
-        endDate = endOfMonth(date);
+        const monthStart = startOfMonth(date);
+        const monthEnd = endOfMonth(date);
+        const monthStartMs = Date.UTC(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate(), 0, 0, 0, 0) + (timezoneOffset * 60 * 1000);
+        const monthEndMs = Date.UTC(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59, 999) + (timezoneOffset * 60 * 1000);
+        startDate = new Date(monthStartMs);
+        endDate = new Date(monthEndMs);
         break;
     }
 
