@@ -52,6 +52,17 @@ export class DashboardService {
         // Use UTC methods to avoid server timezone issues
         const dayStartMs = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
         const dayEndMs = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        console.log('[Dashboard] Date calc:', {
+          inputDate: date.toISOString(),
+          utcYear: date.getUTCFullYear(),
+          utcMonth: date.getUTCMonth(),
+          utcDate: date.getUTCDate(),
+          timezoneOffset,
+          dayStartMs,
+          dayEndMs,
+          startDate: new Date(dayStartMs).toISOString(),
+          endDate: new Date(dayEndMs).toISOString()
+        });
         startDate = new Date(dayStartMs);
         endDate = new Date(dayEndMs);
         break;
