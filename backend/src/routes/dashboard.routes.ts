@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../utils/auth';
 import { dashboardService } from '../services/dashboard.service';
-import { parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 const router = Router();
 
@@ -17,19 +17,12 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Parse date string (YYYY-MM-DD format) or use current date
-    let targetDate: Date;
-    if (date && typeof date === 'string') {
-      const [year, month, day] = date.split('-').map(Number);
-      targetDate = new Date(year, month - 1, day);
-    } else {
-      targetDate = new Date();
-    }
-
+    // Pass date string directly - service will handle timezone conversion
+    const dateStr = (date && typeof date === 'string') ? date : format(new Date(), 'yyyy-MM-dd');
     const mode = viewMode as 'day' | 'week' | 'month';
     const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string) : 0;
 
-    const dashboardData = await dashboardService.getDashboardData(targetDate, mode, userId, tzOffset);
+    const dashboardData = await dashboardService.getDashboardData(dateStr, mode, userId, tzOffset);
 
     res.json(dashboardData);
   } catch (error) {

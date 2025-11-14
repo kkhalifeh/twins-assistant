@@ -17,7 +17,7 @@ import {
 const prisma = new PrismaClient();
 
 export class DashboardService {
-  async getDashboardData(date: Date, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, timezoneOffset: number = 0) {
+  async getDashboardData(dateStr: string, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, timezoneOffset: number = 0) {
     // Get user's accountId
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -39,34 +39,41 @@ export class DashboardService {
 
     const childIds = children.map(c => c.id);
 
+    // Parse date string (YYYY-MM-DD format)
+    const [year, month, day] = dateStr.split('-').map(Number);
+
     // Get date range based on view mode, accounting for user's timezone
     // timezoneOffset is in minutes (e.g., -300 for EST which is UTC-5)
-    // Negative offset means timezone is behind UTC
+    // Formula: User's local time - timezoneOffset = UTC time
+    // For EST (offset = -300): Local midnight - (-300 min) = UTC 05:00
     let startDate: Date;
     let endDate: Date;
 
     switch (viewMode) {
       case 'day':
-        // Get day boundaries in user's local timezone
-        // Convert to UTC by subtracting the timezone offset
-        const dayStartMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const dayEndMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        // Calculate UTC timestamps for day boundaries in user's timezone
+        // Example: Nov 13 00:00 EST = Nov 13 00:00 + 5 hours = Nov 13 05:00 UTC
+        const dayStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const dayEndMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(dayStartMs);
         endDate = new Date(dayEndMs);
         break;
       case 'week':
-        const weekStart = startOfWeek(date, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
-        const weekStartMs = Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const weekEndMs = Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        // Create a reference date for week calculation
+        const refDate = new Date(Date.UTC(year, month - 1, day));
+        const weekStart = startOfWeek(refDate, { weekStartsOn: 0 });
+        const weekEnd = endOfWeek(refDate, { weekStartsOn: 0 });
+        const weekStartMs = Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const weekEndMs = Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(weekStartMs);
         endDate = new Date(weekEndMs);
         break;
       case 'month':
-        const monthStart = startOfMonth(date);
-        const monthEnd = endOfMonth(date);
-        const monthStartMs = Date.UTC(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const monthEndMs = Date.UTC(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        const refDate2 = new Date(Date.UTC(year, month - 1, day));
+        const monthStart = startOfMonth(refDate2);
+        const monthEnd = endOfMonth(refDate2);
+        const monthStartMs = Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), monthStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const monthEndMs = Date.UTC(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(monthStartMs);
         endDate = new Date(monthEndMs);
         break;
@@ -145,18 +152,19 @@ export class DashboardService {
     };
 
     // Generate real-time insights
+    const dateForInsights = new Date(Date.UTC(year, month - 1, day));
     const insights = await this.generateRealTimeInsights(
       children,
       feedingLogs,
       sleepLogs,
       diaperLogs,
       activeSleepSessions,
-      date,
+      dateForInsights,
       viewMode
     );
 
     return {
-      date: date.toISOString(),
+      date: dateStr,
       viewMode,
       dateRange: {
         start: startDate.toISOString(),
