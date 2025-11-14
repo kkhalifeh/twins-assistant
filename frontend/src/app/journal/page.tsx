@@ -9,8 +9,10 @@ import {
 import { format, addDays, subDays, startOfDay, endOfDay } from 'date-fns'
 import { childrenAPI } from '@/lib/api'
 import api from '@/lib/api'
+import { useTimezone } from '@/contexts/TimezoneContext'
 
 export default function JournalPage() {
+  const { formatTime: formatTimeInTimezone } = useTimezone()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedChild, setSelectedChild] = useState<string>('all')
 
@@ -87,10 +89,6 @@ export default function JournalPage() {
       default:
         return 'bg-gray-50 border-gray-200'
     }
-  }
-
-  const formatTime = (timestamp: string) => {
-    return format(new Date(timestamp), 'h:mm a')
   }
 
   const isToday = selectedDate.toDateString() === new Date().toDateString()
@@ -240,7 +238,7 @@ export default function JournalPage() {
                           {activity.childName}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {formatTime(activity.timestamp)}
+                          {formatTimeInTimezone(activity.timestamp)}
                         </p>
                       </div>
                       <p className="text-sm text-gray-700 mb-1">

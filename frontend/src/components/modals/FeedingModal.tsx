@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { feedingAPI } from '@/lib/api'
 import { X } from 'lucide-react'
+import { useTimezone } from '@/contexts/TimezoneContext'
 
 interface FeedingModalProps {
   childId: string
@@ -14,6 +15,7 @@ interface FeedingModalProps {
 
 export default function FeedingModal({ childId: initialChildId, children, onClose, editingLog }: FeedingModalProps) {
   const queryClient = useQueryClient()
+  const { getUserTimezone } = useTimezone()
   const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
   const [type, setType] = useState(editingLog?.type || 'BOTTLE')
   const [amount, setAmount] = useState(editingLog?.amount?.toString() || '')
@@ -57,6 +59,7 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
       duration: duration ? parseInt(duration) : undefined,
       notes,
       startTime: new Date(timestamp).toISOString(),
+      timezone: getUserTimezone(),
     }
 
     if (editingLog) {

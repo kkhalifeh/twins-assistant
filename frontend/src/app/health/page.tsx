@@ -10,9 +10,11 @@ import {
 } from 'lucide-react'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useTimezone } from '@/contexts/TimezoneContext'
 
 export default function HealthPage() {
   const queryClient = useQueryClient()
+  const { getUserTimezone } = useTimezone()
   const [selectedChild, setSelectedChild] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
   const [editingLog, setEditingLog] = useState<any | null>(null)
@@ -124,6 +126,7 @@ export default function HealthPage() {
       unit: healthUnit,
       notes: healthNotes,
       timestamp: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
+      timezone: getUserTimezone(),
     }
 
     if (editingLog) {

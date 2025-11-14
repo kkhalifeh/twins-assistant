@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../index';
 import { AuthRequest } from '../utils/auth';
 import { parseIntSafe } from '../utils/validation';
+import { TimezoneService } from '../utils/timezone';
 
 export const getSleepLogs = async (req: AuthRequest, res: Response) => {
   try {
@@ -80,7 +81,8 @@ export const createSleepLog = async (req: AuthRequest, res: Response) => {
       endTime,
       type,
       quality,
-      notes
+      notes,
+      timezone
     } = req.body;
 
     const userId = req.user?.id;
@@ -92,6 +94,19 @@ export const createSleepLog = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         error: 'Child ID, start time, and type are required'
       });
+    }
+
+    // Get user's timezone if not provided in request
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true }
+    });
+
+    const entryTimezone = timezone || user?.timezone || 'America/New_York';
+
+    // Validate timezone
+    if (!TimezoneService.isValidTimezone(entryTimezone)) {
+      return res.status(400).json({ error: 'Invalid timezone' });
     }
 
     // Calculate duration if endTime is provided
@@ -111,7 +126,8 @@ export const createSleepLog = async (req: AuthRequest, res: Response) => {
         duration,
         type,
         quality,
-        notes
+        notes,
+        entryTimezone
       },
       include: {
         child: true,

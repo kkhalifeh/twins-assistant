@@ -7,12 +7,15 @@ import { format, isWithinInterval, parseISO } from 'date-fns'
 import { Milk, Plus, TrendingUp, Edit2, Trash2 } from 'lucide-react'
 import FeedingModal from '@/components/modals/FeedingModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
+import { useTimezone } from '@/contexts/TimezoneContext'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 
 export default function FeedingPage() {
+  const { formatTime, formatDate } = useTimezone()
+
   // Color mapping function for dynamic children
   const getChildColorClass = (childName: string, type: 'bg' | 'text') => {
     if (!children) return type === 'bg' ? 'bg-gray-100' : 'text-gray-600'
@@ -290,10 +293,10 @@ export default function FeedingPage() {
                 <div className="flex items-center space-x-3">
                   <div className="text-right">
                     <p className="text-sm font-medium">
-                      {format(new Date(log.startTime), 'h:mm a')}
+                      {formatTime(log.startTime)}
                     </p>
                     <p className="text-xs text-gray-600">
-                      {format(new Date(log.startTime), 'MMM d')}
+                      {formatDate(log.startTime, 'MMM d')}
                     </p>
                   </div>
                   {isParent && (

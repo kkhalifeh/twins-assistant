@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { childrenAPI, authAPI, userAPI } from '@/lib/api'
 import api from '@/lib/api'
+import { TimezoneSelector } from '@/components/TimezoneSelector'
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
@@ -184,6 +185,7 @@ export default function SettingsPage() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'team', label: 'Team', icon: Users },
     { id: 'children', label: 'Children', icon: User },
+    { id: 'timezone', label: 'Timezone', icon: Globe },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'whatsapp', label: 'WhatsApp', icon: Smartphone },
     { id: 'privacy', label: 'Privacy', icon: Shield },
@@ -468,6 +470,33 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'timezone' && (
+            <div className="card">
+              <h2 className="text-lg font-semibold mb-4">Timezone Settings</h2>
+              <p className="text-gray-600 mb-6">
+                Set your timezone to ensure all times are displayed correctly. All activity logs will be shown in your local time.
+              </p>
+              <TimezoneSelector />
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-medium text-blue-900 mb-2">How Timezone Works</h3>
+                <ul className="space-y-2 text-sm text-blue-800">
+                  <li>
+                    All times are stored in UTC and converted to your timezone for display
+                  </li>
+                  <li>
+                    When you log an activity, the current time in your timezone is saved
+                  </li>
+                  <li>
+                    Team members in different timezones will see times in their own local time
+                  </li>
+                  <li>
+                    Changing your timezone will not affect previously logged times - they will just be displayed differently
+                  </li>
+                </ul>
+              </div>
             </div>
           )}
 

@@ -4,7 +4,9 @@ import {
   inviteTeamMember,
   updateTeamMemberRole,
   removeTeamMember,
-  getCurrentUser
+  getCurrentUser,
+  getUserTimezone,
+  updateUserTimezone
 } from '../controllers/user.controller';
 import { authMiddleware } from '../utils/auth';
 import { requireParent } from '../middleware/rbac.middleware';
@@ -16,6 +18,10 @@ router.use(authMiddleware);
 
 // Get current user
 router.get('/me', getCurrentUser);
+
+// Timezone settings
+router.get('/timezone', getUserTimezone);
+router.patch('/timezone', updateUserTimezone);
 
 // Get team members (all roles can view)
 router.get('/team', getTeamMembers);

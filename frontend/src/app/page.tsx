@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Activity, TrendingUp, Moon, Baby, Clock, 
+import {
+  Activity, TrendingUp, Moon, Baby, Clock,
   Calendar, ChevronLeft, ChevronRight, AlertCircle,
   CheckCircle, TrendingDown, Sun, Loader2
 } from 'lucide-react'
 import { format, startOfDay, startOfWeek, startOfMonth, endOfWeek, endOfMonth, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns'
 import api from '@/lib/api'
 import Link from 'next/link'
+import { useTimezone } from '@/contexts/TimezoneContext'
 
 export default function DashboardPage() {
+  const { formatTime } = useTimezone()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day')
 
@@ -317,7 +319,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">
-                  {format(new Date(activity.timestamp), 'h:mm a')}
+                  {formatTime(activity.timestamp)}
                 </p>
               </div>
             ))}

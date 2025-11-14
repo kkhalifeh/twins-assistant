@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../index';
 import { AuthRequest } from '../utils/auth';
 import { parseIntSafe } from '../utils/validation';
+import { TimezoneService } from '../utils/timezone';
 
 export const getHealthLogs = async (req: AuthRequest, res: Response) => {
   try {
@@ -64,15 +65,16 @@ export const getHealthLogs = async (req: AuthRequest, res: Response) => {
 
 export const createHealthLog = async (req: AuthRequest, res: Response) => {
   try {
-    const { 
-      childId, 
-      timestamp, 
-      type, 
-      value, 
-      unit, 
-      notes 
+    const {
+      childId,
+      timestamp,
+      type,
+      value,
+      unit,
+      notes,
+      timezone
     } = req.body;
-    
+
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -83,7 +85,20 @@ export const createHealthLog = async (req: AuthRequest, res: Response) => {
         error: 'Child ID, type, and value are required'
       });
     }
-    
+
+    // Get user's timezone if not provided in request
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true }
+    });
+
+    const entryTimezone = timezone || user?.timezone || 'America/New_York';
+
+    // Validate timezone
+    if (!TimezoneService.isValidTimezone(entryTimezone)) {
+      return res.status(400).json({ error: 'Invalid timezone' });
+    }
+
     const log = await prisma.healthLog.create({
       data: {
         childId,
@@ -92,7 +107,8 @@ export const createHealthLog = async (req: AuthRequest, res: Response) => {
         type,
         value: value.toString(),
         unit,
-        notes
+        notes,
+        entryTimezone
       },
       include: {
         child: true,
@@ -101,12 +117,12 @@ export const createHealthLog = async (req: AuthRequest, res: Response) => {
         }
       }
     });
-    
+
     res.status(201).json(log);
   } catch (error) {
     console.error('Create health log error:', error);
-    res.status(500).json({ 
-      error: 'Failed to create health log' 
+    res.status(500).json({
+      error: 'Failed to create health log'
     });
   }
 };

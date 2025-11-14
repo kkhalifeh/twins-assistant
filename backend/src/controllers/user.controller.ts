@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '../index';
 import { AuthRequest, hashPassword, generateToken } from '../utils/auth';
+import { TimezoneService } from '../utils/timezone';
 
 // Get all users in the same account (team members)
 export const getTeamMembers = async (req: AuthRequest, res: Response) => {
@@ -364,5 +365,66 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Get current user error:', error);
     res.status(500).json({ error: 'Failed to fetch user information' });
+  }
+};
+
+// Get user's timezone preference
+export const getUserTimezone = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      timezone: user.timezone || 'America/New_York',
+      display: TimezoneService.getTimezoneDisplay(user.timezone || 'America/New_York')
+    });
+  } catch (error) {
+    console.error('Error fetching timezone:', error);
+    res.status(500).json({ error: 'Failed to fetch timezone' });
+  }
+};
+
+// Update user's timezone preference
+export const updateUserTimezone = async (req: AuthRequest, res: Response) => {
+  try {
+    const { timezone } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (!timezone) {
+      return res.status(400).json({ error: 'Timezone is required' });
+    }
+
+    if (!TimezoneService.isValidTimezone(timezone)) {
+      return res.status(400).json({ error: 'Invalid timezone' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { timezone }
+    });
+
+    res.json({
+      success: true,
+      timezone: user.timezone,
+      display: TimezoneService.getTimezoneDisplay(timezone)
+    });
+  } catch (error) {
+    console.error('Error updating timezone:', error);
+    res.status(500).json({ error: 'Failed to update timezone' });
   }
 };

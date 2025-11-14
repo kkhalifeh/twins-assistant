@@ -61,6 +61,7 @@ app.use('/api/auth', authRoutes);
 
 // Protected routes with RBAC
 app.use('/api/users', userRoutes); // User management routes already have auth middleware
+app.use('/api/user', userRoutes); // Also support singular /api/user for frontend compatibility
 app.use('/api/children', authMiddleware, checkResourceAccess, childrenRoutes);
 app.use('/api/feeding', authMiddleware, checkResourceAccess, feedingRoutes);
 app.use('/api/sleep', authMiddleware, checkResourceAccess, sleepRoutes);

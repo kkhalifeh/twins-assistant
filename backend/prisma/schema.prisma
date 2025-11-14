@@ -27,6 +27,7 @@ model User {
   role      UserRole @default(PARENT)
   phone     String?
   accountId String?  // Reference to Account
+  timezone  String   @default("America/New_York") // IANA timezone
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -69,54 +70,57 @@ model Child {
 }
 
 model FeedingLog {
-  id         String       @id @default(cuid())
-  childId    String
-  userId     String
-  startTime  DateTime
-  endTime    DateTime?
-  type       FeedingType
-  amount     Float?       // in ml
-  duration   Int?         // in minutes
-  notes      String?
-  createdAt  DateTime     @default(now())
-  
+  id            String       @id @default(cuid())
+  childId       String
+  userId        String
+  startTime     DateTime
+  endTime       DateTime?
+  type          FeedingType
+  amount        Float?       // in ml
+  duration      Int?         // in minutes
+  notes         String?
+  entryTimezone String       @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime     @default(now())
+
   // Relations
   child Child @relation(fields: [childId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
-  
+
   @@index([childId, startTime])
 }
 
 model SleepLog {
-  id        String     @id @default(cuid())
-  childId   String
-  userId    String
-  startTime DateTime
-  endTime   DateTime?
-  duration  Int?       // in minutes (calculated)
-  type      SleepType
-  quality   SleepQuality?
-  notes     String?
-  createdAt DateTime   @default(now())
-  
+  id            String     @id @default(cuid())
+  childId       String
+  userId        String
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int?       // in minutes (calculated)
+  type          SleepType
+  quality       SleepQuality?
+  notes         String?
+  entryTimezone String     @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime   @default(now())
+
   // Relations
   child Child @relation(fields: [childId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
-  
+
   @@index([childId, startTime])
 }
 
 model DiaperLog {
-  id          String        @id @default(cuid())
-  childId     String
-  userId      String
-  timestamp   DateTime
-  type        DiaperType
-  consistency Consistency?
-  color       String?
-  imageUrl    String?       // Image upload for diaper
-  notes       String?
-  createdAt   DateTime      @default(now())
+  id            String        @id @default(cuid())
+  childId       String
+  userId        String
+  timestamp     DateTime
+  type          DiaperType
+  consistency   Consistency?
+  color         String?
+  imageUrl      String?       // Image upload for diaper
+  notes         String?
+  entryTimezone String        @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime      @default(now())
 
   // Relations
   child Child @relation(fields: [childId], references: [id])
@@ -126,20 +130,21 @@ model DiaperLog {
 }
 
 model HealthLog {
-  id        String      @id @default(cuid())
-  childId   String
-  userId    String
-  timestamp DateTime
-  type      HealthType
-  value     String      // temperature, medicine name, etc.
-  unit      String?     // °C, ml, etc.
-  notes     String?
-  createdAt DateTime    @default(now())
-  
+  id            String      @id @default(cuid())
+  childId       String
+  userId        String
+  timestamp     DateTime
+  type          HealthType
+  value         String      // temperature, medicine name, etc.
+  unit          String?     // °C, ml, etc.
+  notes         String?
+  entryTimezone String      @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime    @default(now())
+
   // Relations
   child Child @relation(fields: [childId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
-  
+
   @@index([childId, timestamp])
 }
 

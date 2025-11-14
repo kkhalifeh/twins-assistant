@@ -52,11 +52,18 @@ export class AIChatService {
 
   private async handleActivityLogging(message: string): Promise<string> {
     const lowerMessage = message.toLowerCase();
-    
+
     // Ensure we have a userId
     if (!this.context.userId) {
       return "❌ Authentication error. Please refresh and try again.";
     }
+
+    // Get user's timezone preference
+    const user = await prisma.user.findUnique({
+      where: { id: this.context.userId },
+      select: { timezone: true }
+    });
+    const userTimezone = user?.timezone || 'America/New_York';
 
     // Detect child name
     const children = await prisma.child.findMany({ where: { userId: this.context.userId } });
@@ -101,7 +108,8 @@ export class AIChatService {
             type: type,
             amount: amount || 120,
             duration: 20,
-            notes: `Logged via chat: ${message}`
+            notes: `Logged via chat: ${message}`,
+            entryTimezone: userTimezone
           }
         });
 
@@ -139,7 +147,8 @@ export class AIChatService {
               userId: this.context.userId,
               startTime: new Date(),
               type: lowerMessage.includes('nap') ? 'NAP' : 'NIGHT',
-              notes: `Logged via chat: ${message}`
+              notes: `Logged via chat: ${message}`,
+              entryTimezone: userTimezone
             }
           });
           return `✅ Started ${lowerMessage.includes('nap') ? 'nap' : 'sleep'} tracking for ${childName}. I'll track the duration.`;
@@ -157,7 +166,8 @@ export class AIChatService {
             userId: this.context.userId,
             timestamp: new Date(),
             type: type,
-            notes: `Logged via chat: ${message}`
+            notes: `Logged via chat: ${message}`,
+            entryTimezone: userTimezone
           }
         });
 
@@ -177,7 +187,8 @@ export class AIChatService {
               type: 'TEMPERATURE',
               value: temp.toString(),
               unit: '°C',
-              notes: `Logged via chat: ${message}`
+              notes: `Logged via chat: ${message}`,
+              entryTimezone: userTimezone
             }
           });
           
@@ -204,7 +215,8 @@ export class AIChatService {
             type: 'MEDICINE',
             value: medicineName,
             unit: 'dose',
-            notes: `Logged via chat: ${message}`
+            notes: `Logged via chat: ${message}`,
+            entryTimezone: userTimezone
           }
         });
 

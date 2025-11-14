@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { diaperAPI } from '@/lib/api'
 import { X, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
+import { useTimezone } from '@/contexts/TimezoneContext'
 
 interface DiaperModalProps {
   childId: string
@@ -20,6 +21,7 @@ const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
 
 export default function DiaperModal({ childId: initialChildId, children, onClose, editingLog }: DiaperModalProps) {
   const queryClient = useQueryClient()
+  const { getUserTimezone } = useTimezone()
   const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
   const [type, setType] = useState(editingLog?.type || 'WET')
   const [consistency, setConsistency] = useState(editingLog?.consistency || '')
@@ -121,6 +123,7 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
           consistency: consistency || undefined,
           notes: notes || undefined,
           imageUrl: !removeExistingImage && editingLog?.imageUrl ? editingLog.imageUrl : undefined,
+          timezone: getUserTimezone(),
         }
         updateMutation.mutate({ id: editingLog.id, data })
       } else {
@@ -132,6 +135,7 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
         if (consistency) formData.append('consistency', consistency)
         if (notes) formData.append('notes', notes)
         if (image) formData.append('image', image)
+        formData.append('timezone', getUserTimezone())
 
         // Upload using FormData
         const response = await api.post('/diapers', formData, {

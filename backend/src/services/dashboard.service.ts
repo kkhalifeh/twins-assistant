@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { 
-  subDays, 
-  startOfDay, 
-  endOfDay, 
-  differenceInHours, 
+import {
+  subDays,
+  startOfDay,
+  endOfDay,
+  differenceInHours,
   differenceInMinutes,
   format,
   startOfWeek,
@@ -13,20 +13,24 @@ import {
   isToday,
   isYesterday
 } from 'date-fns';
+import { TimezoneService } from '../utils/timezone';
 
 const prisma = new PrismaClient();
 
 export class DashboardService {
-  async getDashboardData(dateStr: string, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, timezoneOffset: number = 0) {
-    // Get user's accountId
+  async getDashboardData(dateStr: string, viewMode: 'day' | 'week' | 'month' = 'day', userId: string, viewTimezone?: string) {
+    // Get user's accountId and timezone
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { accountId: true }
+      select: { accountId: true, timezone: true }
     });
 
     if (!user?.accountId) {
       throw new Error('User not part of an account');
     }
+
+    // Use provided timezone or fall back to user's timezone preference
+    const timezone = viewTimezone || user.timezone || 'America/New_York';
 
     // Get all children IDs for users in the same account
     const children = await prisma.child.findMany({
@@ -39,50 +43,12 @@ export class DashboardService {
 
     const childIds = children.map(c => c.id);
 
-    // Parse date string (YYYY-MM-DD format)
-    const [year, month, day] = dateStr.split('-').map(Number);
-
-    // Get date range based on view mode, accounting for user's timezone
-    // timezoneOffset is in minutes (e.g., -300 for EST which is UTC-5)
-    // Formula: User's local time - timezoneOffset = UTC time
-    // For EST (offset = -300): Local midnight - (-300 min) = UTC 05:00
-    let startDate: Date;
-    let endDate: Date;
-
-    // For accurate timezone handling, we need to:
-    // 1. Query a wider range (±1 day to catch logs that might fall into target date in user's timezone)
-    // 2. Filter logs based on what date they fall on in user's local timezone
-
-    switch (viewMode) {
-      case 'day':
-        // Query from previous day to next day to catch all possible logs
-        const dayStartMs = Date.UTC(year, month - 1, day - 1, 0, 0, 0, 0);
-        const dayEndMs = Date.UTC(year, month - 1, day + 1, 23, 59, 59, 999);
-        startDate = new Date(dayStartMs);
-        endDate = new Date(dayEndMs);
-        break;
-      case 'week':
-        // Create a reference date for week calculation
-        const refDate = new Date(Date.UTC(year, month - 1, day));
-        const weekStart = startOfWeek(refDate, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(refDate, { weekStartsOn: 0 });
-        // Query with ±1 day buffer
-        const weekStartMs = Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate() - 1, 0, 0, 0, 0);
-        const weekEndMs = Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate() + 1, 23, 59, 59, 999);
-        startDate = new Date(weekStartMs);
-        endDate = new Date(weekEndMs);
-        break;
-      case 'month':
-        const refDate2 = new Date(Date.UTC(year, month - 1, day));
-        const monthStart = startOfMonth(refDate2);
-        const monthEnd = endOfMonth(refDate2);
-        // Query with ±1 day buffer
-        const monthStartMs = Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), monthStart.getUTCDate() - 1, 0, 0, 0, 0);
-        const monthEndMs = Date.UTC(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate() + 1, 23, 59, 59, 999);
-        startDate = new Date(monthStartMs);
-        endDate = new Date(monthEndMs);
-        break;
-    }
+    // Use TimezoneService to get proper date range in user's timezone
+    const { startDate, endDate } = TimezoneService.getDateRangeInTimezone(
+      dateStr,
+      timezone,
+      viewMode
+    );
 
     const [allFeedingLogs, allSleepLogs, allDiaperLogs] = await Promise.all([
       prisma.feedingLog.findMany({
@@ -135,38 +101,36 @@ export class DashboardService {
       })
     ]);
 
-    // Helper function to check if a UTC timestamp falls on the target date in user's local timezone
-    const isInTargetDateRange = (utcTimestamp: Date): boolean => {
-      // Convert UTC timestamp to user's local time
-      const localTimeMs = utcTimestamp.getTime() - (timezoneOffset * 60 * 1000);
-      const localDate = new Date(localTimeMs);
+    // Filter logs based on timezone conversion using TimezoneService
+    const feedingLogs = allFeedingLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.startTime,
+        log.entryTimezone || timezone,
+        dateStr,
+        timezone,
+        viewMode
+      )
+    );
 
-      // Extract date components in user's timezone
-      const localYear = localDate.getUTCFullYear();
-      const localMonth = localDate.getUTCMonth() + 1;
-      const localDay = localDate.getUTCDate();
+    const sleepLogs = allSleepLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.startTime,
+        log.entryTimezone || timezone,
+        dateStr,
+        timezone,
+        viewMode
+      )
+    );
 
-      switch (viewMode) {
-        case 'day':
-          return localYear === year && localMonth === month && localDay === day;
-        case 'week': {
-          const refDate = new Date(Date.UTC(year, month - 1, day));
-          const weekStart = startOfWeek(refDate, { weekStartsOn: 0 });
-          const weekEnd = endOfWeek(refDate, { weekStartsOn: 0 });
-          const localDateOnly = new Date(Date.UTC(localYear, localMonth - 1, localDay));
-          return localDateOnly >= weekStart && localDateOnly <= weekEnd;
-        }
-        case 'month':
-          return localYear === year && localMonth === month;
-        default:
-          return false;
-      }
-    };
-
-    // Filter logs to only include those that fall within the target date range in user's timezone
-    const feedingLogs = allFeedingLogs.filter(log => isInTargetDateRange(log.startTime));
-    const sleepLogs = allSleepLogs.filter(log => isInTargetDateRange(log.startTime));
-    const diaperLogs = allDiaperLogs.filter(log => isInTargetDateRange(log.timestamp));
+    const diaperLogs = allDiaperLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || timezone,
+        dateStr,
+        timezone,
+        viewMode
+      )
+    );
 
     // Get active sleep sessions
     const activeSleepSessions = await prisma.sleepLog.findMany({
@@ -190,6 +154,7 @@ export class DashboardService {
     };
 
     // Generate real-time insights
+    const [year, month, day] = dateStr.split('-').map(Number);
     const dateForInsights = new Date(Date.UTC(year, month - 1, day));
     const insights = await this.generateRealTimeInsights(
       children,
@@ -204,6 +169,7 @@ export class DashboardService {
     return {
       date: dateStr,
       viewMode,
+      timezone,
       dateRange: {
         start: startDate.toISOString(),
         end: endDate.toISOString()
@@ -212,7 +178,7 @@ export class DashboardService {
       stats,
       insights,
       activeSleepSessions,
-      recentActivities: this.getRecentActivities(feedingLogs, sleepLogs, diaperLogs).slice(0, 10)
+      recentActivities: this.getRecentActivities(feedingLogs, sleepLogs, diaperLogs, timezone).slice(0, 10)
     };
   }
 
@@ -448,13 +414,19 @@ export class DashboardService {
     return insights.slice(0, 5); // Return top 5 insights
   }
 
-  private getRecentActivities(feedingLogs: any[], sleepLogs: any[], diaperLogs: any[]) {
+  private getRecentActivities(feedingLogs: any[], sleepLogs: any[], diaperLogs: any[], displayTimezone: string) {
     const activities = [
       ...feedingLogs.map(log => ({
         type: 'feeding',
         childName: log.child.name,
         description: `${log.amount}ml ${log.type.toLowerCase()}`,
         timestamp: log.startTime,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.startTime,
+          log.entryTimezone || displayTimezone,
+          displayTimezone
+        ),
         userName: log.user?.name,
         icon: 'bottle',
         color: 'blue'
@@ -466,6 +438,12 @@ export class DashboardService {
           `${log.type} - ${log.duration}min` :
           `Started ${log.type.toLowerCase()}`,
         timestamp: log.startTime,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.startTime,
+          log.entryTimezone || displayTimezone,
+          displayTimezone
+        ),
         userName: log.user?.name,
         icon: log.type === 'NAP' ? 'sun' : 'moon',
         color: 'purple'
@@ -475,6 +453,12 @@ export class DashboardService {
         childName: log.child.name,
         description: log.type.toLowerCase(),
         timestamp: log.timestamp,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.timestamp,
+          log.entryTimezone || displayTimezone,
+          displayTimezone
+        ),
         userName: log.user?.name,
         icon: 'baby',
         color: 'green'
@@ -483,7 +467,7 @@ export class DashboardService {
 
     // Sort by timestamp
     activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    
+
     return activities;
   }
 }

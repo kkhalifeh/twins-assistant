@@ -1,7 +1,8 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../utils/auth';
 import { prisma } from '../index';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, format } from 'date-fns';
+import { TimezoneService } from '../utils/timezone';
 
 const router = Router();
 
@@ -10,47 +11,37 @@ router.use(authMiddleware);
 // Get daily journal data
 router.get('/daily', async (req: AuthRequest, res: Response) => {
   try {
-    const { date, childId, timezoneOffset } = req.query;
+    const { date, childId, timezone } = req.query;
     const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Parse date string (YYYY-MM-DD format) accounting for user's timezone
-    // timezoneOffset is in minutes (e.g., -300 for EST which is UTC-5)
-    // Negative offset means timezone is behind UTC (e.g., EST = UTC-5 = -300)
-    const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string) : 0;
-    let startDate: Date;
-    let endDate: Date;
-
-    let year: number, month: number, day: number;
-
-    if (date) {
-      // Parse date as YYYY-MM-DD
-      [year, month, day] = (date as string).split('-').map(Number);
-    } else {
-      // For "today", use current date in user's timezone
-      const now = new Date();
-      year = now.getUTCFullYear();
-      month = now.getUTCMonth() + 1;
-      day = now.getUTCDate();
-    }
-
-    // Query from previous day to next day to catch all possible logs
-    // Then filter based on what date they fall on in user's local timezone
-    const startMs = Date.UTC(year, month - 1, day - 1, 0, 0, 0, 0);
-    const endMs = Date.UTC(year, month - 1, day + 1, 23, 59, 59, 999);
-    startDate = new Date(startMs);
-    endDate = new Date(endMs);
-
-    const targetDate = startDate;
-
-    // Get user's accountId
+    // Get user's accountId and timezone preference
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { accountId: true }
+      select: { accountId: true, timezone: true }
     });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Use provided timezone or fall back to user's timezone preference
+    const viewTimezone = (timezone as string) || user.timezone || 'America/New_York';
+
+    // Get date string (default to today in user's timezone)
+    const dateStr = (date && typeof date === 'string') ? date : format(new Date(), 'yyyy-MM-dd');
+
+    // Use TimezoneService to get proper date range
+    const { startDate, endDate } = TimezoneService.getDateRangeInTimezone(
+      dateStr,
+      viewTimezone,
+      'day'
+    );
+
+    const [year, month, day] = dateStr.split('-').map(Number);
 
     if (!user?.accountId) {
       return res.status(400).json({ error: 'User not part of an account' });
@@ -70,7 +61,8 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
 
     if (childIds.length === 0) {
       return res.json({
-        date: targetDate.toISOString(),
+        date: dateStr,
+        timezone: viewTimezone,
         activities: [],
         stats: {
           totalFeedings: 0,
@@ -155,25 +147,46 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       })
     ]);
 
-    // Helper function to check if a UTC timestamp falls on the target date in user's local timezone
-    const isInTargetDate = (utcTimestamp: Date): boolean => {
-      // Convert UTC timestamp to user's local time
-      const localTimeMs = utcTimestamp.getTime() - (tzOffset * 60 * 1000);
-      const localDate = new Date(localTimeMs);
+    // Filter logs using TimezoneService
+    const feedingLogs = allFeedingLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.startTime,
+        log.entryTimezone || viewTimezone,
+        dateStr,
+        viewTimezone,
+        'day'
+      )
+    );
 
-      // Extract date components in user's timezone
-      const localYear = localDate.getUTCFullYear();
-      const localMonth = localDate.getUTCMonth() + 1;
-      const localDay = localDate.getUTCDate();
+    const sleepLogs = allSleepLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.startTime,
+        log.entryTimezone || viewTimezone,
+        dateStr,
+        viewTimezone,
+        'day'
+      )
+    );
 
-      return localYear === year && localMonth === month && localDay === day;
-    };
+    const diaperLogs = allDiaperLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || viewTimezone,
+        dateStr,
+        viewTimezone,
+        'day'
+      )
+    );
 
-    // Filter logs to only include those that fall on the target date in user's timezone
-    const feedingLogs = allFeedingLogs.filter(log => isInTargetDate(log.startTime));
-    const sleepLogs = allSleepLogs.filter(log => isInTargetDate(log.startTime));
-    const diaperLogs = allDiaperLogs.filter(log => isInTargetDate(log.timestamp));
-    const healthLogs = allHealthLogs.filter(log => isInTargetDate(log.timestamp));
+    const healthLogs = allHealthLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || viewTimezone,
+        dateStr,
+        viewTimezone,
+        'day'
+      )
+    );
 
     // Convert to activity format
     const activities = [
@@ -182,6 +195,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         childName: log.child.name,
         description: `${log.amount || 0}ml ${log.type?.toLowerCase() || 'feeding'}`,
         timestamp: log.startTime,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.startTime,
+          log.entryTimezone || viewTimezone,
+          viewTimezone
+        ),
         userName: log.user?.name,
         notes: log.notes,
         duration: log.duration ? `${log.duration}min` : null
@@ -193,6 +212,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
           `${log.type?.toLowerCase() || 'sleep'} - ${log.duration || 0}min` :
           `Started ${log.type?.toLowerCase() || 'sleep'}`,
         timestamp: log.startTime,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.startTime,
+          log.entryTimezone || viewTimezone,
+          viewTimezone
+        ),
         userName: log.user?.name,
         notes: log.notes,
         duration: log.duration ? `${log.duration}min` : null
@@ -202,6 +227,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         childName: log.child.name,
         description: log.type?.toLowerCase() || 'diaper change',
         timestamp: log.timestamp,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.timestamp,
+          log.entryTimezone || viewTimezone,
+          viewTimezone
+        ),
         userName: log.user?.name,
         notes: log.notes,
         duration: null
@@ -211,6 +242,12 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         childName: log.child.name,
         description: `${log.type?.toLowerCase() || 'health check'}: ${log.value}${log.unit ? log.unit : ''}`,
         timestamp: log.timestamp,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.timestamp,
+          log.entryTimezone || viewTimezone,
+          viewTimezone
+        ),
         userName: log.user?.name,
         notes: log.notes,
         duration: null
@@ -229,7 +266,8 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     };
 
     res.json({
-      date: targetDate.toISOString(),
+      date: dateStr,
+      timezone: viewTimezone,
       activities,
       stats
     });

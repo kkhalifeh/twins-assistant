@@ -3,6 +3,7 @@ import { prisma } from '../index';
 import { AuthRequest } from '../utils/auth';
 import { parseIntSafe } from '../utils/validation';
 import { getFileUrl } from '../services/storage.service';
+import { TimezoneService } from '../utils/timezone';
 
 export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
   try {
@@ -81,7 +82,8 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
       type,
       consistency,
       color,
-      notes
+      notes,
+      timezone
     } = req.body;
 
     const userId = req.user?.id;
@@ -93,6 +95,19 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         error: 'Child ID and type are required'
       });
+    }
+
+    // Get user's timezone if not provided in request
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true }
+    });
+
+    const entryTimezone = timezone || user?.timezone || 'America/New_York';
+
+    // Validate timezone
+    if (!TimezoneService.isValidTimezone(entryTimezone)) {
+      return res.status(400).json({ error: 'Invalid timezone' });
     }
 
     // Get image URL if file was uploaded
@@ -113,7 +128,8 @@ export const createDiaperLog = async (req: AuthRequest, res: Response) => {
         consistency,
         color,
         imageUrl,
-        notes
+        notes,
+        entryTimezone
       },
       include: {
         child: true,

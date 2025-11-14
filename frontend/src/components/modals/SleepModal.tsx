@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { sleepAPI } from '@/lib/api'
 import { X } from 'lucide-react'
+import { useTimezone } from '@/contexts/TimezoneContext'
 
 interface SleepModalProps {
   childId: string
@@ -14,6 +15,7 @@ interface SleepModalProps {
 
 export default function SleepModal({ childId: initialChildId, children, onClose, editingLog }: SleepModalProps) {
   const queryClient = useQueryClient()
+  const { getUserTimezone } = useTimezone()
   const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
   const [type, setType] = useState(editingLog?.type || 'NAP')
   const [notes, setNotes] = useState(editingLog?.notes || '')
@@ -63,6 +65,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
         notes,
         startTime: startTime ? new Date(startTime).toISOString() : undefined,
         endTime: endTime ? new Date(endTime).toISOString() : undefined,
+        timezone: getUserTimezone(),
       }
       updateMutation.mutate({ id: editingLog.id, data })
     } else if (logMode === 'new') {
@@ -72,6 +75,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
         type,
         notes,
         startTime: new Date().toISOString(),
+        timezone: getUserTimezone(),
       })
     } else {
       // Log past sleep (with start and end time)
@@ -81,6 +85,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
         notes,
         startTime: new Date(startTime).toISOString(),
         endTime: endTime ? new Date(endTime).toISOString() : undefined,
+        timezone: getUserTimezone(),
       })
     }
   }

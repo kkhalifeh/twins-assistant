@@ -10,7 +10,7 @@ router.use(authMiddleware);
 // Get dashboard data
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { date, viewMode = 'day', timezoneOffset } = req.query;
+    const { date, viewMode = 'day', timezone } = req.query;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -20,9 +20,9 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     // Pass date string directly - service will handle timezone conversion
     const dateStr = (date && typeof date === 'string') ? date : format(new Date(), 'yyyy-MM-dd');
     const mode = viewMode as 'day' | 'week' | 'month';
-    const tzOffset = timezoneOffset ? parseInt(timezoneOffset as string) : 0;
+    const viewTimezone = timezone as string | undefined;
 
-    const dashboardData = await dashboardService.getDashboardData(dateStr, mode, userId, tzOffset);
+    const dashboardData = await dashboardService.getDashboardData(dateStr, mode, userId, viewTimezone);
 
     res.json(dashboardData);
   } catch (error) {

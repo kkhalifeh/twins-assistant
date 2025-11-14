@@ -112,7 +112,7 @@ export const createChild = async (req: AuthRequest, res: Response) => {
       data: {
         userId, // Associate child with authenticated user
         name,
-        dateOfBirth: new Date(dateOfBirth + 'T00:00:00.000Z'), // Force UTC midnight to avoid timezone shifts
+        dateOfBirth: new Date(dateOfBirth), // Accept the date as provided (already in ISO format)
         gender,
         medicalNotes
       }

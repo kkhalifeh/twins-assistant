@@ -12,6 +12,7 @@ import {
   MessageSquare, Calendar, Sparkles
 } from 'lucide-react'
 import { authAPI } from '@/lib/api'
+import { TimezoneProvider } from '@/contexts/TimezoneContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -104,7 +105,9 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <QueryClientProvider client={queryClient}>
-            {children}
+            <TimezoneProvider>
+              {children}
+            </TimezoneProvider>
           </QueryClientProvider>
         </body>
       </html>
@@ -115,7 +118,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <QueryClientProvider client={queryClient}>
-          <div className="flex h-screen bg-gray-50">
+          <TimezoneProvider>
+            <div className="flex h-screen bg-gray-50">
             {/* Mobile sidebar backdrop */}
             {sidebarOpen && (
               <div
@@ -203,6 +207,7 @@ export default function RootLayout({
               </main>
             </div>
           </div>
+          </TimezoneProvider>
         </QueryClientProvider>
       </body>
     </html>
