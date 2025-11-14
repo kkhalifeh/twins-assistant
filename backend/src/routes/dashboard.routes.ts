@@ -18,10 +18,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     }
 
     // Parse date string (YYYY-MM-DD format) or use current date
+    // Create date in UTC to avoid server timezone issues
     let targetDate: Date;
     if (date && typeof date === 'string') {
       const [year, month, day] = date.split('-').map(Number);
-      targetDate = new Date(year, month - 1, day);
+      targetDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     } else {
       targetDate = new Date();
     }

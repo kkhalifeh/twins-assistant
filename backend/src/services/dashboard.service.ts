@@ -49,24 +49,25 @@ export class DashboardService {
       case 'day':
         // Get day boundaries in user's local timezone
         // Convert to UTC by subtracting the timezone offset
-        const dayStartMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const dayEndMs = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        // Use UTC methods to avoid server timezone issues
+        const dayStartMs = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const dayEndMs = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(dayStartMs);
         endDate = new Date(dayEndMs);
         break;
       case 'week':
         const weekStart = startOfWeek(date, { weekStartsOn: 0 });
         const weekEnd = endOfWeek(date, { weekStartsOn: 0 });
-        const weekStartMs = Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const weekEndMs = Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        const weekStartMs = Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const weekEndMs = Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(weekStartMs);
         endDate = new Date(weekEndMs);
         break;
       case 'month':
         const monthStart = startOfMonth(date);
         const monthEnd = endOfMonth(date);
-        const monthStartMs = Date.UTC(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const monthEndMs = Date.UTC(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        const monthStartMs = Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), monthStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
+        const monthEndMs = Date.UTC(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
         startDate = new Date(monthStartMs);
         endDate = new Date(monthEndMs);
         break;
