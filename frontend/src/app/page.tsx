@@ -17,7 +17,7 @@ export default function DashboardPage() {
 
   // Fetch dashboard data
   const { data: dashboardData, isLoading, error, refetch } = useQuery({
-    queryKey: ['dashboard', currentDate.toISOString(), viewMode],
+    queryKey: ['dashboard', format(currentDate, 'yyyy-MM-dd'), viewMode],
     queryFn: async () => {
       // Send date with timezone offset to avoid timezone issues
       const dateStr = format(currentDate, 'yyyy-MM-dd')
@@ -31,7 +31,9 @@ export default function DashboardPage() {
       })
       return response.data
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 0, // Consider data stale immediately
+    gcTime: 0 // Don't cache old data
   })
 
   const getDateRange = () => {

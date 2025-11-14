@@ -22,7 +22,7 @@ export default function JournalPage() {
 
   // Fetch journal data for selected date
   const { data: journalData, isLoading } = useQuery({
-    queryKey: ['journal', selectedDate.toDateString(), selectedChild],
+    queryKey: ['journal', format(selectedDate, 'yyyy-MM-dd'), selectedChild],
     queryFn: async () => {
       // Send date in YYYY-MM-DD format and timezone offset to backend
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -35,6 +35,8 @@ export default function JournalPage() {
       const response = await api.get('/journal/daily', { params })
       return response.data
     },
+    staleTime: 0, // Consider data stale immediately
+    gcTime: 0 // Don't cache old data
   })
 
   const activities = journalData?.activities || []
