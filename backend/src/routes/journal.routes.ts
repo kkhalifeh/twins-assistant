@@ -193,7 +193,11 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       ...feedingLogs.map(log => ({
         type: 'feeding',
         childName: log.child.name,
-        description: `${log.amount || 0}ml ${log.type?.toLowerCase() || 'feeding'}`,
+        description: log.amount
+          ? `${log.amount}ml ${log.type?.toLowerCase() || 'feeding'}`
+          : log.duration
+            ? `${log.type?.toLowerCase() || 'feeding'} - ${log.duration} min`
+            : (log.type?.toLowerCase() || 'feeding'),
         timestamp: log.startTime,
         entryTimezone: log.entryTimezone,
         displayTime: TimezoneService.formatInTimezone(

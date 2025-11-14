@@ -419,7 +419,11 @@ export class DashboardService {
       ...feedingLogs.map(log => ({
         type: 'feeding',
         childName: log.child.name,
-        description: `${log.amount}ml ${log.type.toLowerCase()}`,
+        description: log.amount
+          ? `${log.amount}ml ${log.type.toLowerCase()}`
+          : log.duration
+            ? `${log.type.toLowerCase()} - ${log.duration} min`
+            : log.type.toLowerCase(),
         timestamp: log.startTime,
         entryTimezone: log.entryTimezone,
         displayTime: TimezoneService.formatInTimezone(

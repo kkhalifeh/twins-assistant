@@ -281,8 +281,9 @@ export default function FeedingPage() {
                   <div className="flex-1">
                     <p className="font-medium">{log.child?.name}</p>
                     <p className="text-sm text-gray-600">
-                      {log.amount ? `${log.amount}ml` : ''} {log.type.toLowerCase()}
-                      {log.breastDuration ? ` (${log.breastDuration} min)` : ''}
+                      {log.type.toLowerCase()}
+                      {log.amount ? ` - ${log.amount}ml` : ''}
+                      {log.duration && !log.amount ? ` - ${log.duration} min` : ''}
                     </p>
                     {log.user && (
                       <p className="text-xs text-gray-500">Logged by {log.user.name}</p>
