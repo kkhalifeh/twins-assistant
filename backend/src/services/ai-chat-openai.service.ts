@@ -63,7 +63,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   startSleep: async (args: any): Promise<string> => {
-    const { childId, type, userId } = args;
+    const { childId, type, userId, timezone = 'America/New_York' } = args;
 
     // Check if already sleeping
     const activeSleep = await prisma.sleepLog.findFirst({
@@ -76,7 +76,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     });
 
     if (activeSleep) {
-      return `${activeSleep.child.name} is already sleeping (started ${format(activeSleep.startTime, 'h:mm a')})`;
+      const timeStr = formatInTimeZone(activeSleep.startTime, timezone, 'h:mm a');
+      return `${activeSleep.child.name} is already sleeping (started ${timeStr})`;
     }
 
     const sleepLog = await prisma.sleepLog.create({
@@ -465,11 +466,15 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   
   multipleActions: async (args: any): Promise<string> => {
     const results: string[] = [];
-    
+
     for (const action of args.actions) {
       const functionName = action.function;
-      const functionArgs = { ...action.args, userId: args.userId };
-      
+      const functionArgs = {
+        ...action.args,
+        userId: args.userId,
+        timezone: args.timezone || 'America/New_York'
+      };
+
       const functionToCall = availableFunctions[functionName as keyof typeof availableFunctions];
       if (functionToCall) {
         try {
@@ -480,7 +485,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
         }
       }
     }
-    
+
     return results.join('\n\n');
   }
 };
