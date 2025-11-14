@@ -16,7 +16,7 @@ interface FeedingModalProps {
 export default function FeedingModal({ childId: initialChildId, children, onClose, editingLog }: FeedingModalProps) {
   const queryClient = useQueryClient()
   const { getUserTimezone } = useTimezone()
-  const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
+  const [childId, setChildId] = useState(editingLog?.childId || '')
   const [type, setType] = useState(editingLog?.type || 'BOTTLE')
   const [amount, setAmount] = useState(editingLog?.amount?.toString() || '')
   const [duration, setDuration] = useState(editingLog?.duration?.toString() || '')
@@ -90,6 +90,7 @@ export default function FeedingModal({ childId: initialChildId, children, onClos
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             >
+              <option value="">Select Child</option>
               {children.map((child) => (
                 <option key={child.id} value={child.id}>
                   {child.name}

@@ -16,7 +16,7 @@ interface SleepModalProps {
 export default function SleepModal({ childId: initialChildId, children, onClose, editingLog }: SleepModalProps) {
   const queryClient = useQueryClient()
   const { getUserTimezone } = useTimezone()
-  const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
+  const [childId, setChildId] = useState(editingLog?.childId || '')
   const [type, setType] = useState(editingLog?.type || 'NAP')
   const [headTilt, setHeadTilt] = useState(editingLog?.headTilt || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
@@ -142,6 +142,7 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             >
+              <option value="">Select Child</option>
               {children.map((child) => (
                 <option key={child.id} value={child.id}>
                   {child.name}

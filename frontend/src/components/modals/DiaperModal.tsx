@@ -22,7 +22,7 @@ const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
 export default function DiaperModal({ childId: initialChildId, children, onClose, editingLog }: DiaperModalProps) {
   const queryClient = useQueryClient()
   const { getUserTimezone } = useTimezone()
-  const [childId, setChildId] = useState(editingLog?.childId || initialChildId)
+  const [childId, setChildId] = useState(editingLog?.childId || '')
   const [type, setType] = useState(editingLog?.type || 'WET')
   const [consistency, setConsistency] = useState(editingLog?.consistency || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
@@ -191,6 +191,7 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               required
             >
+              <option value="">Select Child</option>
               {children.map((child) => (
                 <option key={child.id} value={child.id}>
                   {child.name}
