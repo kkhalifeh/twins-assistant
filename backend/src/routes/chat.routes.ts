@@ -39,7 +39,7 @@ router.post('/message', async (req: Request, res: Response) => {
     // Fetch account context upfront
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true }
+      select: { id: true, name: true, email: true, timezone: true }
     });
 
     if (!user) {

@@ -17,6 +17,7 @@ interface AIChatContext {
     id: string;
     name: string | null;
     email: string;
+    timezone: string;
   };
   children: Array<{
     id: string;
@@ -485,9 +486,16 @@ You are assisting ${context.user.name || 'the user'}.
 ACCOUNT CONTEXT:
 User ID: ${context.user.id}
 User Name: ${context.user.name || 'User'}
+User Timezone: ${context.user.timezone || 'America/New_York'}
 
 Children:
 ${childrenInfo || '  (No children registered yet)'}
+
+TIMEZONE FORMATTING:
+- The user's timezone is ${context.user.timezone || 'America/New_York'}
+- When displaying times in your responses, ALWAYS format them according to the user's timezone
+- When the user mentions a time (like "2pm" or "14:00"), interpret it as being in their timezone: ${context.user.timezone || 'America/New_York'}
+- Format times in a natural, user-friendly way (e.g., "2:30 PM" instead of "14:30:00")
 
 CRITICAL INSTRUCTIONS FOR NAME MATCHING:
 When the user mentions a child by name (even with misspellings, typos, or nicknames), use your language understanding to match it to the correct child ID above.
