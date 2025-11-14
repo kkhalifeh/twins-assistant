@@ -49,12 +49,15 @@ export class DashboardService {
     let startDate: Date;
     let endDate: Date;
 
+    // For accurate timezone handling, we need to:
+    // 1. Query a wider range (±1 day to catch logs that might fall into target date in user's timezone)
+    // 2. Filter logs based on what date they fall on in user's local timezone
+
     switch (viewMode) {
       case 'day':
-        // Calculate UTC timestamps for day boundaries in user's timezone
-        // Example: Nov 13 00:00 EST = Nov 13 00:00 + 5 hours = Nov 13 05:00 UTC
-        const dayStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const dayEndMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        // Query from previous day to next day to catch all possible logs
+        const dayStartMs = Date.UTC(year, month - 1, day - 1, 0, 0, 0, 0);
+        const dayEndMs = Date.UTC(year, month - 1, day + 1, 23, 59, 59, 999);
         startDate = new Date(dayStartMs);
         endDate = new Date(dayEndMs);
         break;
@@ -63,8 +66,9 @@ export class DashboardService {
         const refDate = new Date(Date.UTC(year, month - 1, day));
         const weekStart = startOfWeek(refDate, { weekStartsOn: 0 });
         const weekEnd = endOfWeek(refDate, { weekStartsOn: 0 });
-        const weekStartMs = Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const weekEndMs = Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        // Query with ±1 day buffer
+        const weekStartMs = Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate() - 1, 0, 0, 0, 0);
+        const weekEndMs = Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate() + 1, 23, 59, 59, 999);
         startDate = new Date(weekStartMs);
         endDate = new Date(weekEndMs);
         break;
@@ -72,14 +76,15 @@ export class DashboardService {
         const refDate2 = new Date(Date.UTC(year, month - 1, day));
         const monthStart = startOfMonth(refDate2);
         const monthEnd = endOfMonth(refDate2);
-        const monthStartMs = Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), monthStart.getUTCDate(), 0, 0, 0, 0) - (timezoneOffset * 60 * 1000);
-        const monthEndMs = Date.UTC(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate(), 23, 59, 59, 999) - (timezoneOffset * 60 * 1000);
+        // Query with ±1 day buffer
+        const monthStartMs = Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), monthStart.getUTCDate() - 1, 0, 0, 0, 0);
+        const monthEndMs = Date.UTC(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate() + 1, 23, 59, 59, 999);
         startDate = new Date(monthStartMs);
         endDate = new Date(monthEndMs);
         break;
     }
 
-    const [feedingLogs, sleepLogs, diaperLogs] = await Promise.all([
+    const [allFeedingLogs, allSleepLogs, allDiaperLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
           childId: { in: childIds },
@@ -129,6 +134,39 @@ export class DashboardService {
         orderBy: { timestamp: 'desc' }
       })
     ]);
+
+    // Helper function to check if a UTC timestamp falls on the target date in user's local timezone
+    const isInTargetDateRange = (utcTimestamp: Date): boolean => {
+      // Convert UTC timestamp to user's local time
+      const localTimeMs = utcTimestamp.getTime() - (timezoneOffset * 60 * 1000);
+      const localDate = new Date(localTimeMs);
+
+      // Extract date components in user's timezone
+      const localYear = localDate.getUTCFullYear();
+      const localMonth = localDate.getUTCMonth() + 1;
+      const localDay = localDate.getUTCDate();
+
+      switch (viewMode) {
+        case 'day':
+          return localYear === year && localMonth === month && localDay === day;
+        case 'week': {
+          const refDate = new Date(Date.UTC(year, month - 1, day));
+          const weekStart = startOfWeek(refDate, { weekStartsOn: 0 });
+          const weekEnd = endOfWeek(refDate, { weekStartsOn: 0 });
+          const localDateOnly = new Date(Date.UTC(localYear, localMonth - 1, localDay));
+          return localDateOnly >= weekStart && localDateOnly <= weekEnd;
+        }
+        case 'month':
+          return localYear === year && localMonth === month;
+        default:
+          return false;
+      }
+    };
+
+    // Filter logs to only include those that fall within the target date range in user's timezone
+    const feedingLogs = allFeedingLogs.filter(log => isInTargetDateRange(log.startTime));
+    const sleepLogs = allSleepLogs.filter(log => isInTargetDateRange(log.startTime));
+    const diaperLogs = allDiaperLogs.filter(log => isInTargetDateRange(log.timestamp));
 
     // Get active sleep sessions
     const activeSleepSessions = await prisma.sleepLog.findMany({

@@ -24,27 +24,25 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     let startDate: Date;
     let endDate: Date;
 
+    let year: number, month: number, day: number;
+
     if (date) {
-      // Parse date as YYYY-MM-DD in user's timezone
-      // Convert to UTC by subtracting the timezone offset
-      const [year, month, day] = (date as string).split('-').map(Number);
-      // User's midnight in UTC = midnight local - offset in minutes
-      // For EST (-300): Nov 13 00:00 EST = Nov 13 00:00 - (-300 min) = Nov 13 05:00 UTC
-      const startMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0) - (tzOffset * 60 * 1000);
-      const endMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999) - (tzOffset * 60 * 1000);
-      startDate = new Date(startMs);
-      endDate = new Date(endMs);
+      // Parse date as YYYY-MM-DD
+      [year, month, day] = (date as string).split('-').map(Number);
     } else {
       // For "today", use current date in user's timezone
       const now = new Date();
-      const localYear = now.getUTCFullYear();
-      const localMonth = now.getUTCMonth();
-      const localDay = now.getUTCDate();
-      const startMs = Date.UTC(localYear, localMonth, localDay, 0, 0, 0, 0) - (tzOffset * 60 * 1000);
-      const endMs = Date.UTC(localYear, localMonth, localDay, 23, 59, 59, 999) - (tzOffset * 60 * 1000);
-      startDate = new Date(startMs);
-      endDate = new Date(endMs);
+      year = now.getUTCFullYear();
+      month = now.getUTCMonth() + 1;
+      day = now.getUTCDate();
     }
+
+    // Query from previous day to next day to catch all possible logs
+    // Then filter based on what date they fall on in user's local timezone
+    const startMs = Date.UTC(year, month - 1, day - 1, 0, 0, 0, 0);
+    const endMs = Date.UTC(year, month - 1, day + 1, 23, 59, 59, 999);
+    startDate = new Date(startMs);
+    endDate = new Date(endMs);
 
     const targetDate = startDate;
 
@@ -89,8 +87,8 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       whereClause.childId = childId as string;
     }
 
-    // Fetch all activities for the day
-    const [feedingLogs, sleepLogs, diaperLogs, healthLogs] = await Promise.all([
+    // Fetch all activities for the day (with ±1 day buffer)
+    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allHealthLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
           ...whereClause,
@@ -156,6 +154,26 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         orderBy: { timestamp: 'desc' }
       })
     ]);
+
+    // Helper function to check if a UTC timestamp falls on the target date in user's local timezone
+    const isInTargetDate = (utcTimestamp: Date): boolean => {
+      // Convert UTC timestamp to user's local time
+      const localTimeMs = utcTimestamp.getTime() - (tzOffset * 60 * 1000);
+      const localDate = new Date(localTimeMs);
+
+      // Extract date components in user's timezone
+      const localYear = localDate.getUTCFullYear();
+      const localMonth = localDate.getUTCMonth() + 1;
+      const localDay = localDate.getUTCDate();
+
+      return localYear === year && localMonth === month && localDay === day;
+    };
+
+    // Filter logs to only include those that fall on the target date in user's timezone
+    const feedingLogs = allFeedingLogs.filter(log => isInTargetDate(log.startTime));
+    const sleepLogs = allSleepLogs.filter(log => isInTargetDate(log.startTime));
+    const diaperLogs = allDiaperLogs.filter(log => isInTargetDate(log.timestamp));
+    const healthLogs = allHealthLogs.filter(log => isInTargetDate(log.timestamp));
 
     // Convert to activity format
     const activities = [
