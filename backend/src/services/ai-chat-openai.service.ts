@@ -173,6 +173,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   
   getLastFeeding: async (args: any): Promise<string> => {
     const { childId, userId, timezone = 'America/New_York' } = args;
+    console.log('[getLastFeeding] Args:', { childId, userId, timezone });
 
     if (childId) {
       const lastFeeding = await prisma.feedingLog.findFirst({
@@ -192,6 +193,12 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       const hoursAgo = differenceInHours(new Date(), lastFeeding.startTime);
       const minutesAgo = differenceInMinutes(new Date(), lastFeeding.startTime) % 60;
       const timeStr = formatInTimeZone(lastFeeding.startTime, timezone, 'h:mm a');
+
+      console.log('[getLastFeeding] Result:', {
+        utcTime: lastFeeding.startTime.toISOString(),
+        timezone,
+        convertedTime: timeStr
+      });
 
       return `${lastFeeding.child.name} was last fed ${hoursAgo}h ${minutesAgo}m ago (${lastFeeding.amount}ml ${lastFeeding.type.toLowerCase()}) at ${timeStr}`;
     } else {
@@ -744,7 +751,11 @@ Be warm, helpful, and conversational. Maintain conversation context and ask clar
         functionArgs.userId = userId;
         functionArgs.timezone = context.user.timezone || 'America/New_York';
 
-        console.log(`Calling function: ${functionName}`, functionArgs);
+        console.log(`[AI] Calling function: ${functionName}`, {
+          ...functionArgs,
+          contextTimezone: context.user.timezone,
+          finalTimezone: functionArgs.timezone
+        });
         
         // Execute the function
         const functionToCall = availableFunctions[functionName as keyof typeof availableFunctions];
