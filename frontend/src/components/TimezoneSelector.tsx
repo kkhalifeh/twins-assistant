@@ -16,6 +16,7 @@ const COMMON_TIMEZONES = [
   { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)', region: 'Europe' },
   { value: 'Europe/Istanbul', label: 'Istanbul (TRT)', region: 'Europe' },
   { value: 'Asia/Dubai', label: 'Dubai (GST)', region: 'Middle East' },
+  { value: 'Asia/Amman', label: 'Jordan (GMT+3)', region: 'Middle East' },
   { value: 'Asia/Kolkata', label: 'India (IST)', region: 'Asia' },
   { value: 'Asia/Shanghai', label: 'China (CST)', region: 'Asia' },
   { value: 'Asia/Tokyo', label: 'Tokyo (JST)', region: 'Asia' },
