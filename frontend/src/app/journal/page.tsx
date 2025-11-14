@@ -24,8 +24,10 @@ export default function JournalPage() {
   const { data: journalData, isLoading } = useQuery({
     queryKey: ['journal', selectedDate.toDateString(), selectedChild],
     queryFn: async () => {
+      // Send date in YYYY-MM-DD format to avoid timezone issues
+      const dateStr = format(selectedDate, 'yyyy-MM-dd')
       const params = {
-        date: selectedDate.toISOString(),
+        date: dateStr,
         childId: selectedChild === 'all' ? undefined : selectedChild
       }
       const response = await api.get('/journal/daily', { params })

@@ -17,7 +17,16 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const targetDate = date ? new Date(date as string) : new Date();
+    // Parse date string (YYYY-MM-DD format) to avoid timezone issues
+    let targetDate: Date;
+    if (date) {
+      // Create date in UTC to avoid timezone conversion issues
+      const [year, month, day] = (date as string).split('-').map(Number);
+      targetDate = new Date(Date.UTC(year, month - 1, day));
+    } else {
+      targetDate = new Date();
+    }
+
     const startDate = startOfDay(targetDate);
     const endDate = endOfDay(targetDate);
 
