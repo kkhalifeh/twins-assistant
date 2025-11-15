@@ -135,6 +135,7 @@ export const deleteDataByType = async (req: AuthRequest, res: Response) => {
         });
         break;
 
+      case 'diaper':
       case 'diapers':
         await prisma.diaperLog.deleteMany({
           where: { childId: { in: childIds } }
@@ -147,6 +148,7 @@ export const deleteDataByType = async (req: AuthRequest, res: Response) => {
         });
         break;
 
+      case 'milestone':
       case 'milestones':
         await prisma.milestone.deleteMany({
           where: { childId: { in: childIds } }
