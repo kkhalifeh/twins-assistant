@@ -94,19 +94,21 @@ export default function JournalPage() {
   const isToday = selectedDate.toDateString() === new Date().toDateString()
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+      {/* Header - Mobile optimized */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Daily Journal</h1>
-          <p className="text-gray-600 mt-1">Chronological view of all activities</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Daily Journal</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Chronological view of all activities</p>
         </div>
       </div>
 
-      {/* Date Navigation */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      {/* Date Navigation - Mobile optimized */}
+      <div className="bg-white rounded-lg shadow-sm border mb-4 sm:mb-6">
+        {/* Mobile Layout */}
+        <div className="sm:hidden p-3 space-y-3">
+          {/* Date Navigation Row */}
+          <div className="flex items-center justify-between">
             <button
               onClick={handlePreviousDay}
               className="p-2 hover:bg-gray-100 rounded-md"
@@ -114,13 +116,13 @@ export default function JournalPage() {
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-2">
-              <Calendar className="w-5 h-5 text-gray-500" />
-              <span className="text-lg font-medium">
-                {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+            <div className="flex items-center space-x-2 flex-1 justify-center px-2">
+              <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <span className="text-sm font-medium text-center">
+                {format(selectedDate, 'MMM d, yyyy')}
               </span>
               {isToday && (
-                <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
+                <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full">
                   Today
                 </span>
               )}
@@ -132,73 +134,131 @@ export default function JournalPage() {
             >
               <ChevronRight className="w-5 h-5" />
             </button>
+          </div>
 
+          {/* Today Button & Filter Row */}
+          <div className="flex items-center gap-2">
             <button
               onClick={handleToday}
-              className="px-3 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded-md"
+              className="flex-1 px-3 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-md font-medium"
             >
               Today
             </button>
+            <div className="flex-1 flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <select
+                value={selectedChild}
+                onChange={(e) => setSelectedChild(e.target.value)}
+                className="flex-1 px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Children</option>
+                {children.map((child: any) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+        </div>
 
-          {/* Child Filter */}
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <select
-              value={selectedChild}
-              onChange={(e) => setSelectedChild(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="all">All Children</option>
-              {children.map((child: any) => (
-                <option key={child.id} value={child.id}>
-                  {child.name}
-                </option>
-              ))}
-            </select>
+        {/* Desktop Layout */}
+        <div className="hidden sm:block p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handlePreviousDay}
+                className="p-2 hover:bg-gray-100 rounded-md"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-5 h-5 text-gray-500" />
+                <span className="text-lg font-medium whitespace-nowrap">
+                  {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                </span>
+                {isToday && (
+                  <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
+                    Today
+                  </span>
+                )}
+              </div>
+
+              <button
+                onClick={handleNextDay}
+                className="p-2 hover:bg-gray-100 rounded-md"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={handleToday}
+                className="px-3 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded-md"
+              >
+                Today
+              </button>
+            </div>
+
+            {/* Child Filter */}
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <select
+                value={selectedChild}
+                onChange={(e) => setSelectedChild(e.target.value)}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Children</option>
+                {children.map((child: any) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Daily Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+      {/* Daily Stats - Mobile optimized */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Feedings</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.totalFeedings}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Feedings</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.totalFeedings}</p>
             </div>
-            <Activity className="w-8 h-8 text-blue-500" />
+            <Activity className="w-6 sm:w-8 h-6 sm:h-8 text-blue-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Sleep</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.totalSleepHours}h</p>
+              <p className="text-xs sm:text-sm text-gray-600">Sleep</p>
+              <p className="text-xl sm:text-2xl font-bold text-purple-600">{stats.totalSleepHours}h</p>
             </div>
-            <Moon className="w-8 h-8 text-purple-500" />
+            <Moon className="w-6 sm:w-8 h-6 sm:h-8 text-purple-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Diapers</p>
-              <p className="text-2xl font-bold text-green-600">{stats.totalDiaperChanges}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Diapers</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.totalDiaperChanges}</p>
             </div>
-            <Baby className="w-8 h-8 text-green-500" />
+            <Baby className="w-6 sm:w-8 h-6 sm:h-8 text-green-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Health</p>
-              <p className="text-2xl font-bold text-red-600">{stats.healthChecks}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Health</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-600">{stats.healthChecks}</p>
             </div>
-            <Heart className="w-8 h-8 text-red-500" />
+            <Heart className="w-6 sm:w-8 h-6 sm:h-8 text-red-500" />
           </div>
         </div>
       </div>
