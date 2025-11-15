@@ -115,9 +115,14 @@ export default function FeedingPage() {
   }, [feedingLogs, dateRange])
 
   const getDailyIntakeData = () => {
-    if (!children || children.length === 0) return []
+    if (!children || children.length === 0) {
+      console.log('getDailyIntakeData: No children')
+      return []
+    }
 
     const groupedByDay: Record<string, any> = {}
+
+    console.log('getDailyIntakeData: filteredLogs=', filteredLogs.length, 'children=', children.length)
 
     filteredLogs.forEach((log: any) => {
       const day = format(new Date(log.startTime), 'MM/dd')
@@ -138,9 +143,11 @@ export default function FeedingPage() {
       groupedByDay[day].Total += amount
     })
 
-    return Object.values(groupedByDay).sort((a, b) =>
+    const result = Object.values(groupedByDay).sort((a, b) =>
       a.day.localeCompare(b.day)
     )
+    console.log('getDailyIntakeData result:', result)
+    return result
   }
 
   const handleDateRangeChange = (start: Date, end: Date) => {
