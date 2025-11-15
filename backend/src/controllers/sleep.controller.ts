@@ -295,6 +295,9 @@ export const endSleepSession = async (req: AuthRequest, res: Response) => {
   try {
     const { childId } = req.params;
     const userId = req.user?.id;
+
+    console.log('[endSleepSession] Starting with:', { childId, userId });
+
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -304,6 +307,8 @@ export const endSleepSession = async (req: AuthRequest, res: Response) => {
       where: { id: userId },
       select: { accountId: true }
     });
+
+    console.log('[endSleepSession] User lookup:', user);
 
     if (!user?.accountId) {
       return res.status(400).json({ error: 'User not part of an account' });
@@ -319,7 +324,16 @@ export const endSleepSession = async (req: AuthRequest, res: Response) => {
       }
     });
 
+    console.log('[endSleepSession] Child lookup:', { childId, accountId: user.accountId, found: !!child });
+
     if (!child) {
+      // Try to find the child without account filtering for debugging
+      const anyChild = await prisma.child.findUnique({
+        where: { id: childId },
+        include: { user: { select: { accountId: true } } }
+      });
+      console.log('[endSleepSession] Direct child lookup:', anyChild);
+
       return res.status(404).json({ error: 'Child not found' });
     }
 
