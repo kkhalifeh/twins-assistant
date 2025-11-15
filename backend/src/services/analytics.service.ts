@@ -193,6 +193,70 @@ export class AnalyticsService {
     };
   }
 
+  // Analyze diaper patterns
+  async analyzeDiaperPatterns(childId: string, days: number = 7, userId: string) {
+    await this.verifyChildAccess(childId, userId);
+    const since = subDays(new Date(), days);
+
+    const diaperLogs = await prisma.diaperLog.findMany({
+      where: {
+        childId,
+        timestamp: { gte: since }
+      },
+      orderBy: { timestamp: 'asc' }
+    });
+
+    if (diaperLogs.length === 0) {
+      return null;
+    }
+
+    // Group by day to count actual days with data
+    const diapersByDay = new Map<string, any[]>();
+    diaperLogs.forEach(log => {
+      const dayKey = format(log.timestamp, 'yyyy-MM-dd');
+      const currentLogs = diapersByDay.get(dayKey) || [];
+      currentLogs.push(log);
+      diapersByDay.set(dayKey, currentLogs);
+    });
+
+    const daysWithData = diapersByDay.size;
+
+    // Count by type
+    const wetCount = diaperLogs.filter(log => log.type === 'WET').length;
+    const dirtyCount = diaperLogs.filter(log => log.type === 'DIRTY').length;
+    const mixedCount = diaperLogs.filter(log => log.type === 'MIXED').length;
+
+    // Calculate average changes per day
+    const avgChangesPerDay = daysWithData > 0 ? (diaperLogs.length / daysWithData).toFixed(1) : '0';
+
+    // Calculate intervals between changes
+    const intervals: number[] = [];
+    for (let i = 1; i < diaperLogs.length; i++) {
+      const interval = differenceInHours(
+        diaperLogs[i].timestamp,
+        diaperLogs[i - 1].timestamp
+      );
+      if (interval > 0 && interval < 12) { // Filter out unrealistic intervals
+        intervals.push(interval);
+      }
+    }
+
+    const avgInterval = intervals.length > 0
+      ? (intervals.reduce((a, b) => a + b, 0) / intervals.length).toFixed(1)
+      : '0';
+
+    return {
+      totalChanges: diaperLogs.length,
+      daysWithData,
+      avgChangesPerDay,
+      avgInterval,
+      wetCount,
+      dirtyCount,
+      mixedCount,
+      lastChange: diaperLogs[diaperLogs.length - 1]
+    };
+  }
+
   // Calculate sleep quality score
   private calculateSleepQuality(sleepLogs: any[]) {
     if (sleepLogs.length === 0) return 'No data';
@@ -473,6 +537,47 @@ export class AnalyticsService {
           nextAction: napCount > 0
             ? `Monitor wake windows - babies typically need a nap after ${Math.round(sleepPattern.averageNapDuration / 60 * 2)}-3 hours awake`
             : 'Track naps to identify sleep patterns'
+        });
+      }
+
+      // Diaper insights
+      const diaperPattern = await this.analyzeDiaperPatterns(child.id, 7, userId);
+      if (diaperPattern) {
+        const daysWithData = diaperPattern.daysWithData;
+        let description = `${child.name} has ${diaperPattern.avgChangesPerDay} diaper changes per day on average (based on ${daysWithData} day${daysWithData > 1 ? 's' : ''} of data)`;
+
+        // Add breakdown by type
+        const types: string[] = [];
+        if (diaperPattern.wetCount > 0) types.push(`${diaperPattern.wetCount} wet`);
+        if (diaperPattern.dirtyCount > 0) types.push(`${diaperPattern.dirtyCount} dirty`);
+        if (diaperPattern.mixedCount > 0) types.push(`${diaperPattern.mixedCount} mixed`);
+
+        if (types.length > 0) {
+          description += ` - ${types.join(', ')}`;
+        }
+
+        description += `. Average interval: ${diaperPattern.avgInterval} hours.`;
+
+        // Determine if the pattern is healthy
+        const changesPerDay = parseFloat(diaperPattern.avgChangesPerDay);
+        let recommendation = '';
+        if (changesPerDay < 4) {
+          recommendation = 'Monitor closely - babies typically need 6-10 diaper changes per day. Ensure adequate feeding and hydration.';
+        } else if (changesPerDay >= 6 && changesPerDay <= 12) {
+          recommendation = 'Diaper change frequency is healthy and normal.';
+        } else if (changesPerDay > 12) {
+          recommendation = 'High frequency of changes. This is normal, but monitor for signs of diarrhea or discomfort.';
+        }
+
+        insights.push({
+          childId: child.id,
+          childName: child.name,
+          type: 'diaper',
+          title: 'Diaper Pattern Analysis',
+          description,
+          confidence: 0.85,
+          recommendation,
+          nextAction: `Last change was ${formatInTimeZone(diaperPattern.lastChange.timestamp, timezone, 'h:mm a')}`
         });
       }
 

@@ -47,6 +47,7 @@ export default function InsightsPage() {
     switch (type) {
       case 'feeding': return TrendingUp
       case 'sleep': return Brain
+      case 'diaper': return Baby
       case 'correlation': return Lightbulb
       case 'comparison': return Activity
       default: return AlertCircle
@@ -57,8 +58,9 @@ export default function InsightsPage() {
     switch (type) {
       case 'feeding': return 'text-blue-600'
       case 'sleep': return 'text-purple-600'
-      case 'correlation': return 'text-green-600'
-      case 'comparison': return 'text-amber-600'
+      case 'diaper': return 'text-green-600'
+      case 'correlation': return 'text-amber-600'
+      case 'comparison': return 'text-pink-600'
       default: return 'text-gray-600'
     }
   }
