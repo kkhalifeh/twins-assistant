@@ -71,7 +71,35 @@ export class AnalyticsService {
     }
 
     const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    const avgAmount = feedingLogs.reduce((sum, log) => sum + (log.amount || 0), 0) / feedingLogs.length;
+
+    // Calculate average amount/duration intelligently
+    // For bottle/formula: use amount in ml
+    // For breast: estimate based on duration (rough estimate: 30ml per 5 minutes)
+    const bottleFeedings = feedingLogs.filter(log => log.type === 'BOTTLE' || log.type === 'FORMULA');
+    const breastFeedings = feedingLogs.filter(log => log.type === 'BREAST');
+
+    let totalIntake = 0;
+    let feedingCount = 0;
+
+    // Add bottle/formula amounts
+    bottleFeedings.forEach(log => {
+      if (log.amount && log.amount > 0) {
+        totalIntake += log.amount;
+        feedingCount++;
+      }
+    });
+
+    // Estimate breast feeding amounts from duration
+    breastFeedings.forEach(log => {
+      if (log.duration && log.duration > 0) {
+        // Rough estimate: 30ml per 5 minutes of breastfeeding
+        const estimatedAmount = (log.duration / 5) * 30;
+        totalIntake += estimatedAmount;
+        feedingCount++;
+      }
+    });
+
+    const avgAmount = feedingCount > 0 ? Math.round(totalIntake / feedingCount) : 0;
 
     // Detect trending patterns
     const recentInterval = intervals.slice(-5).reduce((a, b) => a + b, 0) / Math.min(5, intervals.slice(-5).length);
@@ -81,6 +109,8 @@ export class AnalyticsService {
       averageInterval: avgInterval.toFixed(1),
       averageAmount: Math.round(avgAmount),
       totalFeedings: feedingLogs.length,
+      breastCount: breastFeedings.length,
+      bottleCount: bottleFeedings.length,
       trend,
       lastFeeding: feedingLogs[feedingLogs.length - 1],
       nextFeedingEstimate: new Date(feedingLogs[feedingLogs.length - 1].startTime.getTime() + avgInterval * 60 * 60 * 1000)
@@ -349,16 +379,28 @@ export class AnalyticsService {
       // Feeding insights
       const feedingPattern = await this.analyzeFeedingPatterns(child.id, 7, userId);
       if (feedingPattern) {
+        // Create a more detailed description based on feeding types
+        let feedingDetails = '';
+        if (feedingPattern.breastCount > 0 && feedingPattern.bottleCount > 0) {
+          feedingDetails = ` (${feedingPattern.breastCount} breast, ${feedingPattern.bottleCount} bottle/formula)`;
+        } else if (feedingPattern.breastCount > 0) {
+          feedingDetails = ' (breastfed)';
+        } else if (feedingPattern.bottleCount > 0) {
+          feedingDetails = ' (bottle/formula)';
+        }
+
         insights.push({
           childId: child.id,
           childName: child.name,
           type: 'feeding',
           title: 'Feeding Pattern Analysis',
-          description: `${child.name} feeds every ${feedingPattern.averageInterval} hours on average, consuming about ${feedingPattern.averageAmount}ml per feeding.`,
+          description: `${child.name} feeds every ${feedingPattern.averageInterval} hours on average, consuming about ${feedingPattern.averageAmount}ml per feeding${feedingDetails}. Total: ${feedingPattern.totalFeedings} feedings in past week.`,
           trend: feedingPattern.trend,
           confidence: 0.85,
           recommendation: feedingPattern.trend === 'increasing'
             ? 'Feeding intervals are getting longer, which is normal as baby grows.'
+            : feedingPattern.trend === 'decreasing'
+            ? 'Baby may be going through a growth spurt. This is normal.'
             : 'Maintain current feeding schedule.',
           nextAction: `Next feeding expected around ${formatInTimeZone(feedingPattern.nextFeedingEstimate, timezone, 'h:mm a')}`
         });
@@ -367,18 +409,43 @@ export class AnalyticsService {
       // Sleep insights
       const sleepPattern = await this.analyzeSleepPatterns(child.id, 7, userId);
       if (sleepPattern) {
+        const napHours = (sleepPattern.averageNapDuration / 60).toFixed(1);
+        const nightHours = (sleepPattern.averageNightDuration / 60).toFixed(1);
+        const napCount = sleepPattern.totalNaps;
+        const daysAnalyzed = 7;
+        const avgNapsPerDay = (napCount / daysAnalyzed).toFixed(1);
+
+        let description = `${child.name} sleeps ${sleepPattern.totalSleepHours} hours per day on average`;
+
+        // Add nap details if there are naps
+        if (napCount > 0) {
+          description += ` (including ${avgNapsPerDay} naps/day averaging ${napHours}h each)`;
+        }
+
+        // Add night sleep details
+        if (sleepPattern.totalNightSleeps > 0) {
+          description += `. Night sleep averages ${nightHours}h`;
+        }
+
+        description += '.';
+
         insights.push({
           childId: child.id,
           childName: child.name,
           type: 'sleep',
           title: 'Sleep Pattern Analysis',
-          description: `${child.name} sleeps ${sleepPattern.totalSleepHours} hours per day on average.`,
+          description,
           quality: sleepPattern.sleepQuality,
           confidence: 0.80,
           recommendation: sleepPattern.sleepQuality === 'Excellent'
             ? 'Sleep patterns are healthy and consistent.'
+            : sleepPattern.sleepQuality === 'No data'
+            ? 'Not enough sleep data to evaluate quality.'
             : 'Consider adjusting bedtime routine for better sleep quality.',
-          typicalWakeTime: sleepPattern.typicalWakeTime
+          typicalWakeTime: sleepPattern.typicalWakeTime,
+          nextAction: napCount > 0
+            ? `Monitor wake windows - babies typically need a nap after ${Math.round(sleepPattern.averageNapDuration / 60 * 2)}-3 hours awake`
+            : 'Track naps to identify sleep patterns'
         });
       }
 
