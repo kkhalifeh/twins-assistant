@@ -224,8 +224,8 @@ export default function FeedingPage() {
         <div className="card">
           <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Daily Intake (ml)</h2>
           {getDailyIntakeData().length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={getDailyIntakeData()}>
+            <div className="w-full" style={{ height: 300 }}>
+              <BarChart width={500} height={300} data={getDailyIntakeData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" fontSize={12} />
                 <YAxis fontSize={12} />
@@ -242,7 +242,7 @@ export default function FeedingPage() {
                   )
                 })}
               </BarChart>
-            </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period
@@ -253,8 +253,8 @@ export default function FeedingPage() {
         <div className="card">
           <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Total Daily Intake</h2>
           {getDailyIntakeData().length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={getDailyIntakeData()}>
+            <div className="w-full" style={{ height: 300 }}>
+              <LineChart width={500} height={300} data={getDailyIntakeData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" fontSize={12} />
                 <YAxis fontSize={12} />
@@ -262,7 +262,7 @@ export default function FeedingPage() {
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Line type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2} />
               </LineChart>
-            </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period

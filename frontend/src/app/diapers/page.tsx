@@ -223,8 +223,8 @@ export default function DiapersPage() {
         <div className="card">
           <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Diaper Types Distribution</h2>
           {totalChanges > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
+            <div className="w-full flex justify-center" style={{ height: 300 }}>
+              <PieChart width={400} height={300}>
                 <Pie
                   data={stats}
                   cx="50%"
@@ -242,7 +242,7 @@ export default function DiapersPage() {
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
               </PieChart>
-            </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period

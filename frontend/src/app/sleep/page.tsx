@@ -307,8 +307,8 @@ export default function SleepPage() {
       <div className="card mb-4 sm:mb-6 p-3 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Daily Sleep Hours</h2>
         {getDailySleepData().length > 0 ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={getDailySleepData()}>
+          <div className="w-full" style={{ height: 300 }}>
+            <BarChart width={500} height={300} data={getDailySleepData()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" tick={{ fontSize: 12 }} />
               <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }} tick={{ fontSize: 12 }} />
@@ -325,7 +325,7 @@ export default function SleepPage() {
                 )
               })}
             </BarChart>
-          </ResponsiveContainer>
+          </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
             No data for selected period
