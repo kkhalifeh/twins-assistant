@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
-import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, differenceInMinutes, differenceInHours } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
+import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, differenceInMinutes, differenceInHours, parse } from 'date-fns';
+import { formatInTimeZone, toDate } from 'date-fns-tz';
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
@@ -10,6 +10,64 @@ const openai = new OpenAI({
 
 // Store conversation history per user
 const conversationHistory = new Map<string, any[]>();
+
+// Helper function to parse time strings and convert to UTC
+function parseTimeToUTC(timeString: string | undefined, timezone: string): Date {
+  if (!timeString) {
+    return new Date();
+  }
+
+  const now = new Date();
+  const todayInUserTz = formatInTimeZone(now, timezone, 'yyyy-MM-dd');
+
+  // Normalize the time string
+  const normalizedTime = timeString.trim().toLowerCase();
+
+  // Parse common time formats: "5pm", "17:00", "5:30pm", "17:30"
+  const timeFormats = [
+    { pattern: 'h:mm a', example: '5:30 pm' },    // 5:30 PM
+    { pattern: 'h a', example: '5 pm' },           // 5 PM
+    { pattern: 'HH:mm', example: '17:30' },        // 17:30
+    { pattern: 'H:mm', example: '5:30' },          // 5:30
+    { pattern: 'h:mma', example: '5:30pm' },       // 5:30pm (no space)
+    { pattern: 'ha', example: '5pm' },             // 5pm (no space)
+  ];
+
+  for (const format of timeFormats) {
+    try {
+      const dateTimeStr = `${todayInUserTz} ${normalizedTime}`;
+      const parsed = parse(dateTimeStr, `yyyy-MM-dd ${format.pattern}`, now);
+
+      if (!isNaN(parsed.getTime())) {
+        // Create a date string in user's timezone
+        const userTimeStr = `${todayInUserTz}T${format.pattern.includes('H') ? normalizedTime : format.pattern.includes(':') ? parsed.toTimeString().slice(0, 5) : parsed.toTimeString().slice(0, 5)}`;
+
+        // Use formatInTimeZone to get ISO string and then parse
+        const isoInUserTz = `${todayInUserTz}T${parsed.getHours().toString().padStart(2, '0')}:${parsed.getMinutes().toString().padStart(2, '0')}:00`;
+
+        // Convert from user timezone to UTC using toDate
+        const utcDate = toDate(isoInUserTz, { timeZone: timezone });
+
+        console.log('[parseTimeToUTC]', {
+          input: timeString,
+          timezone,
+          normalizedTime,
+          todayInUserTz,
+          parsedLocal: parsed.toISOString(),
+          isoInUserTz,
+          finalUTC: utcDate.toISOString()
+        });
+        return utcDate;
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+
+  // If parsing fails, use current time
+  console.log('[parseTimeToUTC] Failed to parse, using current time:', timeString);
+  return now;
+}
 
 // AI Chat Context Interface
 interface AIChatContext {
@@ -31,7 +89,10 @@ interface AIChatContext {
 // Define available functions for OpenAI to call
 const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   logFeeding: async (args: any): Promise<string> => {
-    const { childId, amount, type, notes, userId } = args;
+    const { childId, amount, type, notes, userId, time, timezone = 'America/New_York' } = args;
+
+    // Parse the time if provided, otherwise use current time
+    const feedingTime = parseTimeToUTC(time, timezone);
 
     // Direct insert using childId, no lookup needed
     const feedingType = type?.toUpperCase() === 'MILK' ? 'BOTTLE' :
@@ -41,8 +102,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       data: {
         childId,
         userId,
-        startTime: new Date(),
-        endTime: new Date(),
+        startTime: feedingTime,
+        endTime: feedingTime,
         type: feedingType as any,
         amount: amount || 120,
         duration: 20,
@@ -59,11 +120,15 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       }
     });
 
-    return `✅ Logged feeding for ${feeding.child.name}: ${amount}ml ${feedingType.toLowerCase()}. Total feedings today: ${todayCount}`;
+    const timeStr = formatInTimeZone(feeding.startTime, timezone, 'h:mm a');
+    return `✅ Logged feeding for ${feeding.child.name}: ${amount || 120}ml ${feedingType.toLowerCase()} at ${timeStr}. Total feedings today: ${todayCount}`;
   },
   
   startSleep: async (args: any): Promise<string> => {
-    const { childId, type, userId, timezone = 'America/New_York' } = args;
+    const { childId, type, userId, time, timezone = 'America/New_York' } = args;
+
+    // Parse the time if provided, otherwise use current time
+    const sleepTime = parseTimeToUTC(time, timezone);
 
     // Check if already sleeping
     const activeSleep = await prisma.sleepLog.findFirst({
@@ -84,13 +149,14 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       data: {
         childId,
         userId,
-        startTime: new Date(),
+        startTime: sleepTime,
         type: type?.toUpperCase() || 'NAP'
       },
       include: { child: true }
     });
 
-    return `✅ Started ${type || 'sleep'} tracking for ${sleepLog.child.name}`;
+    const timeStr = formatInTimeZone(sleepLog.startTime, timezone, 'h:mm a');
+    return `✅ Started ${type || 'sleep'} tracking for ${sleepLog.child.name} at ${timeStr}`;
   },
   
   endSleep: async (args: any): Promise<string> => {
@@ -127,13 +193,16 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
   },
   
   logDiaper: async (args: any): Promise<string> => {
-    const { childId, type, userId } = args;
+    const { childId, type, userId, time, timezone = 'America/New_York' } = args;
+
+    // Parse the time if provided, otherwise use current time
+    const diaperTime = parseTimeToUTC(time, timezone);
 
     const diaperLog = await prisma.diaperLog.create({
       data: {
         childId,
         userId,
-        timestamp: new Date(),
+        timestamp: diaperTime,
         type: type?.toUpperCase() || 'WET'
       },
       include: { child: true }
@@ -147,17 +216,21 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       }
     });
 
-    return `✅ Logged ${type} diaper change for ${diaperLog.child.name}. Total changes today: ${todayCount}`;
+    const timeStr = formatInTimeZone(diaperLog.timestamp, timezone, 'h:mm a');
+    return `✅ Logged ${type} diaper change for ${diaperLog.child.name} at ${timeStr}. Total changes today: ${todayCount}`;
   },
   
   logTemperature: async (args: any): Promise<string> => {
-    const { childId, temperature, userId } = args;
+    const { childId, temperature, userId, time, timezone = 'America/New_York' } = args;
+
+    // Parse the time if provided, otherwise use current time
+    const tempTime = parseTimeToUTC(time, timezone);
 
     const healthLog = await prisma.healthLog.create({
       data: {
         childId,
         userId,
-        timestamp: new Date(),
+        timestamp: tempTime,
         type: 'TEMPERATURE',
         value: temperature.toString(),
         unit: '°C'
@@ -169,7 +242,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
                       temperature < 36.5 ? "⚠️ That's a bit low. Keep baby warm." :
                       "👍 Temperature is normal.";
 
-    return `✅ Logged temperature for ${healthLog.child.name}: ${temperature}°C. ${assessment}`;
+    const timeStr = formatInTimeZone(healthLog.timestamp, timezone, 'h:mm a');
+    return `✅ Logged temperature for ${healthLog.child.name}: ${temperature}°C at ${timeStr}. ${assessment}`;
   },
   
   getLastFeeding: async (args: any): Promise<string> => {
@@ -548,12 +622,19 @@ CONVERSATIONAL INTELLIGENCE:
    - Keep track of conversation flow and use context clues
 
 Available functions:
-- logFeeding: Log feeding (requires childId, optionally amount in ml, defaults to 120ml)
-- startSleep: Start sleep tracking (requires childId)
+- logFeeding: Log feeding (requires childId, optionally amount in ml defaults to 120ml, optionally time like "5pm" or "17:00")
+- startSleep: Start sleep tracking (requires childId, optionally time when sleep started)
 - endSleep: End sleep tracking (requires childId)
-- logDiaper: Log diaper change (requires childId and type: WET, DIRTY, or MIXED)
-- logTemperature: Log temperature (requires childId and temperature in °C)
+- logDiaper: Log diaper change (requires childId and type: WET, DIRTY, or MIXED, optionally time)
+- logTemperature: Log temperature (requires childId and temperature in °C, optionally time)
 - getLastFeeding, getLastDiaperChange, getSleepStatus, getFeedingCount, compareTwinsToday, getSummary
+
+TIME LOGGING:
+- Users can specify when an event occurred (e.g., "log 40ml for Maryam at 5pm")
+- If a time is mentioned, extract it and pass it in the 'time' parameter
+- Time formats: "5pm", "5:30pm", "17:00", "17:30"
+- All times are interpreted in the user's timezone: ${context.user.timezone || 'America/New_York'}
+- If no time is mentioned, the event is logged at the current time
 
 Be warm, helpful, and conversational. Maintain conversation context and ask clarifying questions when needed.`;
   }
@@ -596,26 +677,28 @@ Be warm, helpful, and conversational. Maintain conversation context and ask clar
       const functions = [
         {
           name: 'logFeeding',
-          description: 'Log a feeding session for a baby. Use the child ID from the account context by matching the name mentioned by the user. If amount is not specified, use 120ml as default.',
+          description: 'Log a feeding session for a baby. Use the child ID from the account context by matching the name mentioned by the user. If amount is not specified, use 120ml as default. Can log at a specific time or current time.',
           parameters: {
             type: 'object',
             properties: {
               childId: { type: 'string', description: 'Child ID from the account context. Match the user\'s mentioned name/pronoun to the correct ID using conversation context.' },
               amount: { type: 'number', description: 'Amount in ml. Defaults to 120ml if not specified.' },
               type: { type: 'string', enum: ['bottle', 'breast', 'formula'], description: 'Type of feeding. Defaults to bottle if not specified.' },
-              notes: { type: 'string', description: 'Optional notes' }
+              notes: { type: 'string', description: 'Optional notes' },
+              time: { type: 'string', description: 'Optional time string (e.g., "5pm", "17:00", "5:30pm"). If not provided, uses current time. Parse in user\'s timezone.' }
             },
             required: ['childId']
           }
         },
         {
           name: 'startSleep',
-          description: 'Start tracking sleep for a baby. Use the child ID from the account context.',
+          description: 'Start tracking sleep for a baby. Use the child ID from the account context. Can specify when sleep started.',
           parameters: {
             type: 'object',
             properties: {
               childId: { type: 'string', description: 'Child ID from account context' },
-              type: { type: 'string', enum: ['nap', 'night'], description: 'Type of sleep' }
+              type: { type: 'string', enum: ['nap', 'night'], description: 'Type of sleep' },
+              time: { type: 'string', description: 'Optional time string (e.g., "5pm", "17:00", "5:30pm"). If not provided, uses current time. Parse in user\'s timezone.' }
             },
             required: ['childId']
           }
@@ -633,24 +716,26 @@ Be warm, helpful, and conversational. Maintain conversation context and ask clar
         },
         {
           name: 'logDiaper',
-          description: 'Log a diaper change. Use the child ID from the account context.',
+          description: 'Log a diaper change. Use the child ID from the account context. Can log at a specific time.',
           parameters: {
             type: 'object',
             properties: {
               childId: { type: 'string', description: 'Child ID from account context' },
-              type: { type: 'string', enum: ['wet', 'dirty', 'mixed'], description: 'Type of diaper' }
+              type: { type: 'string', enum: ['wet', 'dirty', 'mixed'], description: 'Type of diaper' },
+              time: { type: 'string', description: 'Optional time string (e.g., "5pm", "17:00", "5:30pm"). If not provided, uses current time. Parse in user\'s timezone.' }
             },
             required: ['childId', 'type']
           }
         },
         {
           name: 'logTemperature',
-          description: 'Log temperature reading. Use the child ID from the account context.',
+          description: 'Log temperature reading. Use the child ID from the account context. Can log at a specific time.',
           parameters: {
             type: 'object',
             properties: {
               childId: { type: 'string', description: 'Child ID from account context' },
-              temperature: { type: 'number', description: 'Temperature in Celsius' }
+              temperature: { type: 'number', description: 'Temperature in Celsius' },
+              time: { type: 'string', description: 'Optional time string (e.g., "5pm", "17:00", "5:30pm"). If not provided, uses current time. Parse in user\'s timezone.' }
             },
             required: ['childId', 'temperature']
           }
