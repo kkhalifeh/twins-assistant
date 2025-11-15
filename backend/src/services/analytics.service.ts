@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { subDays, differenceInHours, differenceInMinutes, format, startOfDay, endOfDay } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +34,15 @@ export class AnalyticsService {
     if (!childIds.includes(childId)) {
       throw new Error('Child not found or access denied');
     }
+  }
+
+  // Helper method to get user's timezone
+  private async getUserTimezone(userId: string): Promise<string> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true }
+    });
+    return user?.timezone || 'America/New_York';
   }
 
   // Analyze feeding patterns
@@ -323,6 +333,9 @@ export class AnalyticsService {
       throw new Error('User not part of an account');
     }
 
+    // Get user's timezone for formatting times
+    const timezone = await this.getUserTimezone(userId);
+
     const children = await prisma.child.findMany({
       where: {
         user: {
@@ -347,7 +360,7 @@ export class AnalyticsService {
           recommendation: feedingPattern.trend === 'increasing'
             ? 'Feeding intervals are getting longer, which is normal as baby grows.'
             : 'Maintain current feeding schedule.',
-          nextAction: `Next feeding expected around ${format(feedingPattern.nextFeedingEstimate, 'h:mm a')}`
+          nextAction: `Next feeding expected around ${formatInTimeZone(feedingPattern.nextFeedingEstimate, timezone, 'h:mm a')}`
         });
       }
 
@@ -415,6 +428,9 @@ export class AnalyticsService {
       throw new Error('User not part of an account');
     }
 
+    // Get user's timezone for formatting times
+    const timezone = await this.getUserTimezone(userId);
+
     const children = await prisma.child.findMany({
       where: {
         user: {
@@ -431,7 +447,7 @@ export class AnalyticsService {
           type: 'feeding',
           childName: child.name,
           prediction: `Next feeding`,
-          time: format(feedingPattern.nextFeedingEstimate, 'h:mm a'),
+          time: formatInTimeZone(feedingPattern.nextFeedingEstimate, timezone, 'h:mm a'),
           confidence: 'High'
         });
       }
