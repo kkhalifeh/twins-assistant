@@ -168,11 +168,12 @@ export default function SleepPage() {
   const stats = getSleepStats()
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+      {/* Header - Mobile optimized */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sleep Tracker</h1>
-          <p className="text-gray-600 mt-1">Monitor sleep patterns and quality</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sleep Tracker</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor sleep patterns and quality</p>
         </div>
         <button
           onClick={() => {
@@ -180,7 +181,7 @@ export default function SleepPage() {
             setEditingLog(null)
             setShowModal(true)
           }}
-          className="btn-primary flex items-center space-x-2"
+          className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto"
         >
           <Plus className="w-5 h-5" />
           <span>Log Sleep</span>
@@ -236,14 +237,14 @@ export default function SleepPage() {
         </div>
       )}
 
-      {/* Child Filter */}
-      <div className="card mb-6">
-        <div className="flex space-x-2">
+      {/* Child Filter - Mobile optimized */}
+      <div className="card mb-4 sm:mb-6 p-3 sm:p-6">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedChild('all')}
-            className={`px-4 py-2 rounded-lg ${
-              selectedChild === 'all' 
-                ? 'bg-primary-100 text-primary-700' 
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base flex-1 sm:flex-none ${
+              selectedChild === 'all'
+                ? 'bg-primary-100 text-primary-700'
                 : 'bg-gray-100 text-gray-700'
             }`}
           >
@@ -253,9 +254,9 @@ export default function SleepPage() {
             <button
               key={child.id}
               onClick={() => setSelectedChild(child.id)}
-              className={`px-4 py-2 rounded-lg ${
-                selectedChild === child.id 
-                  ? 'bg-primary-100 text-primary-700' 
+              className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base flex-1 sm:flex-none ${
+                selectedChild === child.id
+                  ? 'bg-primary-100 text-primary-700'
                   : 'bg-gray-100 text-gray-700'
               }`}
             >
@@ -265,73 +266,77 @@ export default function SleepPage() {
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="card bg-blue-50">
+      {/* Statistics - Mobile optimized */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="card bg-blue-50 p-3 sm:p-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-700">{stats.totalSleepHours}h</p>
-            <p className="text-sm text-gray-600">Total Sleep</p>
+            <p className="text-xl sm:text-2xl font-bold text-blue-700">{stats.totalSleepHours}h</p>
+            <p className="text-xs sm:text-sm text-gray-600">Total Sleep</p>
           </div>
         </div>
-        <div className="card bg-purple-50">
+        <div className="card bg-purple-50 p-3 sm:p-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-purple-700">{stats.totalNaps}</p>
-            <p className="text-sm text-gray-600">Naps</p>
+            <p className="text-xl sm:text-2xl font-bold text-purple-700">{stats.totalNaps}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Naps</p>
           </div>
         </div>
-        <div className="card bg-indigo-50">
+        <div className="card bg-indigo-50 p-3 sm:p-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-indigo-700">{stats.totalNights}</p>
-            <p className="text-sm text-gray-600">Night Sleeps</p>
+            <p className="text-xl sm:text-2xl font-bold text-indigo-700">{stats.totalNights}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Night Sleeps</p>
           </div>
         </div>
-        <div className="card bg-green-50">
+        <div className="card bg-green-50 p-3 sm:p-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-green-700">{stats.avgNapDuration}m</p>
-            <p className="text-sm text-gray-600">Avg Nap</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-700">{stats.avgNapDuration}m</p>
+            <p className="text-xs sm:text-sm text-gray-600">Avg Nap</p>
           </div>
         </div>
-        <div className="card bg-amber-50">
+        <div className="card bg-amber-50 p-3 sm:p-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-amber-700">{Math.round(stats.avgNightDuration / 60)}h</p>
-            <p className="text-sm text-gray-600">Avg Night</p>
+            <p className="text-xl sm:text-2xl font-bold text-amber-700">{Math.round(stats.avgNightDuration / 60)}h</p>
+            <p className="text-xs sm:text-sm text-gray-600">Avg Night</p>
           </div>
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="card mb-6">
-        <h2 className="text-lg font-semibold mb-4">Daily Sleep Hours</h2>
+      {/* Charts - Mobile optimized */}
+      <div className="card mb-4 sm:mb-6 p-3 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Daily Sleep Hours</h2>
         {getDailySleepData().length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={getDailySleepData()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
-              <Tooltip />
-              <Legend />
-              {children?.map((child: any, index: number) => {
-                const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
-                return (
-                  <Bar
-                    key={child.id}
-                    dataKey={child.name}
-                    fill={colors[index % colors.length]}
-                  />
-                )
-              })}
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <div className="min-w-[300px]">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={getDailySleepData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                  <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }} tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  {children?.map((child: any, index: number) => {
+                    const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                    return (
+                      <Bar
+                        key={child.id}
+                        dataKey={child.name}
+                        fill={colors[index % colors.length]}
+                      />
+                    )
+                  })}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         ) : (
-          <div className="h-[300px] flex items-center justify-center text-gray-500">
+          <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
             No data for selected period
           </div>
         )}
       </div>
 
-      {/* Recent Sleep Logs */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">
+      {/* Recent Sleep Logs - Mobile optimized */}
+      <div className="card p-3 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
           Sleep Timeline ({filteredLogs.length} sessions)
         </h2>
         {filteredLogs.length > 0 ? (
@@ -342,26 +347,26 @@ export default function SleepPage() {
               const minutes = duration % 60
               
               return (
-                <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className={`p-2 rounded-full ${
+                <div key={log.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg gap-3">
+                  <div className="flex items-start sm:items-center space-x-3 flex-1 min-w-0">
+                    <div className={`p-2 rounded-full flex-shrink-0 ${
                       log.type === 'NAP' ? 'bg-amber-100' : 'bg-indigo-100'
                     }`}>
                       {log.type === 'NAP' ? (
-                        <Sun className="w-5 h-5 text-amber-600" />
+                        <Sun className="w-4 sm:w-5 h-4 sm:h-5 text-amber-600" />
                       ) : (
-                        <Moon className="w-5 h-5 text-indigo-600" />
+                        <Moon className="w-4 sm:w-5 h-4 sm:h-5 text-indigo-600" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{log.child?.name}</p>
-                      <p className="text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm sm:text-base truncate">{log.child?.name}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">
                         {log.type} - {hours > 0 ? `${hours}h ` : ''}{minutes}m
                       </p>
                       {log.user && (
-                        <p className="text-xs text-gray-500">Logged by {log.user.name}</p>
+                        <p className="text-xs text-gray-500 truncate">Logged by {log.user.name}</p>
                       )}
-                      <div className="flex gap-2 mt-1">
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mt-1">
                         {log.quality && (
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             log.quality === 'DEEP' ? 'bg-green-100 text-green-700' :
@@ -377,12 +382,12 @@ export default function SleepPage() {
                           </span>
                         )}
                       </div>
-                      {log.notes && <p className="text-xs text-gray-500 mt-1">{log.notes}</p>}
+                      {log.notes && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{log.notes}</p>}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:space-x-3">
+                    <div className="text-left sm:text-right">
+                      <p className="text-xs sm:text-sm font-medium">
                         {format(new Date(log.startTime), 'h:mm a')}
                         {log.endTime && (
                           <span className="text-gray-500">
@@ -396,20 +401,20 @@ export default function SleepPage() {
                       </p>
                     </div>
                     {isParent && (
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(log)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                           title="Edit"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(log.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                         </button>
                       </div>
                     )}

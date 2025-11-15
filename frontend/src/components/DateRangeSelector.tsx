@@ -115,51 +115,106 @@ export default function DateRangeSelector({ onRangeChange }: DateRangeSelectorPr
   }
 
   return (
-    <div className="flex items-center justify-between bg-white rounded-lg shadow-sm border p-3">
-      <div className="flex space-x-1">
-        {(['day', 'week', 'month'] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => handleViewModeChange(mode)}
-            className={`px-3 py-1 rounded-md text-sm font-medium capitalize transition-colors ${
-              viewMode === mode
-                ? 'bg-primary-100 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            {mode}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={handlePrevious}
-          className="p-1 hover:bg-gray-100 rounded transition-colors"
-          aria-label="Previous"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        
-        <div className="flex items-center space-x-2 min-w-[240px] justify-center">
-          <Calendar className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium">{getDisplayText()}</span>
+    <div className="bg-white rounded-lg shadow-sm border">
+      {/* Mobile Layout - Stack vertically */}
+      <div className="flex flex-col sm:hidden gap-3 p-3">
+        {/* View mode buttons */}
+        <div className="flex justify-center space-x-1">
+          {(['day', 'week', 'month'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleViewModeChange(mode)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize transition-colors flex-1 ${
+                viewMode === mode
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
         </div>
-        
-        <button
-          onClick={handleNext}
-          className="p-1 hover:bg-gray-100 rounded transition-colors"
-          aria-label="Next"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-        
+
+        {/* Date navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handlePrevious}
+            className="p-2 hover:bg-gray-100 rounded transition-colors"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center space-x-2 flex-1 justify-center px-2">
+            <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <span className="text-sm font-medium text-center truncate">{getDisplayText()}</span>
+          </div>
+
+          <button
+            onClick={handleNext}
+            className="p-2 hover:bg-gray-100 rounded transition-colors"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Today button */}
         <button
           onClick={handleToday}
-          className="px-3 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded-md transition-colors ml-2"
+          className="w-full px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-md transition-colors font-medium"
         >
           Today
         </button>
+      </div>
+
+      {/* Desktop/Tablet Layout - Original horizontal */}
+      <div className="hidden sm:flex items-center justify-between p-3">
+        <div className="flex space-x-1">
+          {(['day', 'week', 'month'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleViewModeChange(mode)}
+              className={`px-3 py-1 rounded-md text-sm font-medium capitalize transition-colors ${
+                viewMode === mode
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handlePrevious}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center space-x-2 min-w-[180px] justify-center">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium whitespace-nowrap">{getDisplayText()}</span>
+          </div>
+
+          <button
+            onClick={handleNext}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={handleToday}
+            className="px-3 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded-md transition-colors ml-2"
+          >
+            Today
+          </button>
+        </div>
       </div>
     </div>
   )
