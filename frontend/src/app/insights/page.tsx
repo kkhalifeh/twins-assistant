@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { analyticsAPI } from '@/lib/api'
-import { 
-  Brain, TrendingUp, AlertCircle, Lightbulb, 
+import {
+  Brain, TrendingUp, AlertCircle, Lightbulb,
   Calendar, Download, ChevronRight, RefreshCw,
-  Clock, Activity, Target, Loader2
+  Clock, Activity, Target, Loader2, Baby
 } from 'lucide-react'
 import { format } from 'date-fns'
 
