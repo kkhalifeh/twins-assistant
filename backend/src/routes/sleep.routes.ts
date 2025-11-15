@@ -19,13 +19,13 @@ router.get('/', getSleepLogs);
 // Create sleep log - use controller with proper authorization
 router.post('/', createSleepLog);
 
+// End sleep session - MUST come before /:id route to avoid conflict
+router.put('/:childId/end', endSleepSession);
+
 // Update sleep log - use controller with proper authorization
 router.put('/:id', updateSleepLog);
 
 // Delete sleep log - use controller with proper authorization
 router.delete('/:id', deleteSleepLog);
-
-// End sleep session - use controller with proper authorization
-router.put('/:childId/end', endSleepSession);
 
 export default router;
