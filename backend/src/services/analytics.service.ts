@@ -127,14 +127,40 @@ export class AnalyticsService {
         childId,
         startTime: { gte: since },
         endTime: { not: null }
+      },
+      include: {
+        child: { select: { name: true } }
       }
     });
+
+    if (sleepLogs.length === 0) {
+      return null;
+    }
 
     const napLogs = sleepLogs.filter(log => log.type === 'NAP');
     const nightLogs = sleepLogs.filter(log => log.type === 'NIGHT');
 
+    // Group by day to calculate actual days with data
+    const sleepByDay = new Map<string, number>();
+    sleepLogs.forEach(log => {
+      const dayKey = format(log.startTime, 'yyyy-MM-dd');
+      const currentTotal = sleepByDay.get(dayKey) || 0;
+      sleepByDay.set(dayKey, currentTotal + (log.duration || 0));
+    });
+
+    const daysWithData = sleepByDay.size;
     const totalSleepMinutes = sleepLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
-    const avgSleepPerDay = totalSleepMinutes / days;
+    const avgSleepPerDay = daysWithData > 0 ? totalSleepMinutes / daysWithData : 0;
+
+    console.log(`[Sleep Analysis] ${sleepLogs[0]?.child?.name || 'Child'}:`, {
+      totalLogs: sleepLogs.length,
+      napLogs: napLogs.length,
+      nightLogs: nightLogs.length,
+      totalSleepMinutes,
+      daysWithData,
+      avgSleepPerDay,
+      avgSleepHours: (avgSleepPerDay / 60).toFixed(1)
+    });
     
     const avgNapDuration = napLogs.length > 0 
       ? napLogs.reduce((sum, log) => sum + (log.duration || 0), 0) / napLogs.length
@@ -161,6 +187,7 @@ export class AnalyticsService {
       averageNightDuration: avgNightDuration,
       totalNaps: napLogs.length,
       totalNightSleeps: nightLogs.length,
+      daysWithData: daysWithData,
       typicalWakeTime: mostCommonWakeHour ? `${mostCommonWakeHour}:00` : 'Variable',
       sleepQuality: this.calculateSleepQuality(sleepLogs)
     };
@@ -412,14 +439,14 @@ export class AnalyticsService {
         const napHours = (sleepPattern.averageNapDuration / 60).toFixed(1);
         const nightHours = (sleepPattern.averageNightDuration / 60).toFixed(1);
         const napCount = sleepPattern.totalNaps;
-        const daysAnalyzed = 7;
-        const avgNapsPerDay = (napCount / daysAnalyzed).toFixed(1);
+        const daysWithData = sleepPattern.daysWithData || 1; // Prevent division by zero
+        const avgNapsPerDay = (napCount / daysWithData).toFixed(1);
 
-        let description = `${child.name} sleeps ${sleepPattern.totalSleepHours} hours per day on average`;
+        let description = `${child.name} sleeps ${sleepPattern.totalSleepHours} hours per day on average (based on ${daysWithData} day${daysWithData > 1 ? 's' : ''} of data)`;
 
         // Add nap details if there are naps
         if (napCount > 0) {
-          description += ` (including ${avgNapsPerDay} naps/day averaging ${napHours}h each)`;
+          description += ` including ${avgNapsPerDay} nap${parseFloat(avgNapsPerDay) !== 1 ? 's' : ''}/day averaging ${napHours}h each`;
         }
 
         // Add night sleep details
