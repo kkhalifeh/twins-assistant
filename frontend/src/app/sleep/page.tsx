@@ -307,27 +307,25 @@ export default function SleepPage() {
       <div className="card mb-4 sm:mb-6 p-3 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Daily Sleep Hours</h2>
         {getDailySleepData().length > 0 ? (
-          <div style={{ width: '100%', height: 250 }}>
-            <ResponsiveContainer>
-              <BarChart data={getDailySleepData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }} tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                {children?.map((child: any, index: number) => {
-                  const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
-                  return (
-                    <Bar
-                      key={child.id}
-                      dataKey={child.name}
-                      fill={colors[index % colors.length]}
-                    />
-                  )
-                })}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={getDailySleepData()}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+              <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {children?.map((child: any, index: number) => {
+                const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                return (
+                  <Bar
+                    key={child.id}
+                    dataKey={child.name}
+                    fill={colors[index % colors.length]}
+                  />
+                )
+              })}
+            </BarChart>
+          </ResponsiveContainer>
         ) : (
           <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
             No data for selected period

@@ -223,28 +223,26 @@ export default function DiapersPage() {
         <div className="card">
           <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Diaper Types Distribution</h2>
           {totalChanges > 0 ? (
-            <div style={{ width: '100%', height: 250 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={stats}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }: any) => value > 0 ? `${name}: ${value}` : ''}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {stats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={stats}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }: any) => value > 0 ? `${name}: ${value}` : ''}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {stats.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
           ) : (
             <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period

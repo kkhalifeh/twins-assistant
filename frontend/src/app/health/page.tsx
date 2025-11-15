@@ -302,22 +302,20 @@ export default function HealthPage() {
             <div className="card">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Temperature Trend</h2>
               {getTemperatureData().length > 0 ? (
-                <div style={{ width: '100%', height: 250 }}>
-                  <ResponsiveContainer>
-                    <LineChart data={getTemperatureData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" fontSize={12} />
-                      <YAxis domain={[36, 38]} fontSize={12} />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="temp"
-                        stroke="#ef4444"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={getTemperatureData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={12} />
+                    <YAxis domain={[36, 38]} fontSize={12} />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="temp"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               ) : (
                 <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
                   No temperature data for selected period
@@ -328,22 +326,20 @@ export default function HealthPage() {
             <div className="card">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Weight Progress</h2>
               {getWeightData().length > 0 ? (
-                <div style={{ width: '100%', height: 250 }}>
-                  <ResponsiveContainer>
-                    <LineChart data={getWeightData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip />
-                      <Line
-                        type="monotone"
-                        dataKey="weight"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={getWeightData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="weight"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               ) : (
                 <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
                   No weight data for selected period
