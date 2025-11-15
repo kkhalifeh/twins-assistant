@@ -204,7 +204,9 @@ export default function RootLayout({
 
               {/* Page content */}
               <main className="flex-1 overflow-y-auto bg-gray-50">
-                {children}
+                <div className="pb-32 sm:pb-8">
+                  {children}
+                </div>
               </main>
             </div>
 
