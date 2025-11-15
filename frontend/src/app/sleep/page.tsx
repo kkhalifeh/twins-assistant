@@ -179,6 +179,7 @@ export default function SleepPage() {
           <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor sleep patterns and quality</p>
         </div>
         <button
+          data-log-button
           onClick={() => {
             setModalChildId(children?.[0]?.id || '')
             setEditingLog(null)

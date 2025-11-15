@@ -166,6 +166,7 @@ export default function FeedingPage() {
           <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor feeding patterns and intake</p>
         </div>
         <button
+          data-log-button
           onClick={() => {
             setModalChildId(children?.[0]?.id || '')
             setEditingLog(null)

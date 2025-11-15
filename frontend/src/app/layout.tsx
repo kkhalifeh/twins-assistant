@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { authAPI } from '@/lib/api'
 import { TimezoneProvider } from '@/contexts/TimezoneContext'
+import FloatingActionButton from '@/components/FloatingActionButton'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -206,6 +207,9 @@ export default function RootLayout({
                 {children}
               </main>
             </div>
+
+            {/* Floating Action Button */}
+            <FloatingActionButton />
           </div>
           </TimezoneProvider>
         </QueryClientProvider>

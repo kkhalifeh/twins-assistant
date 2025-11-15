@@ -195,6 +195,7 @@ export default function HealthPage() {
           <p className="text-gray-600 mt-1">Track vital signs and medical information</p>
         </div>
         <button
+          data-log-button
           onClick={() => {
             setEditingLog(null)
             setHealthValue('')

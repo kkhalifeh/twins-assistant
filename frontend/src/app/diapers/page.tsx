@@ -153,6 +153,7 @@ export default function DiapersPage() {
           <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor diaper changes and patterns</p>
         </div>
         <button
+          data-log-button
           onClick={() => {
             setModalChildId(children?.[0]?.id || '')
             setEditingLog(null)
