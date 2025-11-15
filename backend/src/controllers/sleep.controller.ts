@@ -290,13 +290,11 @@ export const deleteSleepLog = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// End current sleep session
+// End sleep session by sleep log ID
 export const endSleepSession = async (req: AuthRequest, res: Response) => {
   try {
-    const { childId } = req.params;
+    const { sleepLogId } = req.params;
     const userId = req.user?.id;
-
-    console.log('[endSleepSession] Starting with:', { childId, userId });
 
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -308,42 +306,33 @@ export const endSleepSession = async (req: AuthRequest, res: Response) => {
       select: { accountId: true }
     });
 
-    console.log('[endSleepSession] User lookup:', user);
-
     if (!user?.accountId) {
       return res.status(400).json({ error: 'User not part of an account' });
     }
 
-    // Verify child belongs to someone in the same account
-    const child = await prisma.child.findFirst({
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
       where: {
-        id: childId,
         user: {
           accountId: user.accountId
         }
-      }
+      },
+      select: { id: true }
     });
 
-    console.log('[endSleepSession] Child lookup:', { childId, accountId: user.accountId, found: !!child });
+    const childIds = children.map(c => c.id);
 
-    if (!child) {
-      // Try to find the child without account filtering for debugging
-      const anyChild = await prisma.child.findUnique({
-        where: { id: childId },
-        include: { user: { select: { accountId: true } } }
-      });
-      console.log('[endSleepSession] Direct child lookup:', anyChild);
-
-      return res.status(404).json({ error: 'Child not found' });
+    if (childIds.length === 0) {
+      return res.status(404).json({ error: 'No children found in account' });
     }
 
-    // Find active sleep session (no endTime)
+    // Find the sleep log and verify it belongs to a child in the account
     const activeSession = await prisma.sleepLog.findFirst({
       where: {
-        childId,
+        id: sleepLogId,
+        childId: { in: childIds },
         endTime: null
-      },
-      orderBy: { startTime: 'desc' }
+      }
     });
 
     if (!activeSession) {
