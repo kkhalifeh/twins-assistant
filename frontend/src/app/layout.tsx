@@ -136,15 +136,15 @@ export default function RootLayout({
               <div className="flex h-full flex-col">
                 {/* Logo */}
                 <div className="flex h-16 items-center justify-between px-6 border-b">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative w-9 h-9 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-sm">
-                      <Heart className="w-5 h-5 text-white fill-white" />
+                  <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                    <div className="relative w-11 h-11 bg-gradient-to-br from-rose-200 to-pink-300 rounded-xl flex items-center justify-center shadow-md">
+                      <span className="text-2xl font-bold text-rose-800" style={{ fontFamily: 'cursive' }}>SM</span>
                     </div>
                     <div>
-                      <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">TwinCare</span>
+                      <span className="text-xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">TwinCare</span>
                       <p className="text-[10px] text-gray-500 -mt-1">Parenting Assistant</p>
                     </div>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => setSidebarOpen(false)}
                     className="lg:hidden"
@@ -193,12 +193,12 @@ export default function RootLayout({
                 >
                   <Menu className="w-6 h-6" />
                 </button>
-                <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center shadow-sm">
-                    <Heart className="w-4 h-4 text-white fill-white" />
+                <Link href="/" className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-rose-200 to-pink-300 rounded-lg flex items-center justify-center shadow-md">
+                    <span className="text-lg font-bold text-rose-800" style={{ fontFamily: 'cursive' }}>SM</span>
                   </div>
-                  <span className="font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">TwinCare</span>
-                </div>
+                  <span className="font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">TwinCare</span>
+                </Link>
                 <div className="w-10" />
               </div>
 
