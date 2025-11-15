@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { childrenAPI, healthAPI, authAPI } from '@/lib/api'
-import { format, isWithinInterval, parseISO } from 'date-fns'
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns'
 import {
   Heart, Plus, Thermometer, Pill, Activity,
   TrendingUp, AlertCircle, Calendar, Edit2, Trash2
@@ -26,9 +26,12 @@ export default function HealthPage() {
     const now = new Date()
     return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
   })
-  const [dateRange, setDateRange] = useState({
-    start: new Date(),
-    end: new Date()
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    return {
+      start: startOfWeek(now, { weekStartsOn: 0 }),
+      end: endOfWeek(now, { weekStartsOn: 0 })
+    }
   })
 
   const { data: currentUser } = useQuery({
@@ -295,50 +298,54 @@ export default function HealthPage() {
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <div className="card">
-              <h2 className="text-lg font-semibold mb-4">Temperature Trend</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Temperature Trend</h2>
               {getTemperatureData().length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={getTemperatureData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[36, 38]} />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="temp" 
-                      stroke="#ef4444" 
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ width: '100%', height: 250 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={getTemperatureData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis domain={[36, 38]} fontSize={12} />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="temp"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-gray-500">
+                <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
                   No temperature data for selected period
                 </div>
               )}
             </div>
 
             <div className="card">
-              <h2 className="text-lg font-semibold mb-4">Weight Progress</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Weight Progress</h2>
               {getWeightData().length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={getWeightData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="weight" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ width: '100%', height: 250 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={getWeightData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="weight"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-gray-500">
+                <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
                   No weight data for selected period
                 </div>
               )}

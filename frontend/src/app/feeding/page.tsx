@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { childrenAPI, feedingAPI, authAPI } from '@/lib/api'
-import { format, isWithinInterval, parseISO } from 'date-fns'
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns'
 import { Milk, Plus, TrendingUp, Edit2, Trash2 } from 'lucide-react'
 import FeedingModal from '@/components/modals/FeedingModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
@@ -39,9 +39,12 @@ export default function FeedingPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
   const [editingLog, setEditingLog] = useState<any | null>(null)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(),
-    end: new Date()
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    return {
+      start: startOfWeek(now, { weekStartsOn: 0 }),
+      end: endOfWeek(now, { weekStartsOn: 0 })
+    }
   })
 
   const { data: currentUser } = useQuery({
@@ -149,11 +152,11 @@ export default function FeedingPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Feeding Tracker</h1>
-          <p className="text-gray-600 mt-1">Monitor feeding patterns and intake</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Feeding Tracker</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor feeding patterns and intake</p>
         </div>
         <button
           onClick={() => {
@@ -161,7 +164,7 @@ export default function FeedingPage() {
             setEditingLog(null)
             setShowModal(true)
           }}
-          className="btn-primary flex items-center space-x-2"
+          className="btn-primary flex items-center space-x-2 w-full sm:w-auto mt-3 sm:mt-0 justify-center"
         >
           <Plus className="w-5 h-5" />
           <span>Log Feeding</span>
@@ -169,7 +172,7 @@ export default function FeedingPage() {
       </div>
 
       {/* Date Range Selector */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <DateRangeSelector onRangeChange={handleDateRangeChange} />
       </div>
 
@@ -181,13 +184,13 @@ export default function FeedingPage() {
       </div>
 
       {/* Child Filter */}
-      <div className="card mb-6">
-        <div className="flex space-x-2">
+      <div className="card mb-4 sm:mb-6">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedChild('all')}
-            className={`px-4 py-2 rounded-lg ${
-              selectedChild === 'all' 
-                ? 'bg-primary-100 text-primary-700' 
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base ${
+              selectedChild === 'all'
+                ? 'bg-primary-100 text-primary-700'
                 : 'bg-gray-100 text-gray-700'
             }`}
           >
@@ -197,9 +200,9 @@ export default function FeedingPage() {
             <button
               key={child.id}
               onClick={() => setSelectedChild(child.id)}
-              className={`px-4 py-2 rounded-lg ${
-                selectedChild === child.id 
-                  ? 'bg-primary-100 text-primary-700' 
+              className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base ${
+                selectedChild === child.id
+                  ? 'bg-primary-100 text-primary-700'
                   : 'bg-gray-100 text-gray-700'
               }`}
             >
@@ -210,51 +213,55 @@ export default function FeedingPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
         <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Daily Intake (ml)</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Daily Intake (ml)</h2>
           {getDailyIntakeData().length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={getDailyIntakeData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                {children?.map((child: any, index: number) => {
-                  const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
-                  return (
-                    <Bar
-                      key={child.id}
-                      dataKey={child.name}
-                      fill={colors[index % colors.length]}
-                    />
-                  )
-                })}
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <BarChart data={getDailyIntakeData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  {children?.map((child: any, index: number) => {
+                    const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                    return (
+                      <Bar
+                        key={child.id}
+                        dataKey={child.name}
+                        fill={colors[index % colors.length]}
+                      />
+                    )
+                  })}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period
             </div>
           )}
         </div>
 
         <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Total Daily Intake</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Total Daily Intake</h2>
           {getDailyIntakeData().length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={getDailyIntakeData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <LineChart data={getDailyIntakeData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Line type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period
             </div>
           )}

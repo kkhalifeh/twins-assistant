@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { childrenAPI, sleepAPI, authAPI } from '@/lib/api'
-import { format, isWithinInterval, parseISO, differenceInMinutes } from 'date-fns'
+import { format, isWithinInterval, parseISO, differenceInMinutes, startOfWeek, endOfWeek } from 'date-fns'
 import { Moon, Plus, Sun, Clock, AlertCircle, Edit2, Trash2 } from 'lucide-react'
 import SleepModal from '@/components/modals/SleepModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
@@ -15,9 +15,12 @@ export default function SleepPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
   const [editingLog, setEditingLog] = useState<any | null>(null)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(),
-    end: new Date()
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    return {
+      start: startOfWeek(now, { weekStartsOn: 0 }),
+      end: endOfWeek(now, { weekStartsOn: 0 })
+    }
   })
   const [endingSession, setEndingSession] = useState<string | null>(null)
   const [endSessionError, setEndSessionError] = useState<string | null>(null)
@@ -304,28 +307,26 @@ export default function SleepPage() {
       <div className="card mb-4 sm:mb-6 p-3 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Daily Sleep Hours</h2>
         {getDailySleepData().length > 0 ? (
-          <div className="overflow-x-auto -mx-3 sm:mx-0">
-            <div className="min-w-[300px]">
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={getDailySleepData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                  <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  {children?.map((child: any, index: number) => {
-                    const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
-                    return (
-                      <Bar
-                        key={child.id}
-                        dataKey={child.name}
-                        fill={colors[index % colors.length]}
-                      />
-                    )
-                  })}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          <div style={{ width: '100%', height: 250 }}>
+            <ResponsiveContainer>
+              <BarChart data={getDailySleepData()}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {children?.map((child: any, index: number) => {
+                  const colors = ['#ec4899', '#8b5cf6', '#10b981', '#f59e0b', '#6366f1', '#ef4444']
+                  return (
+                    <Bar
+                      key={child.id}
+                      dataKey={child.name}
+                      fill={colors[index % colors.length]}
+                    />
+                  )
+                })}
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { childrenAPI, diaperAPI, authAPI, getImageUrl } from '@/lib/api'
-import { format, isWithinInterval, parseISO, startOfDay } from 'date-fns'
+import { format, isWithinInterval, parseISO, startOfDay, startOfWeek, endOfWeek } from 'date-fns'
 import { Baby, Plus, Droplets, AlertTriangle, Edit2, Trash2, Image as ImageIcon, X } from 'lucide-react'
 import DiaperModal from '@/components/modals/DiaperModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
@@ -16,9 +16,12 @@ export default function DiapersPage() {
   const [modalChildId, setModalChildId] = useState<string>('')
   const [editingLog, setEditingLog] = useState<any | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(),
-    end: new Date()
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    return {
+      start: startOfWeek(now, { weekStartsOn: 0 }),
+      end: endOfWeek(now, { weekStartsOn: 0 })
+    }
   })
 
   const { data: currentUser } = useQuery({
@@ -143,11 +146,11 @@ export default function DiapersPage() {
   const totalChanges = stats.reduce((sum, stat) => sum + stat.value, 0)
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Diaper Tracker</h1>
-          <p className="text-gray-600 mt-1">Monitor diaper changes and patterns</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Diaper Tracker</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor diaper changes and patterns</p>
         </div>
         <button
           onClick={() => {
@@ -155,7 +158,7 @@ export default function DiapersPage() {
             setEditingLog(null)
             setShowModal(true)
           }}
-          className="btn-primary flex items-center space-x-2"
+          className="btn-primary flex items-center space-x-2 w-full sm:w-auto mt-3 sm:mt-0 justify-center"
         >
           <Plus className="w-5 h-5" />
           <span>Log Diaper</span>
@@ -163,18 +166,18 @@ export default function DiapersPage() {
       </div>
 
       {/* Date Range Selector */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <DateRangeSelector onRangeChange={handleDateRangeChange} />
       </div>
 
       {/* Child Filter */}
-      <div className="card mb-6">
-        <div className="flex space-x-2">
+      <div className="card mb-4 sm:mb-6">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedChild('all')}
-            className={`px-4 py-2 rounded-lg ${
-              selectedChild === 'all' 
-                ? 'bg-primary-100 text-primary-700' 
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base ${
+              selectedChild === 'all'
+                ? 'bg-primary-100 text-primary-700'
                 : 'bg-gray-100 text-gray-700'
             }`}
           >
@@ -184,9 +187,9 @@ export default function DiapersPage() {
             <button
               key={child.id}
               onClick={() => setSelectedChild(child.id)}
-              className={`px-4 py-2 rounded-lg ${
-                selectedChild === child.id 
-                  ? 'bg-primary-100 text-primary-700' 
+              className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base ${
+                selectedChild === child.id
+                  ? 'bg-primary-100 text-primary-700'
                   : 'bg-gray-100 text-gray-700'
               }`}
             >
@@ -198,50 +201,52 @@ export default function DiapersPage() {
 
       {/* Health Alerts */}
       {getHealthAlerts().length > 0 && (
-        <div className="mb-6 space-y-2">
+        <div className="mb-4 sm:mb-6 space-y-2">
           {getHealthAlerts().map((alert, index) => (
             <div
               key={index}
               className={`flex items-center space-x-2 p-3 rounded-lg ${
-                alert.type === 'alert' 
-                  ? 'bg-red-50 text-red-700' 
+                alert.type === 'alert'
+                  ? 'bg-red-50 text-red-700'
                   : 'bg-amber-50 text-amber-700'
               }`}
             >
-              <AlertTriangle className="w-5 h-5" />
-              <span className="text-sm font-medium">{alert.message}</span>
+              <AlertTriangle className="w-4 sm:w-5 h-4 sm:h-5" />
+              <span className="text-xs sm:text-sm font-medium">{alert.message}</span>
             </div>
           ))}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
         {/* Statistics */}
         <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Diaper Types Distribution</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Diaper Types Distribution</h2>
           {totalChanges > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={stats}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }: any) => value > 0 ? `${name}: ${value}` : ''}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {stats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={stats}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }: any) => value > 0 ? `${name}: ${value}` : ''}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {stats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className="h-[250px] flex items-center justify-center text-gray-500 text-sm">
               No data for selected period
             </div>
           )}
@@ -249,33 +254,33 @@ export default function DiapersPage() {
 
         {/* Summary Stats */}
         <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Period Summary</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <Droplets className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="text-2xl font-bold">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Period Summary</h2>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+              <Droplets className="w-5 sm:w-6 h-5 sm:h-6 text-blue-600 mb-2" />
+              <p className="text-xl sm:text-2xl font-bold">
                 {stats[0].value}
               </p>
-              <p className="text-sm text-gray-600">Wet Diapers</p>
+              <p className="text-xs sm:text-sm text-gray-600">Wet Diapers</p>
             </div>
-            <div className="bg-amber-50 rounded-lg p-4">
-              <Baby className="w-6 h-6 text-amber-600 mb-2" />
-              <p className="text-2xl font-bold">
+            <div className="bg-amber-50 rounded-lg p-3 sm:p-4">
+              <Baby className="w-5 sm:w-6 h-5 sm:h-6 text-amber-600 mb-2" />
+              <p className="text-xl sm:text-2xl font-bold">
                 {stats[1].value}
               </p>
-              <p className="text-sm text-gray-600">Dirty Diapers</p>
+              <p className="text-xs sm:text-sm text-gray-600">Dirty Diapers</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <Baby className="w-6 h-6 text-green-600 mb-2" />
-              <p className="text-2xl font-bold">
+            <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+              <Baby className="w-5 sm:w-6 h-5 sm:h-6 text-green-600 mb-2" />
+              <p className="text-xl sm:text-2xl font-bold">
                 {stats[2].value}
               </p>
-              <p className="text-sm text-gray-600">Mixed</p>
+              <p className="text-xs sm:text-sm text-gray-600">Mixed</p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <Baby className="w-6 h-6 text-purple-600 mb-2" />
-              <p className="text-2xl font-bold">{totalChanges}</p>
-              <p className="text-sm text-gray-600">Total Changes</p>
+            <div className="bg-purple-50 rounded-lg p-3 sm:p-4">
+              <Baby className="w-5 sm:w-6 h-5 sm:h-6 text-purple-600 mb-2" />
+              <p className="text-xl sm:text-2xl font-bold">{totalChanges}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Total Changes</p>
             </div>
           </div>
         </div>
