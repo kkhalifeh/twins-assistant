@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft, ChevronRight, Calendar, Filter,
-  Activity, Moon, Baby, Heart, Clock
+  Activity, Moon, Baby, Heart, Clock, Droplet
 } from 'lucide-react'
 import { format, addDays, subDays, startOfDay, endOfDay } from 'date-fns'
 import { childrenAPI } from '@/lib/api'
@@ -46,7 +46,9 @@ export default function JournalPage() {
     totalFeedings: 0,
     totalSleepHours: 0,
     totalDiaperChanges: 0,
-    healthChecks: 0
+    healthChecks: 0,
+    totalPumpingSessions: 0,
+    totalPumpedVolume: 0
   }
 
   const handlePreviousDay = () => {
@@ -71,6 +73,8 @@ export default function JournalPage() {
         return <Baby className="w-4 h-4 text-green-600" />
       case 'health':
         return <Heart className="w-4 h-4 text-red-600" />
+      case 'pumping':
+        return <Droplet className="w-4 h-4 text-cyan-600" />
       default:
         return <Clock className="w-4 h-4 text-gray-600" />
     }
@@ -86,6 +90,8 @@ export default function JournalPage() {
         return 'bg-green-50 border-green-200'
       case 'health':
         return 'bg-red-50 border-red-200'
+      case 'pumping':
+        return 'bg-cyan-50 border-cyan-200'
       default:
         return 'bg-gray-50 border-gray-200'
     }
@@ -221,7 +227,7 @@ export default function JournalPage() {
       </div>
 
       {/* Daily Stats - Mobile optimized */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -249,6 +255,17 @@ export default function JournalPage() {
               <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.totalDiaperChanges}</p>
             </div>
             <Baby className="w-6 sm:w-8 h-6 sm:h-8 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm text-gray-600">Pumping</p>
+              <p className="text-xl sm:text-2xl font-bold text-cyan-600">{stats.totalPumpedVolume}ml</p>
+              <p className="text-xs text-gray-500">{stats.totalPumpingSessions} sessions</p>
+            </div>
+            <Droplet className="w-6 sm:w-8 h-6 sm:h-8 text-cyan-500" />
           </div>
         </div>
 

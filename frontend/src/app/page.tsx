@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Activity, TrendingUp, Moon, Baby, Clock,
   Calendar, ChevronLeft, ChevronRight, AlertCircle,
-  CheckCircle, TrendingDown, Sun, Loader2
+  CheckCircle, TrendingDown, Sun, Loader2, Droplet
 } from 'lucide-react'
 import { format, startOfDay, startOfWeek, startOfMonth, endOfWeek, endOfMonth, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns'
 import api from '@/lib/api'
@@ -114,7 +114,9 @@ export default function DashboardPage() {
     totalDiaperChanges: 0,
     activeSleepSessions: 0,
     avgFeedingInterval: 0,
-    totalSleepHours: 0
+    totalSleepHours: 0,
+    totalPumpingSessions: 0,
+    totalPumpedVolume: 0
   }
 
   const insights = dashboardData?.insights || []
@@ -291,7 +293,7 @@ export default function DashboardPage() {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <Link href="/feeding" className="card hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -327,6 +329,17 @@ export default function DashboardPage() {
           </div>
         </Link>
 
+        <Link href="/pumping" className="card hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Pumping</p>
+              <p className="text-2xl font-bold">{stats.totalPumpedVolume}ml</p>
+              <p className="text-xs text-gray-500">{stats.totalPumpingSessions} sessions</p>
+            </div>
+            <Droplet className="w-8 h-8 text-cyan-500" />
+          </div>
+        </Link>
+
         <Link href="/insights" className="card hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -350,18 +363,21 @@ export default function DashboardPage() {
                   <div className={`p-2 rounded-full ${
                     activity.type === 'feeding' ? 'bg-blue-100' :
                     activity.type === 'sleep' ? 'bg-purple-100' :
+                    activity.type === 'pumping' ? 'bg-cyan-100' :
                     'bg-green-100'
                   }`}>
                     {activity.type === 'feeding' ? (
                       <Activity className="w-4 h-4 text-blue-600" />
                     ) : activity.type === 'sleep' ? (
                       <Moon className="w-4 h-4 text-purple-600" />
+                    ) : activity.type === 'pumping' ? (
+                      <Droplet className="w-4 h-4 text-cyan-600" />
                     ) : (
                       <Baby className="w-4 h-4 text-green-600" />
                     )}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{activity.childName}</p>
+                    <p className="font-medium text-sm">{activity.childName || 'Parent'}</p>
                     <p className="text-xs text-gray-600">{activity.description}</p>
                     {activity.userName && (
                       <p className="text-xs text-gray-500">Logged by {activity.userName}</p>
