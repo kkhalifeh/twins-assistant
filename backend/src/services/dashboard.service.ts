@@ -50,7 +50,14 @@ export class DashboardService {
       viewMode
     );
 
-    const [allFeedingLogs, allSleepLogs, allDiaperLogs] = await Promise.all([
+    // Get all users in account for pumping logs
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+    const userIds = users.map(u => u.id);
+
+    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allPumpingLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
           childId: { in: childIds },
@@ -98,6 +105,21 @@ export class DashboardService {
           }
         },
         orderBy: { timestamp: 'desc' }
+      }),
+      prisma.pumpingLog.findMany({
+        where: {
+          userId: { in: userIds },
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        include: {
+          user: {
+            select: { name: true, email: true }
+          }
+        },
+        orderBy: { timestamp: 'desc' }
       })
     ]);
 
@@ -132,6 +154,16 @@ export class DashboardService {
       )
     );
 
+    const pumpingLogs = allPumpingLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || timezone,
+        dateStr,
+        timezone,
+        viewMode
+      )
+    );
+
     // Get active sleep sessions
     const activeSleepSessions = await prisma.sleepLog.findMany({
       where: {
@@ -141,11 +173,18 @@ export class DashboardService {
       include: { child: true }
     });
 
+    // Calculate pumping stats
+    const totalPumpedVolume = pumpingLogs.reduce((sum, log) => sum + (log.amount || 0), 0);
+    const lastPumping = pumpingLogs.length > 0 ? pumpingLogs[0] : null;
+
     // Calculate statistics
     const stats = {
       totalFeedings: feedingLogs.length,
       totalSleepSessions: sleepLogs.length,
       totalDiaperChanges: diaperLogs.length,
+      totalPumpingSessions: pumpingLogs.length,
+      totalPumpedVolume,
+      lastPumping,
       activeSleepSessions: activeSleepSessions.length,
       avgFeedingInterval: this.calculateAvgFeedingInterval(feedingLogs),
       totalSleepHours: this.calculateTotalSleepHours(sleepLogs),
@@ -178,7 +217,7 @@ export class DashboardService {
       stats,
       insights,
       activeSleepSessions,
-      recentActivities: this.getRecentActivities(feedingLogs, sleepLogs, diaperLogs, timezone).slice(0, 10)
+      recentActivities: this.getRecentActivities(feedingLogs, sleepLogs, diaperLogs, pumpingLogs, timezone).slice(0, 10)
     };
   }
 
@@ -414,7 +453,7 @@ export class DashboardService {
     return insights.slice(0, 5); // Return top 5 insights
   }
 
-  private getRecentActivities(feedingLogs: any[], sleepLogs: any[], diaperLogs: any[], displayTimezone: string) {
+  private getRecentActivities(feedingLogs: any[], sleepLogs: any[], diaperLogs: any[], pumpingLogs: any[], displayTimezone: string) {
     const activities = [
       ...feedingLogs.map(log => ({
         type: 'feeding',
@@ -434,6 +473,21 @@ export class DashboardService {
         userName: log.user?.name,
         icon: 'bottle',
         color: 'blue'
+      })),
+      ...pumpingLogs.map(log => ({
+        type: 'pumping',
+        childName: null,
+        description: `Pumped ${log.amount}ml in ${log.duration} min`,
+        timestamp: log.timestamp,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.timestamp,
+          log.entryTimezone || displayTimezone,
+          displayTimezone
+        ),
+        userName: log.user?.name,
+        icon: 'droplet',
+        color: 'cyan'
       })),
       ...sleepLogs.map(log => ({
         type: 'sleep',

@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import childrenRoutes from './routes/children.routes';
 import feedingRoutes from './routes/feeding.routes';
+import pumpingRoutes from './routes/pumping.routes';
 import sleepRoutes from './routes/sleep.routes';
 import diaperRoutes from './routes/diaper.routes';
 import healthRoutes from './routes/health.routes';
@@ -64,6 +65,7 @@ app.use('/api/users', userRoutes); // User management routes already have auth m
 app.use('/api/user', userRoutes); // Also support singular /api/user for frontend compatibility
 app.use('/api/children', authMiddleware, checkResourceAccess, childrenRoutes);
 app.use('/api/feeding', authMiddleware, checkResourceAccess, feedingRoutes);
+app.use('/api/pumping', authMiddleware, checkResourceAccess, pumpingRoutes);
 app.use('/api/sleep', authMiddleware, checkResourceAccess, sleepRoutes);
 app.use('/api/diapers', authMiddleware, checkResourceAccess, diaperRoutes);
 app.use('/api/health', authMiddleware, checkResourceAccess, healthRoutes);
@@ -84,6 +86,7 @@ app.get('/api', (req: Request, res: Response) => {
       users: '/api/users',
       children: '/api/children',
       feeding: '/api/feeding',
+      pumping: '/api/pumping',
       sleep: '/api/sleep',
       diapers: '/api/diapers',
       health: '/api/health',

@@ -84,7 +84,9 @@ router.get('/suggestions', async (req: Request, res: Response) => {
       "Fed baby 120ml",
       "Child is sleeping",
       "Changed diaper - wet",
+      "Pumped 150ml in 20 minutes",
       "When was last feeding?",
+      "When did I last pump?",
       "Show today's summary",
       "How many times did child eat this week?",
       "Temperature 37.2",
@@ -94,7 +96,7 @@ router.get('/suggestions', async (req: Request, res: Response) => {
       "Compare twins feeding patterns",
       "What's the average sleep duration?"
     ];
-    
+
     res.json(suggestions);
   } catch (error) {
     console.error('Error getting suggestions:', error);

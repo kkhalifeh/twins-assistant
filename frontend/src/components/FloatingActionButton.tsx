@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X, Milk, Moon, Baby, Heart } from 'lucide-react'
+import { Plus, X, Milk, Moon, Baby, Heart, Droplet } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function FloatingActionButton() {
@@ -10,6 +10,7 @@ export default function FloatingActionButton() {
 
   const actions = [
     { icon: Milk, label: 'Feeding', color: 'bg-blue-500 hover:bg-blue-600', route: '/feeding' },
+    { icon: Droplet, label: 'Pumping', color: 'bg-cyan-500 hover:bg-cyan-600', route: '/pumping' },
     { icon: Moon, label: 'Sleep', color: 'bg-purple-500 hover:bg-purple-600', route: '/sleep' },
     { icon: Baby, label: 'Diaper', color: 'bg-green-500 hover:bg-green-600', route: '/diapers' },
     { icon: Heart, label: 'Health', color: 'bg-red-500 hover:bg-red-600', route: '/health' },

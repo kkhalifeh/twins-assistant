@@ -257,10 +257,121 @@ export class AnalyticsService {
     };
   }
 
+  // Analyze pumping patterns for mom
+  async analyzePumpingPatterns(days: number = 7, userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return null;
+    }
+
+    const since = subDays(new Date(), days);
+
+    // Get all users in account (to get all pumping logs)
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
+    const pumpingLogs = await prisma.pumpingLog.findMany({
+      where: {
+        userId: { in: userIds },
+        timestamp: { gte: since }
+      },
+      orderBy: { timestamp: 'asc' }
+    });
+
+    if (pumpingLogs.length === 0) return null;
+
+    // Group by day to count actual days with data
+    const pumpingByDay = new Map<string, any[]>();
+    pumpingLogs.forEach(log => {
+      const dayKey = format(log.timestamp, 'yyyy-MM-dd');
+      const currentLogs = pumpingByDay.get(dayKey) || [];
+      currentLogs.push(log);
+      pumpingByDay.set(dayKey, currentLogs);
+    });
+
+    const daysWithData = pumpingByDay.size;
+
+    // Calculate totals and averages
+    const totalVolume = pumpingLogs.reduce((sum, log) => sum + (log.amount || 0), 0);
+    const totalDuration = pumpingLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
+    const totalSessions = pumpingLogs.length;
+    const avgVolume = totalSessions > 0 ? Math.round(totalVolume / totalSessions) : 0;
+    const avgDuration = totalSessions > 0 ? Math.round(totalDuration / totalSessions) : 0;
+    const avgSessionsPerDay = daysWithData > 0 ? (totalSessions / daysWithData).toFixed(1) : '0';
+    const avgVolumePerDay = daysWithData > 0 ? Math.round(totalVolume / daysWithData) : 0;
+
+    // Analyze pump efficiency (volume per minute)
+    const pumpData: Record<string, { totalVolume: number; totalDuration: number; sessions: number }> = {};
+    pumpingLogs.forEach(log => {
+      const pump = log.pumpType || 'OTHER';
+      if (!pumpData[pump]) {
+        pumpData[pump] = { totalVolume: 0, totalDuration: 0, sessions: 0 };
+      }
+      pumpData[pump].totalVolume += log.amount || 0;
+      pumpData[pump].totalDuration += log.duration || 0;
+      pumpData[pump].sessions += 1;
+    });
+
+    // Find most efficient pump
+    let mostEfficientPump = 'N/A';
+    let highestEfficiency = 0;
+    Object.entries(pumpData).forEach(([pump, data]) => {
+      const efficiency = data.totalDuration > 0 ? data.totalVolume / data.totalDuration : 0;
+      if (efficiency > highestEfficiency) {
+        highestEfficiency = efficiency;
+        mostEfficientPump = pump;
+      }
+    });
+
+    // Usage distribution
+    const stored = pumpingLogs.filter(log => log.usage === 'STORED').length;
+    const used = pumpingLogs.filter(log => log.usage === 'USED').length;
+    const storedPercent = totalSessions > 0 ? Math.round((stored / totalSessions) * 100) : 0;
+
+    // Calculate trend (compare first half vs second half)
+    const midPoint = Math.floor(pumpingLogs.length / 2);
+    const firstHalf = pumpingLogs.slice(0, midPoint);
+    const secondHalf = pumpingLogs.slice(midPoint);
+
+    const firstHalfAvg = firstHalf.length > 0
+      ? firstHalf.reduce((sum, log) => sum + (log.amount || 0), 0) / firstHalf.length
+      : 0;
+    const secondHalfAvg = secondHalf.length > 0
+      ? secondHalf.reduce((sum, log) => sum + (log.amount || 0), 0) / secondHalf.length
+      : 0;
+
+    let trend = 'stable';
+    if (secondHalfAvg > firstHalfAvg * 1.1) trend = 'increasing';
+    if (secondHalfAvg < firstHalfAvg * 0.9) trend = 'decreasing';
+
+    return {
+      totalVolume,
+      totalSessions,
+      daysWithData,
+      avgVolume,
+      avgDuration,
+      avgSessionsPerDay,
+      avgVolumePerDay,
+      mostEfficientPump,
+      highestEfficiency: Math.round(highestEfficiency * 100) / 100,
+      storedPercent,
+      trend,
+      lastSession: pumpingLogs[pumpingLogs.length - 1]
+    };
+  }
+
   // Calculate sleep quality score
   private calculateSleepQuality(sleepLogs: any[]) {
     if (sleepLogs.length === 0) return 'No data';
-    
+
     const qualityScores = {
       'DEEP': 3,
       'RESTLESS': 1,
@@ -272,7 +383,7 @@ export class AnalyticsService {
     }, 0);
 
     const avgScore = totalScore / sleepLogs.length;
-    
+
     if (avgScore >= 2.5) return 'Excellent';
     if (avgScore >= 1.5) return 'Good';
     return 'Needs attention';
@@ -594,6 +705,46 @@ export class AnalyticsService {
           recommendation: 'Use this pattern to optimize daily routine.'
         });
       }
+    }
+
+    // Pumping insights (for mom/parents)
+    const pumpingPattern = await this.analyzePumpingPatterns(7, userId);
+    if (pumpingPattern) {
+      const pumpTypeLabels: Record<string, string> = {
+        'BABY_BUDDHA': 'Baby Buddha',
+        'MADELA_SYMPHONY': 'Madela Symphony',
+        'SPECTRA_S1': 'Spectra S1',
+        'OTHER': 'Other'
+      };
+
+      let description = `Pumping ${pumpingPattern.avgSessionsPerDay} sessions per day on average, producing ${pumpingPattern.avgVolumePerDay}ml daily (${pumpingPattern.avgVolume}ml per session). `;
+      description += `${pumpingPattern.storedPercent}% of milk is being stored. `;
+
+      if (pumpingPattern.mostEfficientPump !== 'N/A') {
+        description += `Most efficient pump: ${pumpTypeLabels[pumpingPattern.mostEfficientPump] || pumpingPattern.mostEfficientPump} (${pumpingPattern.highestEfficiency}ml/min).`;
+      }
+
+      let recommendation = '';
+      if (pumpingPattern.trend === 'increasing') {
+        recommendation = 'Great! Milk supply is increasing. Continue current routine and stay hydrated.';
+      } else if (pumpingPattern.trend === 'decreasing') {
+        recommendation = 'Milk supply appears to be decreasing. Ensure adequate hydration, nutrition, and rest. Consider pumping more frequently.';
+      } else {
+        recommendation = 'Milk supply is stable. Maintain current pumping schedule.';
+      }
+
+      // Provide next action based on last session time
+      const lastSessionTime = formatInTimeZone(pumpingPattern.lastSession.timestamp, timezone, 'h:mm a');
+
+      insights.push({
+        type: 'pumping',
+        title: 'Pumping & Milk Supply Analysis',
+        description,
+        trend: pumpingPattern.trend,
+        confidence: 0.85,
+        recommendation,
+        nextAction: `Last session was at ${lastSessionTime}. Typical interval is every ${Math.round(24 / parseFloat(pumpingPattern.avgSessionsPerDay))} hours.`
+      });
     }
 
     // Children comparison insights (only if multiple children)

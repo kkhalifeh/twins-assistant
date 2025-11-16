@@ -2,10 +2,12 @@ import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, differenceInMinutes, differenceInHours, parse } from 'date-fns';
 import { formatInTimeZone, toDate } from 'date-fns-tz';
+import fetch from 'node-fetch';
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
   apiKey: (process.env.OPENAI_API_KEY || '').trim(),
+  fetch: fetch as any,
 });
 
 // Store conversation history per user
@@ -244,6 +246,72 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
 
     const timeStr = formatInTimeZone(healthLog.timestamp, timezone, 'h:mm a');
     return `✅ Logged temperature for ${healthLog.child.name}: ${temperature}°C at ${timeStr}. ${assessment}`;
+  },
+
+  logPumping: async (args: any): Promise<string> => {
+    const { amount, duration, pumpType, usage, notes, userId, time, timezone = 'America/New_York' } = args;
+
+    // Parse the time if provided, otherwise use current time
+    const pumpingTime = parseTimeToUTC(time, timezone);
+
+    const pumpingLog = await prisma.pumpingLog.create({
+      data: {
+        userId,
+        timestamp: pumpingTime,
+        amount: amount || 120,
+        duration: duration || 15,
+        pumpType: pumpType?.toUpperCase() || 'OTHER',
+        usage: usage?.toUpperCase() || 'STORED',
+        notes: notes || 'Logged via AI chat'
+      },
+      include: {
+        user: {
+          select: { name: true }
+        }
+      }
+    });
+
+    const todayCount = await prisma.pumpingLog.count({
+      where: {
+        userId,
+        timestamp: { gte: startOfDay(new Date()) }
+      }
+    });
+
+    const todayTotal = await prisma.pumpingLog.aggregate({
+      where: {
+        userId,
+        timestamp: { gte: startOfDay(new Date()) }
+      },
+      _sum: { amount: true }
+    });
+
+    const timeStr = formatInTimeZone(pumpingLog.timestamp, timezone, 'h:mm a');
+    return `✅ Logged pumping session: ${amount || 120}ml in ${duration || 15} min at ${timeStr}. Today's total: ${todayCount} sessions (${todayTotal._sum.amount || 0}ml)`;
+  },
+
+  getLastPumping: async (args: any): Promise<string> => {
+    const { userId, timezone = 'America/New_York' } = args;
+
+    const lastPumping = await prisma.pumpingLog.findFirst({
+      where: { userId },
+      orderBy: { timestamp: 'desc' },
+      include: {
+        user: {
+          select: { name: true }
+        }
+      }
+    });
+
+    if (!lastPumping) {
+      return 'No pumping records found';
+    }
+
+    const hoursAgo = differenceInHours(new Date(), lastPumping.timestamp);
+    const minutesAgo = differenceInMinutes(new Date(), lastPumping.timestamp) % 60;
+    const timeStr = formatInTimeZone(lastPumping.timestamp, timezone, 'h:mm a');
+
+    return `Last pumping session was ${hoursAgo}h ${minutesAgo}m ago: ${lastPumping.amount}ml in ${lastPumping.duration} min at ${timeStr}`;
   },
   
   getLastFeeding: async (args: any): Promise<string> => {
@@ -627,7 +695,8 @@ Available functions:
 - endSleep: End sleep tracking (requires childId)
 - logDiaper: Log diaper change (requires childId and type: WET, DIRTY, or MIXED, optionally time)
 - logTemperature: Log temperature (requires childId and temperature in °C, optionally time)
-- getLastFeeding, getLastDiaperChange, getSleepStatus, getFeedingCount, compareTwinsToday, getSummary
+- logPumping: Log pumping session (optionally amount in ml defaults to 120ml, duration in min defaults to 15, pumpType, usage, time)
+- getLastFeeding, getLastDiaperChange, getLastPumping, getSleepStatus, getFeedingCount, compareTwinsToday, getSummary
 
 TIME LOGGING:
 - Users can specify when an event occurred (e.g., "log 40ml for Maryam at 5pm")
@@ -738,6 +807,29 @@ Be warm, helpful, and conversational. Maintain conversation context and ask clar
               time: { type: 'string', description: 'Optional time string (e.g., "5pm", "17:00", "5:30pm"). If not provided, uses current time. Parse in user\'s timezone.' }
             },
             required: ['childId', 'temperature']
+          }
+        },
+        {
+          name: 'logPumping',
+          description: 'Log a pumping session for the mom/parent. This is NOT child-specific. Can log at a specific time.',
+          parameters: {
+            type: 'object',
+            properties: {
+              amount: { type: 'number', description: 'Amount pumped in ml. Defaults to 120ml if not specified.' },
+              duration: { type: 'number', description: 'Duration in minutes. Defaults to 15 min if not specified.' },
+              pumpType: { type: 'string', enum: ['baby_buddha', 'madela_symphony', 'spectra_s1', 'other'], description: 'Type of pump used. Optional.' },
+              usage: { type: 'string', enum: ['stored', 'used'], description: 'Whether the milk was stored or used immediately. Defaults to stored.' },
+              notes: { type: 'string', description: 'Optional notes about the pumping session' },
+              time: { type: 'string', description: 'Optional time string (e.g., "5pm", "17:00", "5:30pm"). If not provided, uses current time. Parse in user\'s timezone.' }
+            }
+          }
+        },
+        {
+          name: 'getLastPumping',
+          description: 'Get information about the last pumping session for the mom/parent.',
+          parameters: {
+            type: 'object',
+            properties: {}
           }
         },
         {

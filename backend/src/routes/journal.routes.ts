@@ -60,6 +60,25 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     const childIds = children.map(c => c.id);
 
     if (childIds.length === 0) {
+      // Even with no children, we can still show pumping stats for the user
+      const users = await prisma.user.findMany({
+        where: { accountId: user.accountId },
+        select: { id: true }
+      });
+      const userIds = users.map(u => u.id);
+
+      const pumpingLogs = await prisma.pumpingLog.findMany({
+        where: {
+          userId: { in: userIds },
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        }
+      });
+
+      const totalPumpedVolume = pumpingLogs.reduce((sum, log) => sum + (log.amount || 0), 0);
+
       return res.json({
         date: dateStr,
         timezone: viewTimezone,
@@ -68,7 +87,9 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
           totalFeedings: 0,
           totalSleepHours: 0,
           totalDiaperChanges: 0,
-          healthChecks: 0
+          healthChecks: 0,
+          totalPumpingSessions: pumpingLogs.length,
+          totalPumpedVolume
         }
       });
     }
@@ -79,8 +100,15 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       whereClause.childId = childId as string;
     }
 
+    // Get all users in account for pumping logs
+    const users = await prisma.user.findMany({
+      where: { accountId: user.accountId },
+      select: { id: true }
+    });
+    const userIds = users.map(u => u.id);
+
     // Fetch all activities for the day (with ±1 day buffer)
-    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allHealthLogs] = await Promise.all([
+    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allHealthLogs, allPumpingLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
           ...whereClause,
@@ -144,6 +172,21 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
           }
         },
         orderBy: { timestamp: 'desc' }
+      }),
+      prisma.pumpingLog.findMany({
+        where: {
+          userId: { in: userIds },
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        include: {
+          user: {
+            select: { name: true, email: true }
+          }
+        },
+        orderBy: { timestamp: 'desc' }
       })
     ]);
 
@@ -179,6 +222,16 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     );
 
     const healthLogs = allHealthLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || viewTimezone,
+        dateStr,
+        viewTimezone,
+        'day'
+      )
+    );
+
+    const pumpingLogs = allPumpingLogs.filter(log =>
       TimezoneService.isInDateRange(
         log.timestamp,
         log.entryTimezone || viewTimezone,
@@ -255,18 +308,38 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         userName: log.user?.name,
         notes: log.notes,
         duration: null
+      })),
+      ...pumpingLogs.map(log => ({
+        type: 'pumping',
+        childName: null,
+        description: `Pumped ${log.amount}ml in ${log.duration} min`,
+        timestamp: log.timestamp,
+        entryTimezone: log.entryTimezone,
+        displayTime: TimezoneService.formatInTimezone(
+          log.timestamp,
+          log.entryTimezone || viewTimezone,
+          viewTimezone
+        ),
+        userName: log.user?.name,
+        notes: log.notes,
+        duration: `${log.duration}min`
       }))
     ];
 
     // Sort by timestamp (most recent first)
     activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+    // Calculate pumping stats
+    const totalPumpedVolume = pumpingLogs.reduce((sum, log) => sum + (log.amount || 0), 0);
+
     // Calculate stats
     const stats = {
       totalFeedings: feedingLogs.length,
       totalSleepHours: Math.round((sleepLogs.reduce((sum, log) => sum + (log.duration || 0), 0) / 60) * 10) / 10,
       totalDiaperChanges: diaperLogs.length,
-      healthChecks: healthLogs.length
+      healthChecks: healthLogs.length,
+      totalPumpingSessions: pumpingLogs.length,
+      totalPumpedVolume
     };
 
     res.json({

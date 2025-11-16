@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import {
   Home, Activity, Moon, Baby, Heart, Trophy,
   Package, Brain, Settings, Menu, X, LogOut,
-  MessageSquare, Calendar, Sparkles
+  MessageSquare, Calendar, Sparkles, Droplet
 } from 'lucide-react'
 import { authAPI } from '@/lib/api'
 import { TimezoneProvider } from '@/contexts/TimezoneContext'
@@ -30,6 +30,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Journal', href: '/journal', icon: Calendar },
   { name: 'Feeding', href: '/feeding', icon: Activity },
+  { name: 'Pumping', href: '/pumping', icon: Droplet },
   { name: 'Sleep', href: '/sleep', icon: Moon },
   { name: 'Diapers', href: '/diapers', icon: Baby },
   { name: 'Health', href: '/health', icon: Heart },

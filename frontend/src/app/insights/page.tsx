@@ -6,7 +6,7 @@ import { analyticsAPI } from '@/lib/api'
 import {
   Brain, TrendingUp, AlertCircle, Lightbulb,
   Calendar, Download, ChevronRight, RefreshCw,
-  Clock, Activity, Target, Loader2, Baby
+  Clock, Activity, Target, Loader2, Baby, Droplet
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -46,6 +46,7 @@ export default function InsightsPage() {
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'feeding': return TrendingUp
+      case 'pumping': return Droplet
       case 'sleep': return Brain
       case 'diaper': return Baby
       case 'correlation': return Lightbulb
@@ -57,6 +58,7 @@ export default function InsightsPage() {
   const getInsightColor = (type: string) => {
     switch (type) {
       case 'feeding': return 'text-blue-600'
+      case 'pumping': return 'text-cyan-600'
       case 'sleep': return 'text-purple-600'
       case 'diaper': return 'text-green-600'
       case 'correlation': return 'text-amber-600'

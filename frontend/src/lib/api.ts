@@ -103,6 +103,14 @@ export const feedingAPI = {
   endFeeding: (id: string) => api.put(`/feeding/${id}/end`).then(res => res.data),
 };
 
+// Pumping API
+export const pumpingAPI = {
+  getAll: (params?: any) => api.get('/pumping', { params }).then(res => res.data),
+  create: (data: any) => api.post('/pumping', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/pumping/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/pumping/${id}`).then(res => res.data),
+};
+
 // Sleep API
 export const sleepAPI = {
   getAll: (params?: any) => api.get('/sleep', { params }).then(res => res.data),

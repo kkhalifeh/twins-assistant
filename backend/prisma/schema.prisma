@@ -36,6 +36,7 @@ model User {
   ownedAccount Account?     @relation("AccountOwner")
   children     Child[]
   feedingLogs  FeedingLog[]
+  pumpingLogs  PumpingLog[]
   sleepLogs    SleepLog[]
   diaperLogs   DiaperLog[]
   healthLogs   HealthLog[]
@@ -87,6 +88,24 @@ model FeedingLog {
   user  User  @relation(fields: [userId], references: [id])
 
   @@index([childId, startTime])
+}
+
+model PumpingLog {
+  id            String       @id @default(cuid())
+  userId        String
+  timestamp     DateTime
+  pumpType      PumpType
+  duration      Int          // in minutes
+  amount        Float        // in ml
+  usage         UsageType
+  notes         String?
+  entryTimezone String       @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime     @default(now())
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
 }
 
 model SleepLog {
@@ -331,4 +350,16 @@ enum PatternType {
   HEALTH
   BEHAVIOR
   CORRELATION
+}
+
+enum PumpType {
+  BABY_BUDDHA
+  MADELA_SYMPHONY
+  SPECTRA_S1
+  OTHER
+}
+
+enum UsageType {
+  STORED
+  USED
 }
