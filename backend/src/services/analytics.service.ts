@@ -72,34 +72,34 @@ export class AnalyticsService {
 
     const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
 
-    // Calculate average amount/duration intelligently
-    // For bottle/formula: use amount in ml
-    // For breast: estimate based on duration (rough estimate: 30ml per 5 minutes)
+    // Calculate average amount ONLY for bottle/formula (measured amounts)
+    // For breast: calculate average duration separately - don't estimate volume
     const bottleFeedings = feedingLogs.filter(log => log.type === 'BOTTLE' || log.type === 'FORMULA');
     const breastFeedings = feedingLogs.filter(log => log.type === 'BREAST');
 
-    let totalIntake = 0;
-    let feedingCount = 0;
-
-    // Add bottle/formula amounts
+    // Calculate average for bottle/formula feedings (actual measured amounts)
+    let totalBottleAmount = 0;
+    let bottleCount = 0;
     bottleFeedings.forEach(log => {
       if (log.amount && log.amount > 0) {
-        totalIntake += log.amount;
-        feedingCount++;
+        totalBottleAmount += log.amount;
+        bottleCount++;
       }
     });
 
-    // Estimate breast feeding amounts from duration
+    const avgBottleAmount = bottleCount > 0 ? Math.round(totalBottleAmount / bottleCount) : 0;
+
+    // Calculate average duration for breastfeedings
+    let totalBreastDuration = 0;
+    let breastCount = 0;
     breastFeedings.forEach(log => {
       if (log.duration && log.duration > 0) {
-        // Rough estimate: 30ml per 5 minutes of breastfeeding
-        const estimatedAmount = (log.duration / 5) * 30;
-        totalIntake += estimatedAmount;
-        feedingCount++;
+        totalBreastDuration += log.duration;
+        breastCount++;
       }
     });
 
-    const avgAmount = feedingCount > 0 ? Math.round(totalIntake / feedingCount) : 0;
+    const avgBreastDuration = breastCount > 0 ? Math.round(totalBreastDuration / breastCount) : 0;
 
     // Detect trending patterns
     const recentInterval = intervals.slice(-5).reduce((a, b) => a + b, 0) / Math.min(5, intervals.slice(-5).length);
@@ -107,7 +107,8 @@ export class AnalyticsService {
 
     return {
       averageInterval: avgInterval.toFixed(1),
-      averageAmount: Math.round(avgAmount),
+      averageBottleAmount: avgBottleAmount, // Only bottle/formula (measured)
+      averageBreastDuration: avgBreastDuration, // Breast duration in minutes
       totalFeedings: feedingLogs.length,
       breastCount: breastFeedings.length,
       bottleCount: bottleFeedings.length,
@@ -583,20 +584,40 @@ export class AnalyticsService {
       if (feedingPattern) {
         // Create a more detailed description based on feeding types
         let feedingDetails = '';
+        let amountDetails = '';
+
         if (feedingPattern.breastCount > 0 && feedingPattern.bottleCount > 0) {
           feedingDetails = ` (${feedingPattern.breastCount} breast, ${feedingPattern.bottleCount} bottle/formula)`;
+          // Show both bottle amount and breast duration
+          if (feedingPattern.averageBottleAmount > 0) {
+            amountDetails += `averaging ${feedingPattern.averageBottleAmount}ml per bottle/formula feed`;
+          }
+          if (feedingPattern.averageBreastDuration > 0) {
+            if (amountDetails) amountDetails += ' and ';
+            amountDetails += `${feedingPattern.averageBreastDuration} minutes per breastfeed`;
+          }
         } else if (feedingPattern.breastCount > 0) {
           feedingDetails = ' (breastfed)';
+          if (feedingPattern.averageBreastDuration > 0) {
+            amountDetails = `averaging ${feedingPattern.averageBreastDuration} minutes per feed`;
+          }
         } else if (feedingPattern.bottleCount > 0) {
           feedingDetails = ' (bottle/formula)';
+          if (feedingPattern.averageBottleAmount > 0) {
+            amountDetails = `averaging ${feedingPattern.averageBottleAmount}ml per feed`;
+          }
         }
+
+        const description = amountDetails
+          ? `${child.name} feeds every ${feedingPattern.averageInterval} hours on average, ${amountDetails}${feedingDetails}. Total: ${feedingPattern.totalFeedings} feedings in past week.`
+          : `${child.name} feeds every ${feedingPattern.averageInterval} hours on average${feedingDetails}. Total: ${feedingPattern.totalFeedings} feedings in past week.`;
 
         insights.push({
           childId: child.id,
           childName: child.name,
           type: 'feeding',
           title: 'Feeding Pattern Analysis',
-          description: `${child.name} feeds every ${feedingPattern.averageInterval} hours on average, consuming about ${feedingPattern.averageAmount}ml per feeding${feedingDetails}. Total: ${feedingPattern.totalFeedings} feedings in past week.`,
+          description,
           trend: feedingPattern.trend,
           confidence: 0.85,
           recommendation: feedingPattern.trend === 'increasing'
