@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tantml:parameter>
-<invoke name="pumpingAPI, authAPI } from '@/lib/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { pumpingAPI, authAPI } from '@/lib/api'
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns'
 import { Droplet, Plus, TrendingUp, Edit2, Trash2, Activity } from 'lucide-react'
 import PumpingModal from '@/components/modals/PumpingModal'
