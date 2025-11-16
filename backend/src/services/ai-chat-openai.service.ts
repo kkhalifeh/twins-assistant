@@ -2,12 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, differenceInMinutes, differenceInHours, parse } from 'date-fns';
 import { formatInTimeZone, toDate } from 'date-fns-tz';
-import fetch from 'node-fetch';
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
   apiKey: (process.env.OPENAI_API_KEY || '').trim(),
-  fetch: fetch as any,
 });
 
 // Store conversation history per user
