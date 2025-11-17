@@ -57,7 +57,7 @@ export class DashboardService {
     });
     const userIds = users.map(u => u.id);
 
-    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allPumpingLogs] = await Promise.all([
+    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allPumpingLogs, allHygieneLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
           childId: { in: childIds },
@@ -120,6 +120,22 @@ export class DashboardService {
           }
         },
         orderBy: { timestamp: 'desc' }
+      }),
+      prisma.hygieneLog.findMany({
+        where: {
+          childId: { in: childIds },
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
+        orderBy: { timestamp: 'desc' }
       })
     ]);
 
@@ -164,6 +180,16 @@ export class DashboardService {
       )
     );
 
+    const hygieneLogs = allHygieneLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || timezone,
+        dateStr,
+        timezone,
+        viewMode
+      )
+    );
+
     // Get active sleep sessions
     const activeSleepSessions = await prisma.sleepLog.findMany({
       where: {
@@ -177,6 +203,12 @@ export class DashboardService {
     const totalPumpedVolume = pumpingLogs.reduce((sum, log) => sum + (log.amount || 0), 0);
     const lastPumping = pumpingLogs.length > 0 ? pumpingLogs[0] : null;
 
+    // Calculate hygiene stats
+    const totalHygieneLogs = hygieneLogs.length;
+    const lastBath = hygieneLogs.find(log => log.type === 'BATH') || null;
+    const lastNailTrim = hygieneLogs.find(log => log.type === 'NAIL_TRIMMING') || null;
+    const lastOralCare = hygieneLogs.find(log => log.type === 'ORAL_CARE') || null;
+
     // Calculate statistics
     const stats = {
       totalFeedings: feedingLogs.length,
@@ -189,7 +221,11 @@ export class DashboardService {
       avgFeedingInterval: this.calculateAvgFeedingInterval(feedingLogs),
       totalSleepHours: this.calculateTotalSleepHours(sleepLogs),
       lastFeedings: await this.getLastFeedingsPerChild(children),
-      lastDiaperChanges: await this.getLastDiaperChangesPerChild(children)
+      lastDiaperChanges: await this.getLastDiaperChangesPerChild(children),
+      totalHygieneLogs,
+      lastBath,
+      lastNailTrim,
+      lastOralCare
     };
 
     // Generate real-time insights
@@ -217,7 +253,7 @@ export class DashboardService {
       stats,
       insights,
       activeSleepSessions,
-      recentActivities: this.getRecentActivities(feedingLogs, sleepLogs, diaperLogs, pumpingLogs, timezone).slice(0, 10)
+      recentActivities: this.getRecentActivities(feedingLogs, sleepLogs, diaperLogs, pumpingLogs, hygieneLogs, timezone).slice(0, 10)
     };
   }
 
@@ -453,7 +489,7 @@ export class DashboardService {
     return insights.slice(0, 5); // Return top 5 insights
   }
 
-  private getRecentActivities(feedingLogs: any[], sleepLogs: any[], diaperLogs: any[], pumpingLogs: any[], displayTimezone: string) {
+  private getRecentActivities(feedingLogs: any[], sleepLogs: any[], diaperLogs: any[], pumpingLogs: any[], hygieneLogs: any[], displayTimezone: string) {
     const activities = [
       ...feedingLogs.map(log => ({
         type: 'feeding',
@@ -520,7 +556,44 @@ export class DashboardService {
         userName: log.user?.name,
         icon: 'baby',
         color: 'green'
-      }))
+      })),
+      ...hygieneLogs.map(log => {
+        let description = '';
+        let icon = 'sparkles';
+
+        switch (log.type) {
+          case 'BATH':
+            description = 'Bath';
+            icon = 'sparkles';
+            break;
+          case 'NAIL_TRIMMING':
+            description = 'Nail trimming';
+            icon = 'scissors';
+            break;
+          case 'ORAL_CARE':
+            description = 'Oral care';
+            icon = 'smile';
+            break;
+          default:
+            description = log.type.toLowerCase();
+        }
+
+        return {
+          type: 'hygiene',
+          childName: log.child.name,
+          description,
+          timestamp: log.timestamp,
+          entryTimezone: log.entryTimezone,
+          displayTime: TimezoneService.formatInTimezone(
+            log.timestamp,
+            log.entryTimezone || displayTimezone,
+            displayTimezone
+          ),
+          userName: log.user?.name,
+          icon,
+          color: 'teal'
+        };
+      })
     ];
 
     // Sort by timestamp

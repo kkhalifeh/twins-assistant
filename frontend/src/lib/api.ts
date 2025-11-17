@@ -137,6 +137,14 @@ export const healthAPI = {
   getVitals: (childId: string) => api.get(`/health/vitals/${childId}`).then(res => res.data),
 };
 
+// Hygiene API
+export const hygieneAPI = {
+  getAll: (params?: any) => api.get('/hygiene', { params }).then(res => res.data),
+  create: (data: any) => api.post('/hygiene', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/hygiene/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/hygiene/${id}`).then(res => res.data),
+};
+
 // Analytics API
 export const analyticsAPI = {
   getInsights: () => api.get('/analytics/insights').then(res => res.data),

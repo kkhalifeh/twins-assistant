@@ -108,7 +108,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     const userIds = users.map(u => u.id);
 
     // Fetch all activities for the day (with ±1 day buffer)
-    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allHealthLogs, allPumpingLogs] = await Promise.all([
+    const [allFeedingLogs, allSleepLogs, allDiaperLogs, allHealthLogs, allPumpingLogs, allHygieneLogs] = await Promise.all([
       prisma.feedingLog.findMany({
         where: {
           ...whereClause,
@@ -187,6 +187,22 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
           }
         },
         orderBy: { timestamp: 'desc' }
+      }),
+      prisma.hygieneLog.findMany({
+        where: {
+          ...whereClause,
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        include: {
+          child: true,
+          user: {
+            select: { name: true, email: true }
+          }
+        },
+        orderBy: { timestamp: 'desc' }
       })
     ]);
 
@@ -232,6 +248,16 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
     );
 
     const pumpingLogs = allPumpingLogs.filter(log =>
+      TimezoneService.isInDateRange(
+        log.timestamp,
+        log.entryTimezone || viewTimezone,
+        dateStr,
+        viewTimezone,
+        'day'
+      )
+    );
+
+    const hygieneLogs = allHygieneLogs.filter(log =>
       TimezoneService.isInDateRange(
         log.timestamp,
         log.entryTimezone || viewTimezone,
@@ -323,7 +349,40 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         userName: log.user?.name,
         notes: log.notes,
         duration: `${log.duration}min`
-      }))
+      })),
+      ...hygieneLogs.map(log => {
+        let description = '';
+
+        switch (log.type) {
+          case 'BATH':
+            description = 'Bath';
+            break;
+          case 'NAIL_TRIMMING':
+            description = 'Nail trimming';
+            break;
+          case 'ORAL_CARE':
+            description = 'Oral care';
+            break;
+          default:
+            description = log.type?.toLowerCase() || 'hygiene';
+        }
+
+        return {
+          type: 'hygiene',
+          childName: log.child.name,
+          description,
+          timestamp: log.timestamp,
+          entryTimezone: log.entryTimezone,
+          displayTime: TimezoneService.formatInTimezone(
+            log.timestamp,
+            log.entryTimezone || viewTimezone,
+            viewTimezone
+          ),
+          userName: log.user?.name,
+          notes: log.notes,
+          duration: null
+        };
+      })
     ];
 
     // Sort by timestamp (most recent first)
@@ -339,7 +398,8 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       totalDiaperChanges: diaperLogs.length,
       healthChecks: healthLogs.length,
       totalPumpingSessions: pumpingLogs.length,
-      totalPumpedVolume
+      totalPumpedVolume,
+      totalHygieneLogs: hygieneLogs.length
     };
 
     res.json({

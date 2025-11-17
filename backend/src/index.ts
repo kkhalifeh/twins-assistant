@@ -17,6 +17,7 @@ import pumpingRoutes from './routes/pumping.routes';
 import sleepRoutes from './routes/sleep.routes';
 import diaperRoutes from './routes/diaper.routes';
 import healthRoutes from './routes/health.routes';
+import hygieneRoutes from './routes/hygiene.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import chatRoutes from './routes/chat.routes';
@@ -69,6 +70,7 @@ app.use('/api/pumping', authMiddleware, checkResourceAccess, pumpingRoutes);
 app.use('/api/sleep', authMiddleware, checkResourceAccess, sleepRoutes);
 app.use('/api/diapers', authMiddleware, checkResourceAccess, diaperRoutes);
 app.use('/api/health', authMiddleware, checkResourceAccess, healthRoutes);
+app.use('/api/hygiene', authMiddleware, checkResourceAccess, hygieneRoutes);
 app.use('/api/analytics', authMiddleware, checkResourceAccess, analyticsRoutes);
 app.use('/api/dashboard', authMiddleware, checkResourceAccess, dashboardRoutes);
 app.use('/api/chat', authMiddleware, checkResourceAccess, chatRoutes);
@@ -90,6 +92,7 @@ app.get('/api', (req: Request, res: Response) => {
       sleep: '/api/sleep',
       diapers: '/api/diapers',
       health: '/api/health',
+      hygiene: '/api/hygiene',
       analytics: '/api/analytics',
       inventory: '/api/inventory'
     }

@@ -40,6 +40,7 @@ model User {
   sleepLogs    SleepLog[]
   diaperLogs   DiaperLog[]
   healthLogs   HealthLog[]
+  hygieneLogs  HygieneLog[]
   schedules    Schedule[]
   inventory    Inventory[]
 
@@ -63,6 +64,7 @@ model Child {
   sleepLogs    SleepLog[]
   diaperLogs   DiaperLog[]
   healthLogs   HealthLog[]
+  hygieneLogs  HygieneLog[]
   milestones   Milestone[]
   schedules    Schedule[]
   insights     Insight[]
@@ -160,6 +162,23 @@ model HealthLog {
   notes         String?
   entryTimezone String      @default("America/New_York") // IANA timezone when log was created
   createdAt     DateTime    @default(now())
+
+  // Relations
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([childId, timestamp])
+}
+
+model HygieneLog {
+  id            String       @id @default(cuid())
+  childId       String
+  userId        String
+  timestamp     DateTime
+  type          HygieneType
+  notes         String?
+  entryTimezone String       @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime     @default(now())
 
   // Relations
   child Child @relation(fields: [childId], references: [id])
@@ -362,4 +381,10 @@ enum PumpType {
 enum UsageType {
   STORED
   USED
+}
+
+enum HygieneType {
+  BATH
+  NAIL_TRIMMING
+  ORAL_CARE
 }
