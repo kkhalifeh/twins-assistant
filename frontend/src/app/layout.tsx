@@ -34,6 +34,7 @@ const navigation = [
   { name: 'Sleep', href: '/sleep', icon: Moon },
   { name: 'Diapers', href: '/diapers', icon: Baby },
   { name: 'Health', href: '/health', icon: Heart },
+  { name: 'Hygiene', href: '/hygiene', icon: Sparkles },
   { name: 'Milestones', href: '/milestones', icon: Trophy },
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Insights', href: '/insights', icon: Brain },
