@@ -364,7 +364,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
             description = 'Oral care';
             break;
           default:
-            description = log.type?.toLowerCase() || 'hygiene';
+            description = 'hygiene';
         }
 
         return {
