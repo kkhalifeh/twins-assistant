@@ -11,6 +11,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build argument for API URL
+ARG NEXT_PUBLIC_API_URL=https://parenting.atmata.ai/api
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build application
 RUN npm run build
 
