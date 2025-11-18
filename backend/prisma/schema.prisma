@@ -375,7 +375,7 @@ enum PumpType {
   BABY_BUDDHA
   MADELA_SYMPHONY
   SPECTRA_S1
-  OTHER
+  MADELA_IN_STYLE
 }
 
 enum UsageType {
