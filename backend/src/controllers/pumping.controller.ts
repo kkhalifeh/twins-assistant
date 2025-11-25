@@ -6,7 +6,7 @@ import { TimezoneService } from '../utils/timezone';
 
 export const getPumpingLogs = async (req: AuthRequest, res: Response) => {
   try {
-    const { date, limit = '50' } = req.query;
+    const { date } = req.query;
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -56,8 +56,7 @@ export const getPumpingLogs = async (req: AuthRequest, res: Response) => {
           select: { name: true, email: true }
         }
       },
-      orderBy: { timestamp: 'desc' },
-      take: parseIntSafe(limit as string) || 50
+      orderBy: { timestamp: 'desc' }
     });
 
     res.json(logs);

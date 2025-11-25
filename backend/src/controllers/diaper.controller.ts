@@ -7,7 +7,7 @@ import { TimezoneService } from '../utils/timezone';
 
 export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
   try {
-    const { childId, date, limit = '50' } = req.query;
+    const { childId, date } = req.query;
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -61,8 +61,7 @@ export const getDiaperLogs = async (req: AuthRequest, res: Response) => {
           select: { name: true, email: true }
         }
       },
-      orderBy: { timestamp: 'desc' },
-      take: parseIntSafe(limit as string) || 50
+      orderBy: { timestamp: 'desc' }
     });
 
     res.json(logs);

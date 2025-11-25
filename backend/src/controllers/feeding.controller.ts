@@ -6,7 +6,7 @@ import { TimezoneService } from '../utils/timezone';
 
 export const getFeedingLogs = async (req: AuthRequest, res: Response) => {
   try {
-    const { childId, date, limit = '50' } = req.query;
+    const { childId, date } = req.query;
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -60,8 +60,7 @@ export const getFeedingLogs = async (req: AuthRequest, res: Response) => {
           select: { name: true, email: true }
         }
       },
-      orderBy: { startTime: 'desc' },
-      take: parseIntSafe(limit as string) || 50
+      orderBy: { startTime: 'desc' }
     });
 
     res.json(logs);
