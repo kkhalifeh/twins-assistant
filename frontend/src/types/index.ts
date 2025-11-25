@@ -72,3 +72,15 @@ export interface HealthLog {
   notes?: string;
   createdAt: string;
 }
+
+export interface Milestone {
+  id: string;
+  childId: string;
+  child?: Child;
+  type: 'MOTOR' | 'LANGUAGE' | 'SOCIAL' | 'COGNITIVE';
+  name: string;
+  dateAchieved: string;
+  notes?: string;
+  mediaUrl?: string;
+  createdAt: string;
+}

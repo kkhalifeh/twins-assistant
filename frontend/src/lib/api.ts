@@ -185,3 +185,12 @@ export const inventoryAPI = {
   decrease: (id: string, quantity: number) =>
     api.put(`/inventory/${id}/decrease`, { quantity }).then(res => res.data),
 };
+
+// Milestones API
+export const milestonesAPI = {
+  getAll: (params?: any) => api.get('/milestones', { params }).then(res => res.data),
+  getByChild: (childId: string) => api.get('/milestones', { params: { childId } }).then(res => res.data),
+  create: (data: any) => api.post('/milestones', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/milestones/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/milestones/${id}`).then(res => res.data),
+};
