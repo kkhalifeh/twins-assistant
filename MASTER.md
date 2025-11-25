@@ -1,64 +1,199 @@
 # MASTER DOCUMENTATION
 
-**Parenting AI Assistant** - Comprehensive project documentation for Claude Code
+**Parenting AI Assistant** - Complete Technical Reference
 
-Last Updated: October 27, 2025
+Last Updated: November 16, 2025
 
 ---
 
 ## 🎯 PROJECT OVERVIEW
 
-AI-powered web application for managing child care with multi-child support, role-based access control, and natural language AI interface. Deployed at: https://parenting.atmata.ai
+AI-powered parenting assistant with comprehensive child care tracking, multi-child support, role-based access control, AI chat interface, and timezone-aware logging.
 
-### Core Capabilities
-- 📊 Real-time dashboard with activity tracking
-- 🍼 Feeding logs (bottles, breastfeeding with duration, solid foods)
-- 😴 Sleep monitoring with duration tracking
-- 🚼 Diaper logs with image upload capability
-- 🏥 Health records (temperature, weight, medical notes)
-- 📦 Inventory management with restock alerts
-- 🤖 AI chat interface for natural language logging
-- 👥 Multi-child support (dynamic, unlimited)
-- 🔐 Role-based access control (PARENT, NANNY, VIEWER)
+**Production URL**: https://parenting.atmata.ai
+**Repository**: https://github.com/kkhalifeh/twins-assistant
+
+### Core Features
+
+#### 👶 Child Care Modules
+- **Feeding Logs** - Breast, bottle, formula, solids with duration/amount tracking
+- **Pumping/Breastmilk** - Track pumping sessions, volumes, storage, and usage
+- **Sleep Monitoring** - Naps/night sleep with quality, duration, head tilt tracking
+- **Diaper Logs** - Wet/dirty/mixed with optional photo upload and consistency tracking
+- **Health Records** - Temperature, weight, height, medicine, symptoms, doctor visits
+- **Milestones** - Motor, language, social, cognitive development tracking
+
+#### 📊 Analytics & Insights
+- **Real-time Dashboard** - Activity overview with day/week/month views
+- **AI-Generated Insights** - Pattern analysis for feeding, sleep, health behaviors
+- **Predictive Analytics** - Next feeding/sleep time predictions
+- **Correlation Analysis** - Discover relationships between activities
+- **Daily Journal** - Chronological timeline of all activities
+- **Comparative Reports** - Week-over-week, child-to-child comparisons
+
+#### 🤖 AI & Automation
+- **Natural Language Chat** - Log activities via conversational AI
+- **WhatsApp Integration** - Voice & text logging through WhatsApp (AI service)
+- **Smart Scheduling** - Recurring events with auto-reminders
+- **Pattern Detection** - Automatic behavior pattern identification
+
+#### 👥 Multi-User & Access Control
+- **Account-Based Architecture** - Shared data across family/team
+- **Role-Based Permissions** (RBAC):
+  - **PARENT**: Full access to all features
+  - **NANNY**: Manage feeding, sleep, diapers, health (no deletion)
+  - **VIEWER**: Read-only access
+- **Team Invitations** - Email-based member invites
+- **Timezone Support** - Per-user timezone settings (IANA format)
+
+#### 📦 Inventory Management
+- **Stock Tracking** - Formula, diapers, wipes, medicine, supplies
+- **Low Stock Alerts** - Automatic reorder notifications
+- **Consumption Rate** - AI-powered usage predictions
 
 ---
 
-## 🏗️ ARCHITECTURE
+## 🏗️ TECHNOLOGY STACK
 
-### Technology Stack
-- **Backend**: Node.js 18 + TypeScript + Express + Prisma ORM
-- **Database**: PostgreSQL 14+ (production: Docker container)
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS + React Query
-- **AI Service**: Python 3.9+ + FastAPI + LangChain + OpenAI
-- **Infrastructure**: Docker + Redis + Nginx (Caddy for SSL)
-- **CI/CD**: GitHub Actions with automated deployment
+### Backend
+- **Runtime**: Node.js 18+
+- **Framework**: Express + TypeScript
+- **Database**: PostgreSQL 14+ (Alpine container)
+- **ORM**: Prisma Client
+- **Authentication**: JWT (bcrypt password hashing)
+- **Cache**: Redis 7
+- **File Storage**: Local filesystem with URL references
 
-### Project Structure
+### Frontend
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: React Query (TanStack Query)
+- **Forms**: React Hook Form + Zod validation
+- **Icons**: Lucide React
+- **HTTP Client**: Axios
+
+### AI Service
+- **Framework**: Python FastAPI
+- **AI**: LangChain + OpenAI GPT
+- **Integration**: Meta WhatsApp Business API
+
+### Infrastructure
+- **Containerization**: Docker + Docker Compose
+- **Reverse Proxy**: Caddy (auto-SSL)
+- **CI/CD**: GitHub Actions
+- **Server**: VPS at 209.250.253.59 (Studio-Republik)
+
+---
+
+## 📁 PROJECT STRUCTURE
+
 ```
 twins-assistant/
-├── backend/                    # Node.js API server
+├── backend/                         # Node.js API Server
 │   ├── src/
-│   │   ├── controllers/       # Business logic
-│   │   ├── routes/            # API endpoints
-│   │   ├── middleware/        # Auth, RBAC, validation
-│   │   ├── services/          # External integrations
-│   │   └── index.ts           # Server entry
+│   │   ├── controllers/            # Business logic layer
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── children.controller.ts
+│   │   │   ├── feeding.controller.ts
+│   │   │   ├── pumping.controller.ts
+│   │   │   ├── sleep.controller.ts
+│   │   │   ├── diaper.controller.ts
+│   │   │   ├── health.controller.ts
+│   │   │   ├── inventory.controller.ts
+│   │   │   ├── user.controller.ts
+│   │   │   └── data.controller.ts
+│   │   ├── routes/                  # API endpoints
+│   │   │   ├── auth.routes.ts       # /api/auth
+│   │   │   ├── children.routes.ts   # /api/children
+│   │   │   ├── feeding.routes.ts    # /api/feeding
+│   │   │   ├── pumping.routes.ts    # /api/pumping
+│   │   │   ├── sleep.routes.ts      # /api/sleep
+│   │   │   ├── diaper.routes.ts     # /api/diapers
+│   │   │   ├── health.routes.ts     # /api/health
+│   │   │   ├── inventory.routes.ts  # /api/inventory
+│   │   │   ├── user.routes.ts       # /api/users
+│   │   │   ├── dashboard.routes.ts  # /api/dashboard
+│   │   │   ├── journal.routes.ts    # /api/journal
+│   │   │   ├── analytics.routes.ts  # /api/analytics
+│   │   │   ├── chat.routes.ts       # /api/chat
+│   │   │   └── data.routes.ts       # /api/data
+│   │   ├── services/                # External integrations
+│   │   │   ├── dashboard.service.ts
+│   │   │   ├── analytics.service.ts
+│   │   │   ├── ai-chat-openai.service.ts
+│   │   │   ├── ai-chat.service.ts
+│   │   │   └── storage.service.ts
+│   │   ├── middleware/
+│   │   │   ├── auth.middleware.ts   # JWT verification
+│   │   │   ├── rbac.middleware.ts   # Role-based access
+│   │   │   ├── validation.middleware.ts
+│   │   │   └── error.middleware.ts
+│   │   ├── utils/
+│   │   │   └── auth.ts              # AuthRequest type
+│   │   └── index.ts                 # Server entry
 │   ├── prisma/
-│   │   ├── schema.prisma      # Database schema
-│   │   └── migrations/        # Version-controlled migrations
-│   └── Dockerfile             # Alpine Linux container
-├── frontend/                   # Next.js web app
+│   │   ├── schema.prisma            # Database schema
+│   │   └── migrations/              # Version-controlled migrations
+│   ├── uploads/                     # File upload directory
+│   ├── Dockerfile                   # Alpine Linux production image
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend/                        # Next.js Web Application
 │   ├── src/
-│   │   ├── app/               # Pages (feeding, sleep, diapers, etc.)
-│   │   ├── components/        # Reusable UI components
-│   │   └── lib/               # API client, utilities
-│   └── Dockerfile             # Production container
-├── ai-service/                 # Python AI service
-├── scripts/
-│   ├── auto-deploy.sh         # Server-side deployment script
-│   └── production-cli.sh      # Local production management CLI
-└── .github/workflows/
-    └── deploy-production.yml  # GitHub Actions CI/CD
+│   │   ├── app/                     # Next.js App Router pages
+│   │   │   ├── page.tsx             # Dashboard (/)
+│   │   │   ├── login/
+│   │   │   ├── register/
+│   │   │   ├── onboarding/
+│   │   │   ├── feeding/
+│   │   │   ├── pumping/
+│   │   │   ├── sleep/
+│   │   │   ├── diapers/
+│   │   │   ├── health/
+│   │   │   ├── milestones/
+│   │   │   ├── inventory/
+│   │   │   ├── chat/
+│   │   │   ├── journal/
+│   │   │   ├── insights/
+│   │   │   ├── settings/
+│   │   │   └── layout.tsx           # Root layout
+│   │   ├── components/              # Reusable UI components
+│   │   │   ├── FloatingActionButton.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── contexts/
+│   │   │   └── TimezoneContext.tsx  # Timezone conversion
+│   │   └── lib/
+│   │       └── api.ts               # Axios client + API methods
+│   ├── public/                      # Static assets
+│   ├── Dockerfile                   # Production image
+│   ├── next.config.mjs
+│   ├── tailwind.config.ts
+│   └── package.json
+│
+├── ai-service/                      # Python AI Service
+│   ├── src/
+│   │   ├── main.py                  # FastAPI server
+│   │   ├── webhook_handler.py       # WhatsApp webhook
+│   │   └── message_processor.py     # NLP processing
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+├── scripts/                         # Automation scripts
+│   ├── auto-deploy.sh               # Server-side CI/CD script
+│   ├── deploy-frontend.sh           # Frontend-only deploy
+│   ├── production-cli.sh            # Local production management
+│   └── server-setup.sh              # Initial server setup
+│
+├── .github/workflows/
+│   └── deploy-production.yml        # GitHub Actions CI/CD
+│
+├── docker-compose.dev.yml           # Local development
+├── docker-compose.prod.yml          # Production containers
+├── MASTER.md                        # This file
+└── CLAUDE.md                        # Claude Code instructions
 ```
 
 ---
@@ -67,323 +202,1102 @@ twins-assistant/
 
 ### Core Models
 
-**User** - Account users with roles
-- id, email, password (bcrypt hashed), name, phone
-- role: PARENT | NANNY | VIEWER
-- accountId (foreign key)
+#### **Account**
+Multi-user family/team container
 
-**Account** - Team/family container
-- id, name, ownerId
-- One owner, many users
+```prisma
+model Account {
+  id        String   @id @default(cuid())
+  name      String   // Account/family name
+  ownerId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-**Child** - Individual children
-- id, name, dateOfBirth, gender
-- userId (belongs to user)
+  owner   User   @relation("AccountOwner", fields: [ownerId], references: [id])
+  members User[]
+}
+```
 
-**FeedingLog** - Feeding records
-- type: BOTTLE | BREAST | SOLID
-- amount (ml for bottles)
-- **breastDuration** (minutes for breastfeeding) ⭐ NEW
-- notes
-- childId, userId
-
-**SleepLog** - Sleep tracking
-- startTime, endTime, duration
-- notes
-- childId, userId
-
-**DiaperLog** - Diaper changes
-- type: WET | DIRTY | BOTH
-- **imageUrl** (optional photo) ⭐ NEW
-- notes, changedAt
-- childId, userId
-
-**HealthLog** - Health records
-- temperature, weight, height, notes
-- childId, userId
-
-**Inventory** - Supplies tracking
-- name, category, currentStock, minStock
-- userId
-
-**Schedule** - Routines
-- type, time, notes
-- childId, userId
+**Key Points**:
+- One owner, multiple members
+- All users in account share data
+- Owner can invite team members
 
 ---
 
-## 🆕 RECENT FEATURES
+#### **User**
+Account users with roles and timezone
 
-### 1. Multi-User Account Data Sharing Architecture ⭐ CRITICAL FIX
-**Implemented**: October 27, 2025
+```prisma
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String   // bcrypt hashed
+  role      UserRole @default(PARENT)
+  phone     String?
+  accountId String?
+  timezone  String   @default("America/New_York") // IANA timezone
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-**Problem Solved**:
-- Users in the same account couldn't see each other's data
-- Delete all data was logging users out (401 errors)
-- Nanny role couldn't create diaper logs due to RBAC mismatch
+  account      Account?     @relation(fields: [accountId], references: [id])
+  ownedAccount Account?     @relation("AccountOwner")
+  children     Child[]
+  feedingLogs  FeedingLog[]
+  pumpingLogs  PumpingLog[]
+  sleepLogs    SleepLog[]
+  diaperLogs   DiaperLog[]
+  healthLogs   HealthLog[]
+  schedules    Schedule[]
+  inventory    Inventory[]
+}
 
-**Architecture Change**:
-All controllers and services now use **accountId-based queries** instead of userId-based queries:
+enum UserRole {
+  PARENT   // Full access
+  NANNY    // Limited write access
+  VIEWER   // Read-only
+}
+```
 
+**Key Points**:
+- Each user has unique email + password
+- Role determines permissions (RBAC)
+- Timezone affects timestamp display (not storage)
+- Password hashed with bcrypt
+
+---
+
+#### **Child**
+Individual children in the account
+
+```prisma
+model Child {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  dateOfBirth DateTime  @db.Date
+  gender      Gender
+  photoUrl    String?
+  medicalNotes String?  @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user         User @relation(fields: [userId], references: [id])
+  feedingLogs  FeedingLog[]
+  sleepLogs    SleepLog[]
+  diaperLogs   DiaperLog[]
+  healthLogs   HealthLog[]
+  milestones   Milestone[]
+  schedules    Schedule[]
+  insights     Insight[]
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+```
+
+**Key Points**:
+- Created by one user but shared across account
+- All queries use accountId pattern (not userId)
+
+---
+
+#### **FeedingLog**
+Breast, bottle, formula, solid feeding records
+
+```prisma
+model FeedingLog {
+  id            String       @id @default(cuid())
+  childId       String
+  userId        String
+  startTime     DateTime
+  endTime       DateTime?
+  type          FeedingType
+  amount        Float?       // in ml (bottle/formula)
+  duration      Int?         // in minutes (breast)
+  notes         String?
+  entryTimezone String       @default("America/New_York")
+  createdAt     DateTime     @default(now())
+
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+enum FeedingType {
+  BREAST     // Duration only
+  BOTTLE     // Amount in ml
+  FORMULA    // Amount in ml
+  MIXED      // Both
+  SOLID      // Food
+}
+```
+
+**Key Points**:
+- `amount` for bottle/formula (measured ml)
+- `duration` for breastfeeding (minutes)
+- Analytics never estimates breast volume
+- `entryTimezone` records user's timezone at log creation
+
+---
+
+#### **PumpingLog**
+Breastmilk pumping sessions
+
+```prisma
+model PumpingLog {
+  id            String       @id @default(cuid())
+  userId        String       // Parent, not child
+  timestamp     DateTime
+  pumpType      PumpType
+  duration      Int          // in minutes
+  amount        Float        // in ml
+  usage         UsageType    // STORED or USED
+  notes         String?
+  entryTimezone String       @default("America/New_York")
+  createdAt     DateTime     @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+enum PumpType {
+  BABY_BUDDHA
+  MADELA_SYMPHONY
+  SPECTRA_S1
+  OTHER
+}
+
+enum UsageType {
+  STORED    // Put in fridge/freezer
+  USED      // Fed directly to baby
+}
+```
+
+**Key Points**:
+- Belongs to user (parent), not child
+- Tracks pump sessions and milk inventory
+- Integrated into dashboard, journal, insights
+
+---
+
+#### **SleepLog**
+Sleep tracking with quality and head tilt
+
+```prisma
+model SleepLog {
+  id            String     @id @default(cuid())
+  childId       String
+  userId        String
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int?       // in minutes (calculated)
+  type          SleepType
+  quality       SleepQuality?
+  headTilt      HeadTilt?
+  notes         String?
+  entryTimezone String     @default("America/New_York")
+  createdAt     DateTime   @default(now())
+
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+enum SleepType {
+  NAP
+  NIGHT
+}
+
+enum SleepQuality {
+  DEEP
+  RESTLESS
+  INTERRUPTED
+}
+
+enum HeadTilt {
+  LEFT
+  RIGHT
+  STRAIGHT
+}
+```
+
+**Key Points**:
+- Track active sleep sessions (endTime = null)
+- Duration auto-calculated on end
+- Head tilt for plagiocephaly monitoring
+
+---
+
+#### **DiaperLog**
+Diaper changes with photo upload
+
+```prisma
+model DiaperLog {
+  id            String        @id @default(cuid())
+  childId       String
+  userId        String
+  timestamp     DateTime
+  type          DiaperType
+  consistency   Consistency?
+  color         String?
+  imageUrl      String?       // Photo upload
+  notes         String?
+  entryTimezone String        @default("America/New_York")
+  createdAt     DateTime      @default(now())
+
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+enum DiaperType {
+  WET
+  DIRTY
+  MIXED
+}
+
+enum Consistency {
+  NORMAL
+  WATERY
+  HARD
+}
+```
+
+**Key Points**:
+- Optional photo for health monitoring
+- Color and consistency tracking
+- NANNY role has full access (RBAC fixed)
+
+---
+
+#### **HealthLog**
+Medical records and vitals
+
+```prisma
+model HealthLog {
+  id            String      @id @default(cuid())
+  childId       String
+  userId        String
+  timestamp     DateTime
+  type          HealthType
+  value         String      // temperature, medicine name, etc.
+  unit          String?     // °C, ml, kg, etc.
+  notes         String?
+  entryTimezone String      @default("America/New_York")
+  createdAt     DateTime    @default(now())
+
+  child Child @relation(fields: [childId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+enum HealthType {
+  TEMPERATURE
+  MEDICINE
+  WEIGHT
+  HEIGHT
+  VACCINATION
+  SYMPTOM
+  DOCTOR_VISIT
+}
+```
+
+**Key Points**:
+- Flexible value/unit system
+- Track growth charts, vaccinations, symptoms
+
+---
+
+#### **Inventory**
+Supplies and stock management
+
+```prisma
+model Inventory {
+  id               String   @id @default(cuid())
+  userId           String
+  category         ItemCategory
+  brand            String?
+  itemName         String
+  unitSize         String   // "30 diapers", "800g powder"
+  currentStock     Float
+  minimumStock     Float
+  consumptionRate  Float?   // units per day
+  lastRestocked    DateTime?
+  nextReorderDate  DateTime?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum ItemCategory {
+  FORMULA
+  DIAPERS
+  WIPES
+  CLOTHES
+  MEDICINE
+  TOYS
+  FEEDING_SUPPLIES
+  OTHER
+}
+```
+
+**Key Points**:
+- AI predicts consumption rates
+- Auto-calculate next reorder date
+- Low stock alerts
+
+---
+
+#### **Schedule**
+Recurring events and reminders
+
+```prisma
+model Schedule {
+  id         String        @id @default(cuid())
+  childId    String?
+  userId     String
+  eventType  EventType
+  dueTime    DateTime
+  recurrence RecurrenceType?
+  frequency  String?       // "every 3 hours", "daily"
+  status     ScheduleStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  child Child? @relation(fields: [childId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+}
+
+enum EventType {
+  FEEDING
+  NAP
+  MEDICINE
+  VACCINATION
+  APPOINTMENT
+  OTHER
+}
+
+enum ScheduleStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+enum RecurrenceType {
+  ONCE
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+```
+
+---
+
+#### **Milestone**
+Developmental milestones
+
+```prisma
+model Milestone {
+  id          String        @id @default(cuid())
+  childId     String
+  type        MilestoneType
+  name        String
+  dateAchieved DateTime
+  notes       String?
+  mediaUrl    String?
+  createdAt   DateTime      @default(now())
+
+  child Child @relation(fields: [childId], references: [id])
+}
+
+enum MilestoneType {
+  MOTOR      // Crawling, walking
+  LANGUAGE   // First words
+  SOCIAL     // Smiling, waving
+  COGNITIVE  // Problem solving
+}
+```
+
+---
+
+#### **Insight**
+AI-generated pattern insights
+
+```prisma
+model Insight {
+  id           String      @id @default(cuid())
+  childId      String?
+  patternType  PatternType
+  description  String      @db.Text
+  confidence   Float       // 0-1
+  suggestion   String?     @db.Text
+  validFrom    DateTime
+  validUntil   DateTime?
+  createdAt    DateTime    @default(now())
+
+  child Child? @relation(fields: [childId], references: [id])
+}
+
+enum PatternType {
+  FEEDING
+  SLEEP
+  HEALTH
+  BEHAVIOR
+  CORRELATION
+}
+```
+
+---
+
+## 🔒 AUTHENTICATION & AUTHORIZATION
+
+### Authentication Flow
+
+1. **Registration** (`POST /api/auth/register`)
+   ```typescript
+   // 3-step atomic transaction:
+   // 1. Hash password with bcrypt
+   const hashedPassword = await bcrypt.hash(password, 10);
+
+   // 2. Create Account
+   const account = await prisma.account.create({
+     data: { name: `${name}'s Account` }
+   });
+
+   // 3. Create User with accountId and ownerId
+   const user = await prisma.user.create({
+     data: {
+       email, name, password: hashedPassword,
+       role: 'PARENT',
+       accountId: account.id,
+       timezone: userTimezone || 'America/New_York'
+     }
+   });
+
+   // 4. Update Account with ownerId
+   await prisma.account.update({
+     where: { id: account.id },
+     data: { ownerId: user.id }
+   });
+
+   // 5. Generate JWT token
+   const token = jwt.sign({ userId: user.id, id: user.id }, JWT_SECRET, { expiresIn: '30d' });
+   ```
+
+2. **Login** (`POST /api/auth/login`)
+   ```typescript
+   // Verify credentials
+   const user = await prisma.user.findUnique({ where: { email } });
+   const valid = await bcrypt.compare(password, user.password);
+
+   // Generate JWT
+   const token = jwt.sign({ userId: user.id, id: user.id }, JWT_SECRET, { expiresIn: '30d' });
+   ```
+
+3. **Protected Routes**
+   ```typescript
+   // All API routes use authMiddleware
+   router.use(authMiddleware); // Decodes JWT, attaches req.user
+
+   // Access user info in controllers
+   export const getData = async (req: AuthRequest, res: Response) => {
+     const userId = req.user?.id; // From JWT
+     // ...
+   };
+   ```
+
+### Authorization (RBAC)
+
+**Middleware**: `backend/src/middleware/rbac.middleware.ts`
+
+**Permission Matrix**:
+
+| Resource      | PARENT | NANNY | VIEWER |
+|--------------|--------|-------|--------|
+| children     | CRUD   | R     | R      |
+| feeding      | CRUD   | CRU   | R      |
+| pumping      | CRUD   | -     | -      |
+| sleep        | CRUD   | CRU   | R      |
+| diapers      | CRUD   | CRU   | R      |
+| health       | CRUD   | CRU   | R      |
+| inventory    | CRUD   | R     | R      |
+| analytics    | R      | R     | R      |
+| dashboard    | R      | R     | R      |
+| journal      | R      | R     | R      |
+| users/team   | CRUD   | -     | -      |
+
+**Implementation**:
 ```typescript
-// OLD (wrong) - only shows user's own data
-const children = await prisma.child.findMany({
-  where: { userId }
-});
+// Route setup
+router.use(authMiddleware);           // JWT verification
+router.use(checkResourceAccess);      // RBAC check
 
-// NEW (correct) - shows all children in account
-const user = await prisma.user.findUnique({
-  where: { id: userId },
-  select: { accountId: true }
-});
+// RBAC logic
+const permissions = {
+  PARENT: ['*'],  // All access
+  NANNY: ['feeding', 'sleep', 'diapers', 'health', 'children'], // Write access
+  VIEWER: []      // Read-only (handled separately)
+};
 
-const children = await prisma.child.findMany({
+const resource = req.baseUrl.replace('/api/', ''); // Extract resource name
+const method = req.method; // GET, POST, PUT, DELETE
+
+// Check permission
+if (role === 'VIEWER' && method !== 'GET') {
+  return res.status(403).json({ error: 'Viewers have read-only access' });
+}
+```
+
+**Critical Fix** (October 2025):
+- Changed `'diaper'` → `'diapers'` in Nanny permissions
+- Fixed resource extraction to use `req.baseUrl + req.path`
+
+---
+
+## 🌍 TIMEZONE ARCHITECTURE
+
+### Strategy: Store UTC, Display User Timezone
+
+**Why**: Ensures data consistency across users in different timezones.
+
+### Implementation
+
+#### Backend
+```typescript
+// All timestamps stored in UTC (Prisma default)
+model FeedingLog {
+  startTime     DateTime  // UTC in database
+  entryTimezone String    // User's timezone at creation (for reference)
+}
+
+// Return timestamps as ISO 8601 strings
+res.json({
+  startTime: log.startTime.toISOString(), // "2025-11-16T18:30:00.000Z"
+  entryTimezone: log.entryTimezone        // "America/New_York"
+});
+```
+
+#### Frontend
+```typescript
+// TimezoneContext provides conversion
+import { useTimezone } from '@/contexts/TimezoneContext';
+
+const { formatTime } = useTimezone();
+
+// Converts UTC ISO string to user's browser timezone
+formatTime("2025-11-16T18:30:00.000Z")
+// → "Nov 16, 1:30 PM" (if user in EST)
+```
+
+#### Date Queries
+```typescript
+// When fetching daily data, send timezone offset
+const params = {
+  date: '2025-11-16',            // YYYY-MM-DD
+  timezoneOffset: new Date().getTimezoneOffset() // in minutes
+};
+
+// Backend converts to UTC range
+const startOfDayLocal = new Date(`${date}T00:00:00`);
+const startOfDayUTC = new Date(startOfDayLocal.getTime() + timezoneOffset * 60000);
+const endOfDayUTC = new Date(startOfDayUTC.getTime() + 24 * 60 * 60 * 1000);
+
+const logs = await prisma.feedingLog.findMany({
   where: {
-    user: { accountId: user.accountId }
+    startTime: {
+      gte: startOfDayUTC,
+      lt: endOfDayUTC
+    }
   }
 });
 ```
 
-**Fixed Controllers** (all using accountId pattern):
-- ✅ Children Controller - `src/controllers/children.controller.ts`
-- ✅ Feeding Controller - `src/controllers/feeding.controller.ts`
-- ✅ Sleep Controller - `src/controllers/sleep.controller.ts`
-- ✅ Diaper Controller - `src/controllers/diaper.controller.ts`
-- ✅ Health Controller - `src/controllers/health.controller.ts`
-- ✅ Inventory Controller - `src/controllers/inventory.controller.ts`
-- ✅ Data Management Controller - `src/controllers/data.controller.ts`
+---
 
-**Fixed Services**:
-- ✅ Dashboard Service - `src/services/dashboard.service.ts`
-- ✅ Analytics Service - `src/services/analytics.service.ts`
+## 🏛️ ACCOUNT-BASED ARCHITECTURE
 
-**Critical Fixes**:
-1. **Delete All Data Logout Fix**
-   - Changed `(req as any).user?.userId` → `req.user?.id`
-   - Changed `Request` type → `AuthRequest` type
-   - File: `src/controllers/data.controller.ts`
+### Critical Pattern: AccountId-Based Queries
 
-2. **RBAC Diaper Permission Fix**
-   - Changed `'diaper'` → `'diapers'` in Nanny permissions
-   - File: `src/middleware/rbac.middleware.ts:22-23`
+**Problem Solved**: Users in same account must see shared data (not just their own).
 
-3. **Sleep Delete Consistency**
-   - Changed 204 No Content → JSON message response
-   - File: `src/routes/sleep.routes.ts:205`
+**All controllers follow this pattern**:
 
-4. **Database Reset Script**
-   - Added account deletion before users (foreign key fix)
-   - File: `backend/reset-db.js`
+```typescript
+export const getData = async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
 
-**Testing**:
-- Comprehensive test suite created: `comprehensive-test.sh`
-- 47/48 tests passing (97.9% pass rate)
-- Tests 20+ scenarios including multi-user, RBAC, CRUD, real-time sync
+  // Step 1: Get user's accountId
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { accountId: true }
+  });
 
-### 2. Role-Based Access Control (RBAC)
-**Implemented**: October 27, 2025
+  if (!user?.accountId) {
+    return res.status(400).json({ error: 'User not part of an account' });
+  }
 
-**Roles and Permissions**:
-- **PARENT**: Full access to everything
-- **NANNY**: Can manage feeding, sleep, **diapers**, health (read + write) ⭐ FIXED
-- **VIEWER**: Read-only access to logs
+  // Step 2: Get all children in account
+  const children = await prisma.child.findMany({
+    where: {
+      user: { accountId: user.accountId }
+    }
+  });
 
-**Key Files**:
-- `backend/src/middleware/rbac.middleware.ts` - Permission checks
-- `backend/src/controllers/user.controller.ts` - Team invitations
-- `frontend/src/app/settings/page.tsx` - Settings UI with team management
+  const childIds = children.map(c => c.id);
 
-**Technical Details**:
-- User has `role` field (enum: PARENT, NANNY, VIEWER)
-- Account has `ownerId` field (only owner can invite)
-- Middleware uses `req.baseUrl + req.path` to determine resource
-- Routes apply RBAC after auth: `router.use(authMiddleware, checkResourceAccess)`
-- Nanny permissions: `['feeding', 'sleep', 'diapers', 'health', 'children']`
+  // Step 3: Query logs for all children
+  const logs = await prisma.feedingLog.findMany({
+    where: { childId: { in: childIds } }
+  });
 
-### 3. Breast Feeding Duration
-**Implemented**: October 27, 2025
+  res.json(logs);
+};
+```
 
-Added `breastDuration` field to FeedingLog for tracking breastfeeding sessions in minutes.
+**Controllers using this pattern**:
+- ✅ `children.controller.ts`
+- ✅ `feeding.controller.ts`
+- ✅ `pumping.controller.ts`
+- ✅ `sleep.controller.ts`
+- ✅ `diaper.controller.ts`
+- ✅ `health.controller.ts`
+- ✅ `inventory.controller.ts`
+- ✅ `data.controller.ts` (delete all data)
+- ✅ `dashboard.service.ts`
+- ✅ `analytics.service.ts`
 
-**Key Files**:
-- `backend/prisma/schema.prisma` - Added `breastDuration Int?`
-- `backend/src/controllers/feeding.controller.ts` - Handles duration
-- `frontend/src/app/feeding/page.tsx` - Duration input UI
-
-### 4. Diaper Image Upload
-**Implemented**: October 27, 2025
-
-Added `imageUrl` field to DiaperLog for optional photo attachment.
-
-**Key Files**:
-- `backend/prisma/schema.prisma` - Added `imageUrl String?`
-- `backend/src/controllers/diaper.controller.ts` - Handles image URL
-- `frontend/src/app/diapers/page.tsx` - Image upload UI with preview
-
-**Note**: Currently stores URLs, not files. File upload implementation pending.
+**Why**: Ensures parents and nannies in same account see all children and logs.
 
 ---
 
-## 🚀 CI/CD AUTOMATION
+## 📊 ANALYTICS ENGINE
 
-### Automated Deployment
-**Every push to `main` triggers automatic deployment** (~3-4 minutes)
+### Key Services
+
+#### Dashboard Service
+**File**: `backend/src/services/dashboard.service.ts`
+
+**Capabilities**:
+- Day/week/month statistics
+- Active sleep session detection
+- Real-time insights generation
+- Recent activity timeline
+
+**Key Metrics**:
+```typescript
+{
+  stats: {
+    totalFeedings: number,
+    totalSleepHours: number,
+    totalSleepSessions: number,
+    totalDiaperChanges: number,
+    totalPumpingSessions: number,
+    totalPumpedVolume: number,
+    avgFeedingInterval: number
+  },
+  insights: Array<{
+    type: 'feeding' | 'sleep' | 'health',
+    title: string,
+    description: string,
+    icon: string,
+    color: 'red' | 'amber' | 'green' | 'blue'
+  }>,
+  recentActivities: Array<{
+    type: string,
+    childName: string,
+    description: string,
+    timestamp: string
+  }>,
+  activeSleepSessions: Array<...>
+}
+```
+
+---
+
+#### Analytics Service
+**File**: `backend/src/services/analytics.service.ts`
+
+**Key Methods**:
+
+1. **`analyzeFeedingPatterns(childId, days, userId)`**
+   ```typescript
+   return {
+     averageInterval: "2.4",           // hours between feeds
+     averageBottleAmount: 29,          // ml per bottle/formula
+     averageBreastDuration: 28,        // minutes per breastfeed
+     totalFeedings: 13,
+     breastCount: 6,
+     bottleCount: 7,
+     trend: 'increasing' | 'stable' | 'decreasing',
+     lastFeeding: FeedingLog,
+     nextFeedingEstimate: Date
+   }
+   ```
+
+   **Critical Fix (Nov 2025)**: Removed breastfeeding volume estimation
+   - Before: `(duration / 5) * 30ml` (inaccurate)
+   - After: Separate `averageBottleAmount` (ml) and `averageBreastDuration` (min)
+
+2. **`analyzeSleepPatterns(childId, days, userId)`**
+   ```typescript
+   return {
+     averageSleepPerDay: 520,          // minutes
+     averageNapDuration: 45,           // minutes
+     averageNightSleepHours: 7.2,
+     totalNaps: 12,
+     totalNightSessions: 5,
+     longestSleep: 480,
+     trend: 'improving' | 'stable' | 'concerning'
+   }
+   ```
+
+3. **`generateInsights(userId, days)`**
+   - Feeding pattern insights
+   - Sleep pattern insights
+   - Diaper pattern insights
+   - Cross-pattern correlations
+
+---
+
+## 🚀 CI/CD & DEPLOYMENT
+
+### GitHub Actions Workflow
+
+**File**: `.github/workflows/deploy-production.yml`
+
+**Trigger**: Push to `main` branch (or manual dispatch)
+
+**Steps**:
+1. Checkout code
+2. Setup SSH with `ATMATA_SSH_KEY` secret
+3. Add server to known hosts
+4. Execute `scripts/auto-deploy.sh` on server
+5. Verify health checks
+
+**Secrets Required**:
+- `ATMATA_SSH_KEY`: SSH private key for root@209.250.253.59
+
+---
+
+### Auto-Deploy Script
+
+**File**: `scripts/auto-deploy.sh`
+
+**Location**: `/var/www/parenting-assistant/scripts/auto-deploy.sh`
 
 **Workflow**:
-1. GitHub Actions detects push
-2. Connects to production server via SSH
-3. Executes `scripts/auto-deploy.sh` on server
-4. Pulls latest code
-5. Restores production configs (API URLs, etc.)
-6. Installs dependencies
-7. Runs database migrations automatically
-8. Generates Prisma client
-9. Rebuilds frontend
-10. Restarts Docker containers
-11. Performs health checks with retry logic
-12. Verifies deployment success
 
-**Configuration**:
-- Workflow: `.github/workflows/deploy-production.yml`
-- Server script: `scripts/auto-deploy.sh`
-- Requires: `SSH_PRIVATE_KEY` in GitHub Secrets
-
-### Production Management CLI
-
-**Local command-line tool for managing production from your machine**
-
-#### Status & Monitoring
 ```bash
-# Check server and container status
-./scripts/production-cli.sh status
+# 1. Stash local changes
+git stash push -m "Auto-deploy: production configs $(date)"
 
-# View live backend logs
-./scripts/production-cli.sh logs backend
+# 2. Pull latest code
+git fetch origin main
+git reset --hard origin/main
 
-# View live frontend logs
-./scripts/production-cli.sh logs frontend
+# 3. Restore production configs
+# - Frontend API URL: localhost → parenting.atmata.ai
+sed -i "s|http://localhost:3003/api|https://parenting.atmata.ai/api|g" frontend/src/lib/api.ts
 
-# View all logs (last 30 lines each)
-./scripts/production-cli.sh logs
+# - Next.js config (ignore TS/ESLint errors)
+cat > frontend/next.config.mjs << 'EOF'
+const nextConfig = {
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true }
+};
+export default nextConfig;
+EOF
+
+# - Prisma binary target for Alpine
+# Ensures linux-musl-openssl-3.0.x is present
+
+# 4. Backend deployment
+cd backend
+npm install
+npx prisma generate
+docker exec parenting_backend npx prisma migrate deploy
+docker restart parenting_backend
+
+# Wait for health check (12 retries × 5s)
+until curl -f http://localhost:3001/health; do
+  sleep 5
+done
+
+# 5. Frontend deployment
+cd ../frontend
+npm install
+npm run build
+
+# Kill existing process
+pkill -f "next start" || true
+
+# Start with PM2 (or nohup fallback)
+if command -v pm2; then
+  pm2 delete parenting-frontend || true
+  pm2 start npm --name "parenting-frontend" -- start
+  pm2 save
+else
+  nohup npm start > /tmp/frontend.log 2>&1 &
+fi
+
+# Wait for health check (12 retries × 5s)
+until curl -f http://localhost:3000; do
+  sleep 5
+done
+
+# 6. Verification
+echo "✅ Deployment completed!"
+docker ps | grep parenting
+git log -3 --oneline
 ```
 
-#### Deployment & Restarts
+**Duration**: ~3-4 minutes
+
+---
+
+### Production CLI Tool
+
+**File**: `scripts/production-cli.sh`
+
+**Usage**: Run from local machine to manage production
+
+**Commands**:
+
 ```bash
-# Trigger manual deployment (without pushing to GitHub)
-./scripts/production-cli.sh deploy
+# Status & Monitoring
+./scripts/production-cli.sh status           # Container status
+./scripts/production-cli.sh logs backend     # Live backend logs
+./scripts/production-cli.sh logs frontend    # Live frontend logs
+./scripts/production-cli.sh logs            # All logs
 
-# Restart backend
-./scripts/production-cli.sh restart backend
-
-# Restart frontend
+# Deployment & Restarts
+./scripts/production-cli.sh deploy          # Manual deployment
+./scripts/production-cli.sh restart backend # Restart backend only
 ./scripts/production-cli.sh restart frontend
-
-# Restart everything
 ./scripts/production-cli.sh restart all
-```
 
-#### Database Management
-```bash
-# View database tables and migration status
-./scripts/production-cli.sh db:status
+# Database Management
+./scripts/production-cli.sh db:status       # Migration status
+./scripts/production-cli.sh db:migrate      # Run migrations
+./scripts/production-cli.sh db:backup       # Download backup
+./scripts/production-cli.sh db:clean        # Delete all data
 
-# Run pending migrations
-./scripts/production-cli.sh db:migrate
-
-# Create database backup (downloads to local machine)
-./scripts/production-cli.sh db:backup
-
-# Delete all data (keeps schema)
-./scripts/production-cli.sh db:clean
-```
-
-#### Data Management
-```bash
-# Delete all user data (children, logs, etc.)
-./scripts/production-cli.sh data:delete-all
-
-# Delete specific data types
+# Data Management
+./scripts/production-cli.sh data:delete-all # Delete user data
 ./scripts/production-cli.sh data:delete-feeding
 ./scripts/production-cli.sh data:delete-sleep
-./scripts/production-cli.sh data:delete-diapers
-```
 
-#### Direct Access
-```bash
-# SSH into production server
-./scripts/production-cli.sh ssh
-
-# Show all available commands
-./scripts/production-cli.sh help
+# Direct Access
+./scripts/production-cli.sh ssh             # SSH into server
+./scripts/production-cli.sh help            # Show all commands
 ```
 
 ---
 
-## 💻 DEVELOPMENT
+## 🏭 PRODUCTION ENVIRONMENT
 
-### Local Setup
+### Server Details
+- **Host**: 209.250.253.59 (Studio-Republik VPS)
+- **User**: root
+- **App Directory**: `/var/www/parenting-assistant`
+- **Domain**: https://parenting.atmata.ai
+- **SSL**: Caddy (auto-renewal)
 
-1. **Install dependencies**
+### Docker Containers
+
+```yaml
+# docker-compose.prod.yml
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: parenting_postgres
+    ports: [127.0.0.1:5433:5432]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    environment:
+      POSTGRES_USER: parenting_user
+      POSTGRES_PASSWORD: <encoded>
+      POSTGRES_DB: parenting_assistant
+
+  redis:
+    image: redis:7-alpine
+    container_name: parenting_redis
+    ports: [127.0.0.1:6380:6379]
+
+  backend:
+    build: ./backend
+    container_name: parenting_backend
+    ports: [127.0.0.1:3001:3001]
+    environment:
+      DATABASE_URL: postgresql://parenting_user:<encoded>@parenting_postgres:5432/parenting_assistant
+      JWT_SECRET: <secret>
+      JWT_EXPIRE: 30d
+      NODE_ENV: production
+      PORT: 3001
+      REDIS_URL: redis://parenting_redis:6379
+      OPENAI_API_KEY: sk-proj-...
+    depends_on: [postgres, redis]
+
+  frontend:
+    build: ./frontend
+    container_name: parenting_frontend
+    ports: [127.0.0.1:3000:3000]
+    environment:
+      NODE_ENV: production
+    depends_on: [backend]
+```
+
+**Container Status**:
+```bash
+NAME                 STATUS
+parenting_postgres   Up 3 hours (healthy)
+parenting_redis      Up 3 hours (healthy)
+parenting_backend    Up 2 minutes (unhealthy*)
+parenting_frontend   Up 2 hours (unhealthy*)
+```
+
+*Note: "unhealthy" status is due to health check config, but services are functional.
+
+---
+
+### Environment Variables
+
+#### Backend (`/var/www/parenting-assistant/backend/.env`)
+```bash
+DATABASE_URL="postgresql://parenting_user:<URL_ENCODED_PASSWORD>@parenting_postgres:5432/parenting_assistant?schema=public"
+JWT_SECRET="your-secure-secret"
+JWT_EXPIRE="30d"
+PORT=3001
+NODE_ENV=production
+OPENAI_API_KEY="sk-proj-..."
+REDIS_URL="redis://parenting_redis:6379"
+```
+
+**Critical**: URL-encode special characters in password:
+- `+` → `%2B`
+- `/` → `%2F`
+- `=` → `%3D`
+
+#### Frontend (hardcoded in `frontend/src/lib/api.ts`)
+```typescript
+// Auto-deploy script changes this line:
+// Local:      http://localhost:3003/api
+// Production: https://parenting.atmata.ai/api
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
+```
+
+**Note**: Auto-deploy automatically replaces localhost with production URL.
+
+---
+
+## 🛠️ LOCAL DEVELOPMENT
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 14+ (or Docker)
+- Redis (optional, for caching)
+- Git
+
+### Setup
+
+1. **Clone repository**
    ```bash
+   git clone https://github.com/kkhalifeh/twins-assistant.git
+   cd twins-assistant
+   ```
+
+2. **Install dependencies**
+   ```bash
+   # All services
    npm run setup
+
+   # Or individually
+   cd backend && npm install
+   cd frontend && npm install
    ```
 
-2. **Configure environment**
-   ```bash
-   # Backend
-   cd backend
-   cp .env.example .env
-   # Edit DATABASE_URL, JWT_SECRET, OPENAI_API_KEY
+3. **Configure environment**
 
-   # Frontend
-   cd frontend
-   cp .env.example .env
-   # Edit NEXT_PUBLIC_API_URL (usually http://localhost:3003/api)
+   **Backend** (`backend/.env`):
+   ```bash
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public"
+   JWT_SECRET="local-dev-secret"
+   JWT_EXPIRE="30d"
+   PORT=3003
+   NODE_ENV=development
+   OPENAI_API_KEY="sk-proj-..."
+   REDIS_URL="redis://localhost:6379"
    ```
 
-3. **Setup database**
+   **Frontend** (`frontend/.env.local`):
    ```bash
-   cd backend
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" npx prisma migrate dev
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" npx prisma generate
+   NEXT_PUBLIC_API_URL=http://localhost:3003/api
    ```
 
-4. **Start development servers**
+4. **Setup database**
    ```bash
-   # Terminal 1 - Backend (port 3003 locally)
    cd backend
-   PORT=3003 DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" npm run dev
 
-   # Terminal 2 - Frontend (port 3000)
+   # Run migrations
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" \
+     npx prisma migrate dev
+
+   # Generate Prisma client
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" \
+     npx prisma generate
+
+   # Optional: Open Prisma Studio
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" \
+     npx prisma studio
+   ```
+
+5. **Start development servers**
+
+   **Terminal 1 - Backend**:
+   ```bash
+   cd backend
+   PORT=3003 DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" \
+     npm run dev
+   ```
+
+   **Terminal 2 - Frontend**:
+   ```bash
    cd frontend
    npm run dev
    ```
 
-5. **Access application**
+6. **Access application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:3003
    - Health check: http://localhost:3003/health
+   - Prisma Studio: http://localhost:5555
 
-### Common Development Commands
+---
+
+### Common Commands
 
 #### Backend
 ```bash
 cd backend
 
-# Development server with hot-reload
+# Development with hot-reload
 npm run dev
 
 # TypeScript compilation
 npm run build
 
-# Prisma Studio (database GUI)
-DATABASE_URL="..." npx prisma studio
+# Database management
+DATABASE_URL="..." npx prisma migrate dev --name description  # New migration
+DATABASE_URL="..." npx prisma migrate reset                    # Reset DB
+DATABASE_URL="..." npx prisma studio                           # GUI
+DATABASE_URL="..." npx prisma generate                         # Regen client
 
-# Create new migration
-DATABASE_URL="..." npx prisma migrate dev --name description
-
-# Reset database (WARNING: deletes all data)
-DATABASE_URL="..." npx prisma migrate reset
+# Linting
+npm run lint
 ```
 
 #### Frontend
@@ -403,85 +1317,41 @@ npm run start
 npm run lint
 ```
 
-### Making Database Changes
-
-**Local workflow**:
-```bash
-cd backend
-
-# 1. Edit prisma/schema.prisma
-vim prisma/schema.prisma
-
-# 2. Create migration
-DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" npx prisma migrate dev --name add_new_field
-
-# 3. Test locally
-npm run dev
-
-# 4. Commit and push (migration runs automatically on production)
-git add .
-git commit -m "Add new field to model"
-git push origin main
-```
-
 ---
 
-## 🏭 PRODUCTION DETAILS
+### Making Database Changes
 
-### Server Configuration
-- **Host**: 209.250.253.59 (Studio-Republik)
-- **App Directory**: `/var/www/parenting-assistant`
-- **User**: root
-- **Domain**: https://parenting.atmata.ai
-- **SSL**: Managed by Caddy (auto-renewal)
+**Workflow**:
 
-### Docker Containers
-- `parenting_postgres` - PostgreSQL database (port 5432)
-- `parenting_backend` - Node.js API (port 3001)
-- `parenting_frontend` - Next.js app (port 3000)
-- `parenting_redis` - Redis cache (port 6379)
+1. Edit `backend/prisma/schema.prisma`
+   ```prisma
+   model Child {
+     id          String    @id @default(cuid())
+     // ... existing fields
+     newField    String?   // Add new field
+   }
+   ```
 
-### Environment Variables (Production)
+2. Create migration
+   ```bash
+   cd backend
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" \
+     npx prisma migrate dev --name add_new_field
+   ```
 
-**Backend** (`/var/www/parenting-assistant/backend/.env`):
-```bash
-DATABASE_URL="postgresql://parenting_user:UmCGUizk0x5BwBoHRLyFXv2WyQhj%2B8pryOM%2Bovci%2FZ4%3D@parenting_postgres:5432/parenting_assistant?schema=public"
-JWT_SECRET="your-secure-secret"
-JWT_EXPIRE="30d"
-PORT=3001
-NODE_ENV=production
-OPENAI_API_KEY="sk-proj-..."
-REDIS_URL="redis://parenting_redis:6379"
-```
+3. Test locally
+   ```bash
+   npm run dev
+   ```
 
-**Important**: Special characters in passwords must be URL-encoded:
-- `+` → `%2B`
-- `/` → `%2F`
-- `=` → `%3D`
+4. Commit and push (migration runs automatically on production)
+   ```bash
+   git add .
+   git commit -m "Add newField to Child model"
+   git push origin main
+   ```
 
-**Frontend** (hardcoded in `frontend/src/lib/api.ts`):
-```typescript
-const API_URL = 'https://parenting.atmata.ai/api'
-```
-
-**Note**: Auto-deploy script automatically restores this configuration.
-
-### Critical Production Configs
-
-The auto-deploy script preserves these production-specific settings:
-
-1. **Frontend API URL**
-   - Local: `http://localhost:3003/api`
-   - Production: `https://parenting.atmata.ai/api`
-   - File: `frontend/src/lib/api.ts`
-
-2. **Next.js Build Config**
-   - Ignores TypeScript/ESLint errors in production
-   - File: `frontend/next.config.mjs`
-
-3. **Prisma Binary Target**
-   - Must include `linux-musl-openssl-3.0.x` for Alpine Linux
-   - File: `backend/prisma/schema.prisma`
+**Production**: Migration runs via `npx prisma migrate deploy` in auto-deploy script.
 
 ---
 
@@ -489,320 +1359,457 @@ The auto-deploy script preserves these production-specific settings:
 
 ### Deployment Failed
 
-**Check GitHub Actions logs**:
-1. Go to https://github.com/kkhalifeh/twins-assistant/actions
-2. Click on failed workflow run
-3. Review step-by-step logs
+**Check GitHub Actions**:
+1. https://github.com/kkhalifeh/twins-assistant/actions
+2. Click failed workflow
+3. Review step logs
 
-**Check production logs**:
+**Check Production Logs**:
 ```bash
-# Backend logs
 ./scripts/production-cli.sh logs backend
-
-# Frontend logs
 ./scripts/production-cli.sh logs frontend
-
-# All logs
-./scripts/production-cli.sh logs
 ```
 
-**Common issues**:
-- Health check timeout → Backend needs more time to start (retry logic handles this)
-- Migration failed → Check database schema conflicts
-- Build failed → Check TypeScript errors or dependencies
-
-### Frontend Not Updating
-
-```bash
-# Manually rebuild and restart
-./scripts/production-cli.sh deploy
-```
-
-### Database Migration Failed
-
-```bash
-# Check migration status
-./scripts/production-cli.sh db:status
-
-# Try running manually
-./scripts/production-cli.sh db:migrate
-```
-
-### Container Not Running
-
-```bash
-# Check status
-./scripts/production-cli.sh status
-
-# Restart services
-./scripts/production-cli.sh restart all
-```
-
-### Backend Health Check Failing
-
-**Symptoms**: Deployment fails at health check, but backend logs show activity
-
-**Cause**: Container needs more startup time
-
-**Solution**: Auto-deploy script has retry logic (12 attempts x 5 seconds = 60s max wait)
-
-### Prisma Client Errors
-
-**Error**: "Query engine binary not found"
-
-**Cause**: Binary target mismatch (Debian vs Alpine)
-
-**Solution**: Ensure `binaryTargets = ["native", "linux-musl-openssl-3.0.x"]` in schema.prisma
-
-### Database Connection Errors
-
-**Error**: "Invalid port number"
-
-**Cause**: Special characters in DATABASE_URL not encoded
-
-**Solution**: URL-encode password special characters
-
-### Multi-User Account Issues
-
-**Problem**: Users in same account can't see each other's data
-
-**Cause**: Controller using userId-based queries instead of accountId-based
-
-**Solution**: Check controller uses this pattern:
-```typescript
-const user = await prisma.user.findUnique({
-  where: { id: userId },
-  select: { accountId: true }
-});
-
-const children = await prisma.child.findMany({
-  where: {
-    user: { accountId: user.accountId }
-  }
-});
-```
-
-**Problem**: Nanny can't create logs (403 errors)
-
-**Cause**: RBAC resource name mismatch (e.g., `diaper` vs `diapers`)
-
-**Solution**: Check `backend/src/middleware/rbac.middleware.ts` - ensure resource names match API routes
-
-**Problem**: Delete operations return 401 errors
-
-**Cause**: Controller using wrong Request type or wrong user ID access
-
-**Solution**:
-- Use `AuthRequest` type (not `Request`)
-- Access user ID via `req.user?.id` (not `req.user?.userId`)
-
-### Testing Multi-User Functionality
-
-**Comprehensive Test Suite**: `comprehensive-test.sh`
-
-```bash
-# Run full test suite (creates test account with 2 parents, 1 nanny, 2 children)
-./comprehensive-test.sh
-
-# View test results
-cat backend/TEST_FEEDBACK.md
-```
-
-Tests include:
-- Account setup and user invitations
-- Multi-child management
-- Cross-user data visibility
-- Role-based permissions (PARENT, NANNY, VIEWER)
-- CRUD operations across all users
-- Real-time synchronization
-- Dashboard and analytics
-- Journal functionality
-- Data deletion without logout
-- AI chat integration
-- Team management
-
-**Expected Results**: 47/48 tests passing (analytics needs 2+ data points)
+**Common Issues**:
+- Health check timeout → Backend needs more startup time (auto-retry handles this)
+- Migration failed → Check schema conflicts
+- Build failed → Check TypeScript errors
 
 ---
 
-## 📝 IMPORTANT TECHNICAL NOTES
+### Container Issues
 
-### Account-Based Architecture ⭐ CRITICAL
-**All data queries MUST use accountId, not userId**
-
-Every controller should follow this pattern:
-```typescript
-export const getData = async (req: AuthRequest, res: Response) => {
-  const userId = req.user?.id;
-
-  // Step 1: Get user's accountId
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { accountId: true }
-  });
-
-  if (!user?.accountId) {
-    return res.status(400).json({ error: 'User not part of an account' });
-  }
-
-  // Step 2: Get all children (or users) in account
-  const children = await prisma.child.findMany({
-    where: {
-      user: { accountId: user.accountId }
-    }
-  });
-
-  const childIds = children.map(c => c.id);
-
-  // Step 3: Query data using childIds
-  const logs = await prisma.feedingLog.findMany({
-    where: { childId: { in: childIds } }
-  });
-
-  res.json(logs);
-};
+**Check status**:
+```bash
+./scripts/production-cli.sh status
 ```
 
-**Why**: This ensures all users in the same account (parents, nannies) see shared data.
+**Restart services**:
+```bash
+./scripts/production-cli.sh restart all
+./scripts/production-cli.sh restart backend
+./scripts/production-cli.sh restart frontend
+```
 
-**Controllers using this pattern**: All controllers in `src/controllers/` and services in `src/services/`
+**View logs**:
+```bash
+ssh root@209.250.253.59
+cd /var/www/parenting-assistant
+docker-compose -f docker-compose.prod.yml logs backend --tail=100
+docker-compose -f docker-compose.prod.yml logs frontend --tail=100
+```
 
-### Authentication Flow
-1. User registers → Creates User + Account + links them
-2. Login returns JWT token with userId
-3. All API requests include: `Authorization: Bearer <token>`
-4. `authMiddleware` decodes token, attaches `req.user`
-5. `checkResourceAccess` verifies role permissions
-6. Controllers use accountId (not userId) to query shared data
+---
 
-**Key Files**:
-- `backend/src/controllers/auth.controller.ts` - 3-step registration
-- `backend/src/routes/auth.routes.ts` - Must use controller (not inline logic)
-- `backend/src/middleware/rbac.middleware.ts` - Permission checks
-- `backend/src/utils/auth.ts` - AuthRequest type definition
+### Database Issues
 
-### RBAC Implementation
-- Middleware uses `req.baseUrl + req.path` (not just `req.path`)
-- Routes: `/api/feeding`, `/api/sleep`, `/api/diapers`, `/api/health`
-- Resources: `feeding`, `sleep`, `diapers`, `health`, `inventory`, `children`
-- Write operations (POST, PUT, DELETE) require write permissions
+**Prisma Client Errors**:
+- **Error**: "Query engine binary not found"
+- **Cause**: Binary target mismatch (Debian vs Alpine)
+- **Solution**: Ensure `schema.prisma` has:
+  ```prisma
+  generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  }
+  ```
 
-### Prisma for Alpine Linux
-Production uses Alpine-based Docker images. Prisma must include Alpine binary target:
+**Connection Errors**:
+- **Error**: "Invalid port number"
+- **Cause**: Special characters in DATABASE_URL not encoded
+- **Solution**: URL-encode password (`+` → `%2B`, `/` → `%2F`, `=` → `%3D`)
 
-```prisma
-generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+**Migration Failed**:
+```bash
+./scripts/production-cli.sh db:status   # Check status
+./scripts/production-cli.sh db:migrate  # Run manually
+```
+
+---
+
+### Multi-User Issues
+
+**Problem**: Users in same account can't see each other's data
+- **Cause**: Controller using userId instead of accountId
+- **Solution**: Verify controller uses accountId pattern (see Architecture section)
+
+**Problem**: Nanny can't create logs (403 errors)
+- **Cause**: RBAC resource name mismatch
+- **Solution**: Check `rbac.middleware.ts` - ensure resource names match routes
+
+**Problem**: Delete operations return 401
+- **Cause**: Wrong Request type or user ID access
+- **Solution**: Use `AuthRequest` type, access via `req.user?.id`
+
+---
+
+### Frontend Not Updating
+
+**Manual rebuild**:
+```bash
+./scripts/production-cli.sh deploy
+```
+
+**Or direct SSH**:
+```bash
+ssh root@209.250.253.59
+cd /var/www/parenting-assistant/frontend
+npm run build
+pm2 restart parenting-frontend
+```
+
+---
+
+## 📝 API REFERENCE
+
+### Base URL
+- **Production**: `https://parenting.atmata.ai/api`
+- **Local Dev**: `http://localhost:3003/api`
+
+### Authentication
+All protected routes require:
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+---
+
+### Auth Endpoints
+
+#### `POST /api/auth/register`
+Register new user and create account
+
+**Request**:
+```json
+{
+  "email": "parent@example.com",
+  "password": "secure123",
+  "name": "Jane Doe",
+  "phone": "+1234567890"
 }
 ```
 
-Without this, Prisma Client will fail in production containers.
+**Response**:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "cm...",
+    "email": "parent@example.com",
+    "name": "Jane Doe",
+    "role": "PARENT",
+    "accountId": "cm..."
+  }
+}
+```
 
-### Docker Volume Mounts
-Production uses volume mounts for persistence:
-- `backend/node_modules` and `frontend/node_modules` must exist on HOST
-- Run `npm install` on host when dependencies change
-- Container restarts use host's node_modules, not container's
+---
 
-### Frontend Production Build
-- Must run `npm run build` on host (not in container)
-- `.next` directory must exist on host
-- Container serves pre-built static files
+#### `POST /api/auth/login`
+Login existing user
+
+**Request**:
+```json
+{
+  "email": "parent@example.com",
+  "password": "secure123"
+}
+```
+
+**Response**: Same as register
+
+---
+
+### Children Endpoints
+
+#### `GET /api/children`
+Get all children in account
+
+**Response**:
+```json
+[
+  {
+    "id": "cm...",
+    "name": "Emma",
+    "dateOfBirth": "2025-01-15",
+    "gender": "FEMALE",
+    "photoUrl": null,
+    "userId": "cm...",
+    "createdAt": "2025-11-16T..."
+  }
+]
+```
+
+---
+
+#### `POST /api/children`
+Create new child
+
+**Request**:
+```json
+{
+  "name": "Emma",
+  "dateOfBirth": "2025-01-15",
+  "gender": "FEMALE",
+  "photoUrl": null,
+  "medicalNotes": "No allergies"
+}
+```
+
+---
+
+### Feeding Endpoints
+
+#### `GET /api/feeding?childId=<id>&startDate=<date>&endDate=<date>`
+Get feeding logs
+
+**Response**:
+```json
+[
+  {
+    "id": "cm...",
+    "childId": "cm...",
+    "startTime": "2025-11-16T18:30:00.000Z",
+    "endTime": "2025-11-16T18:50:00.000Z",
+    "type": "BREAST",
+    "amount": null,
+    "duration": 20,
+    "notes": "Left breast",
+    "child": { "name": "Emma" },
+    "user": { "name": "Jane Doe" }
+  }
+]
+```
+
+---
+
+#### `POST /api/feeding`
+Create feeding log
+
+**Request**:
+```json
+{
+  "childId": "cm...",
+  "startTime": "2025-11-16T18:30:00.000Z",
+  "type": "BOTTLE",
+  "amount": 120,
+  "notes": "Formula"
+}
+```
+
+---
+
+### Pumping Endpoints
+
+#### `GET /api/pumping?startDate=<date>&endDate=<date>`
+Get pumping logs
+
+#### `POST /api/pumping`
+Create pumping log
+
+**Request**:
+```json
+{
+  "timestamp": "2025-11-16T14:00:00.000Z",
+  "pumpType": "SPECTRA_S1",
+  "duration": 15,
+  "amount": 150,
+  "usage": "STORED",
+  "notes": "Morning pump"
+}
+```
+
+---
+
+### Sleep Endpoints
+
+#### `GET /api/sleep?childId=<id>`
+Get sleep logs
+
+#### `POST /api/sleep`
+Start sleep session
+
+**Request**:
+```json
+{
+  "childId": "cm...",
+  "startTime": "2025-11-16T13:00:00.000Z",
+  "type": "NAP",
+  "headTilt": "RIGHT"
+}
+```
+
+#### `PUT /api/sleep/:id/end`
+End active sleep session
+
+**Request**:
+```json
+{
+  "quality": "DEEP",
+  "notes": "Slept well"
+}
+```
+
+---
+
+### Dashboard Endpoints
+
+#### `GET /api/dashboard?date=2025-11-16&viewMode=day`
+Get dashboard statistics
+
+**Query Params**:
+- `date`: YYYY-MM-DD
+- `timezoneOffset`: Browser offset in minutes
+- `viewMode`: day | week | month
+
+**Response**:
+```json
+{
+  "stats": {
+    "totalFeedings": 8,
+    "totalSleepHours": 12.5,
+    "totalSleepSessions": 5,
+    "totalDiaperChanges": 6,
+    "totalPumpingSessions": 3,
+    "totalPumpedVolume": 420,
+    "avgFeedingInterval": 3.2
+  },
+  "insights": [
+    {
+      "type": "feeding",
+      "title": "Feeding Pattern",
+      "description": "Emma feeds every 3.2 hours on average",
+      "icon": "clock",
+      "color": "green"
+    }
+  ],
+  "recentActivities": [...],
+  "activeSleepSessions": [...]
+}
+```
+
+---
+
+### Analytics Endpoints
+
+#### `GET /api/analytics/insights?days=7`
+Get AI-generated insights
+
+**Response**:
+```json
+{
+  "insights": [
+    {
+      "childId": "cm...",
+      "childName": "Emma",
+      "type": "feeding",
+      "title": "Feeding Pattern Analysis",
+      "description": "Emma feeds every 2.4 hours on average, averaging 29ml per bottle/formula feed and 28 minutes per breastfeed (6 breast, 7 bottle/formula). Total: 13 feedings in past week.",
+      "trend": "stable",
+      "confidence": 85,
+      "lastUpdated": "2025-11-16T..."
+    }
+  ]
+}
+```
 
 ---
 
 ## 🎯 CURRENT STATUS
 
-**Production**: ✅ Live at https://parenting.atmata.ai
+### Production
+✅ **Live**: https://parenting.atmata.ai
 
-**Latest Critical Fixes** (October 27, 2025):
-- ✅ **Multi-user account data sharing** - All users in account see shared data
-- ✅ **Delete all data logout bug** - FIXED (was returning 401 errors)
-- ✅ **RBAC permissions** - Nanny can now create diaper logs
-- ✅ **Cross-user CRUD operations** - All working correctly
-- ✅ **Real-time data synchronization** - Verified across all users
-- ✅ **Comprehensive test suite** - 47/48 tests passing (97.9%)
+### Latest Deployments (November 2025)
+- ✅ **Pumping Module** - Full tracking, dashboard integration, analytics (Nov 16)
+- ✅ **Accurate Feeding Analytics** - Removed volume estimation, separated bottle/breast metrics (Nov 16)
+- ✅ **Timezone Support** - Per-user IANA timezones, UTC storage (Nov 14)
+- ✅ **Head Tilt Tracking** - Plagiocephaly monitoring for sleep (Nov 14)
+- ✅ **Multi-User Account Sharing** - AccountId-based queries (Oct 27)
+- ✅ **RBAC** - Parent/Nanny/Viewer roles (Oct 27)
 
-**All Features Deployed and Working**:
-- ✅ Role-based access control (PARENT, NANNY, VIEWER)
-- ✅ Breast feeding duration tracking
-- ✅ Diaper image upload
-- ✅ Team invitation system
-- ✅ Account creation fixed
-- ✅ Journal showing all activities
-- ✅ Dashboard and analytics
-- ✅ AI chat integration
+### Database Migrations Applied
+1. `20251006111158_init` - Initial schema
+2. `20251008082340_add_userid_to_child` - Child ownership
+3. `20251009073508_add_userid_to_inventory` - Inventory ownership
+4. `20251027112614_add_account_and_features` - Accounts + RBAC
+5. `20251110162734_change_dateofbirth_to_date` - Date type fix
+6. `20251114042718_add_timezone_support` - Timezone fields
+7. `20251114145002_add_head_tilt_to_sleep` - Head tilt enum
+8. `20251116153106_add_pumping_log` - Pumping module
 
-**CI/CD**: ✅ Fully automated
-- Push to main → Auto-deploys in 3-4 minutes
+### CI/CD
+✅ Fully automated via GitHub Actions
+- Push to `main` → Auto-deploys in ~3-4 minutes
 - Health checks with retry logic
 - Production CLI for remote management
 
-**Database**: 4 migrations applied
-1. Initial schema
-2. Add inventory and schedules
-3. Add Account and roles
-4. Add breastDuration and imageUrl
-
-**Testing**: ✅ Comprehensive test suite available
-- Run: `./comprehensive-test.sh` (in project root)
-- Creates 2 parents + 1 nanny + 2 children
-- Tests 20+ scenarios including multi-user, RBAC, CRUD
-- Feedback report: `backend/TEST_FEEDBACK.md`
-
-**Next Steps**: None required - system is production-ready and fully tested
+### Test Coverage
+✅ Comprehensive test suite: `comprehensive-test.sh`
+- 47/48 tests passing (97.9%)
+- Multi-user scenarios
+- RBAC permissions
+- Cross-user data visibility
+- Real-time synchronization
 
 ---
 
-## 📚 REFERENCE
+## 📚 QUICK REFERENCE
 
 ### Git Workflow
 ```bash
-# Make changes locally
-vim file.ts
-
-# Test locally
-npm run dev
-
-# Commit and push (triggers auto-deploy)
+# Make changes
 git add .
 git commit -m "Description"
-git push origin main
+git push origin main  # Triggers auto-deploy
 
 # Watch deployment
 # https://github.com/kkhalifeh/twins-assistant/actions
 ```
 
-### Quick Commands Reference
+### Production Management
 ```bash
-# Development
-npm run dev                    # Start all services
-cd backend && npm run dev      # Backend only
-cd frontend && npm run dev     # Frontend only
-
-# Production Management
+# Status
 ./scripts/production-cli.sh status
+
+# Logs
 ./scripts/production-cli.sh logs backend
-./scripts/production-cli.sh data:delete-all
+
+# Restart
 ./scripts/production-cli.sh restart all
-./scripts/production-cli.sh db:backup
 
 # Database
-cd backend
-DATABASE_URL="..." npx prisma migrate dev
-DATABASE_URL="..." npx prisma studio
-DATABASE_URL="..." npx prisma generate
+./scripts/production-cli.sh db:backup
+./scripts/production-cli.sh db:migrate
+
+# SSH
+./scripts/production-cli.sh ssh
+```
+
+### Local Development
+```bash
+# Start all services
+npm run dev
+
+# Backend only (port 3003)
+cd backend && PORT=3003 DATABASE_URL="postgresql://postgres:password@localhost:5432/twins_assistant?schema=public" npm run dev
+
+# Frontend only (port 3000)
+cd frontend && npm run dev
+
+# Database GUI
+cd backend && DATABASE_URL="..." npx prisma studio
 ```
 
 ### Key URLs
 - **Production**: https://parenting.atmata.ai
-- **GitHub Actions**: https://github.com/kkhalifeh/twins-assistant/actions
+- **GitHub**: https://github.com/kkhalifeh/twins-assistant
+- **Actions**: https://github.com/kkhalifeh/twins-assistant/actions
 - **Local Frontend**: http://localhost:3000
 - **Local Backend**: http://localhost:3003
 
 ---
 
-**End of Documentation**
+**END OF DOCUMENTATION**
 
-*This file serves as the single source of truth for the Parenting AI Assistant project.*
+*This file is the single source of truth for the Parenting AI Assistant project.*
