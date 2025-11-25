@@ -114,6 +114,7 @@ export const pumpingAPI = {
 // Sleep API
 export const sleepAPI = {
   getAll: (params?: any) => api.get('/sleep', { params }).then(res => res.data),
+  getActive: () => api.get('/sleep/active').then(res => res.data),
   create: (data: any) => api.post('/sleep', data).then(res => res.data),
   update: (id: string, data: any) => api.put(`/sleep/${id}`, data).then(res => res.data),
   delete: (id: string) => api.delete(`/sleep/${id}`).then(res => res.data),

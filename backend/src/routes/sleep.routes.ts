@@ -5,6 +5,7 @@ import {
   createSleepLog,
   updateSleepLog,
   deleteSleepLog,
+  getActiveSleepSessions,
   endSleepSession
 } from '../controllers/sleep.controller';
 
@@ -15,6 +16,9 @@ router.use(authMiddleware);
 
 // Get all sleep logs - use controller with proper authorization
 router.get('/', getSleepLogs);
+
+// Get active sleep sessions - MUST come before specific routes to avoid conflicts
+router.get('/active', getActiveSleepSessions);
 
 // Create sleep log - use controller with proper authorization
 router.post('/', createSleepLog);

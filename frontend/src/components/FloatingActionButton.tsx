@@ -1,12 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Plus, X, Milk, Moon, Baby, Heart, Droplet } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { sleepAPI } from '@/lib/api'
+import WakeUpPromptModal from './modals/WakeUpPromptModal'
 
 export default function FloatingActionButton() {
   const [isOpen, setIsOpen] = useState(false)
+  const [showWakeUpPrompt, setShowWakeUpPrompt] = useState(false)
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null)
   const router = useRouter()
+
+  const { data: activeSessions } = useQuery({
+    queryKey: ['activeSleep'],
+    queryFn: sleepAPI.getActive,
+    refetchInterval: 30000, // Check every 30 seconds
+  })
 
   const actions = [
     { icon: Milk, label: 'Feeding', color: 'bg-blue-500 hover:bg-blue-600', route: '/feeding' },
@@ -17,8 +28,27 @@ export default function FloatingActionButton() {
   ]
 
   const handleActionClick = (route: string) => {
-    router.push(route)
+    // Check if there are active sleep sessions (except when clicking sleep itself)
+    if (activeSessions && activeSessions.length > 0 && route !== '/sleep') {
+      setPendingRoute(route)
+      setShowWakeUpPrompt(true)
+      setIsOpen(false)
+      return
+    }
+
+    // If no active sessions, proceed normally
+    continueToRoute(route)
+  }
+
+  const continueToRoute = (route?: string) => {
+    const targetRoute = route || pendingRoute
+    if (!targetRoute) return
+
+    router.push(targetRoute)
     setIsOpen(false)
+    setShowWakeUpPrompt(false)
+    setPendingRoute(null)
+
     // Trigger the "Log" button click after navigation
     setTimeout(() => {
       const logButton = document.querySelector('[data-log-button]') as HTMLButtonElement
@@ -35,6 +65,18 @@ export default function FloatingActionButton() {
         <div
           className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity"
           onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Wake-up Prompt Modal */}
+      {showWakeUpPrompt && activeSessions && activeSessions.length > 0 && (
+        <WakeUpPromptModal
+          activeSessions={activeSessions}
+          onClose={() => {
+            setShowWakeUpPrompt(false)
+            setPendingRoute(null)
+          }}
+          onContinue={() => continueToRoute()}
         />
       )}
 

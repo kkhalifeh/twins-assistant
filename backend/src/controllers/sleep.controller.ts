@@ -289,6 +289,64 @@ export const deleteSleepLog = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Check for active sleep sessions for all children in account
+export const getActiveSleepSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
+      select: { id: true }
+    });
+
+    const childIds = children.map(c => c.id);
+
+    if (childIds.length === 0) {
+      return res.json([]);
+    }
+
+    // Find all active sleep sessions (no endTime) for children in the account
+    const activeSessions = await prisma.sleepLog.findMany({
+      where: {
+        childId: { in: childIds },
+        endTime: null
+      },
+      include: {
+        child: true,
+        user: {
+          select: { name: true, email: true }
+        }
+      },
+      orderBy: { startTime: 'desc' }
+    });
+
+    res.json(activeSessions);
+  } catch (error) {
+    console.error('Get active sleep sessions error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch active sleep sessions'
+    });
+  }
+};
+
 // End sleep session by sleep log ID
 export const endSleepSession = async (req: AuthRequest, res: Response) => {
   try {
