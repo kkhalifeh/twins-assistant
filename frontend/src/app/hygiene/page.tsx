@@ -341,7 +341,6 @@ export default function HygienePage() {
               <div className="space-y-3">
                 {filteredLogs
                   .filter((log: any) => log.childId === selectedChild)
-                  .slice(0, 20)
                   .map((log: any) => (
                   <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3 flex-1">

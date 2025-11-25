@@ -279,7 +279,7 @@ export default function FeedingPage() {
         </h2>
         {filteredLogs.length > 0 ? (
           <div className="space-y-3">
-            {filteredLogs.slice(0, 20).map((log: any) => (
+            {filteredLogs.map((log: any) => (
               <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3 flex-1">
                   <div className={`p-2 rounded-full ${

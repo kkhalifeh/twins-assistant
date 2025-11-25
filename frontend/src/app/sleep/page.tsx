@@ -341,7 +341,7 @@ export default function SleepPage() {
         </h2>
         {filteredLogs.length > 0 ? (
           <div className="space-y-3">
-            {filteredLogs.slice(0, 20).map((log: any) => {
+            {filteredLogs.map((log: any) => {
               const duration = log.duration || 0
               const hours = Math.floor(duration / 60)
               const minutes = duration % 60
