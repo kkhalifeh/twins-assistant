@@ -14,6 +14,7 @@ import {
 import { authAPI } from '@/lib/api'
 import { TimezoneProvider } from '@/contexts/TimezoneContext'
 import FloatingActionButton from '@/components/FloatingActionButton'
+import NavigationMenu from '@/components/NavigationMenu'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -87,19 +88,6 @@ export default function RootLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  // Fetch current user for role-based navigation
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: authAPI.getCurrentUser,
-    retry: false,
-    enabled: isAuthenticated,
-  })
-
-  // Filter navigation based on user role
-  const navigation = allNavigation.filter((item) =>
-    item.roles.includes(currentUser?.role || 'VIEWER')
-  )
-
   useEffect(() => {
     const token = localStorage.getItem('token')
     setIsAuthenticated(!!token)
@@ -170,27 +158,11 @@ export default function RootLayout({
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto px-4 py-4">
-                  <ul className="space-y-1">
-                    {navigation.map((item) => {
-                      const isActive = pathname === item.href
-                      return (
-                        <li key={item.name}>
-                          <Link
-                            href={item.href}
-                            onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                              isActive
-                                ? 'bg-gradient-to-r from-primary-50 to-secondary-50 text-primary-700 shadow-sm'
-                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                            }`}
-                          >
-                            <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-600' : ''}`} />
-                            <span className="font-medium">{item.name}</span>
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
+                  <NavigationMenu
+                    navigation={allNavigation}
+                    pathname={pathname}
+                    onItemClick={() => setSidebarOpen(false)}
+                  />
                 </nav>
 
                 {/* User section */}
