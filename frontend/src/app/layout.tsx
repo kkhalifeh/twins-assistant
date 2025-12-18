@@ -26,20 +26,20 @@ const queryClient = new QueryClient({
   },
 })
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Journal', href: '/journal', icon: Calendar },
-  { name: 'Feeding', href: '/feeding', icon: Activity },
-  { name: 'Pumping', href: '/pumping', icon: Droplet },
-  { name: 'Sleep', href: '/sleep', icon: Moon },
-  { name: 'Diapers', href: '/diapers', icon: Baby },
-  { name: 'Health', href: '/health', icon: Heart },
-  { name: 'Hygiene', href: '/hygiene', icon: Sparkles },
-  { name: 'Milestones', href: '/milestones', icon: Trophy },
-  { name: 'Inventory', href: '/inventory', icon: Package },
-  { name: 'Insights', href: '/insights', icon: Brain },
-  { name: 'Chat Test', href: '/chat', icon: MessageSquare },
-  { name: 'Settings', href: '/settings', icon: Settings },
+const allNavigation = [
+  { name: 'Dashboard', href: '/', icon: Home, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Journal', href: '/journal', icon: Calendar, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Feeding', href: '/feeding', icon: Activity, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Pumping', href: '/pumping', icon: Droplet, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Sleep', href: '/sleep', icon: Moon, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Diapers', href: '/diapers', icon: Baby, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Health', href: '/health', icon: Heart, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Hygiene', href: '/hygiene', icon: Sparkles, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Milestones', href: '/milestones', icon: Trophy, roles: ['PARENT', 'VIEWER'] },
+  { name: 'Inventory', href: '/inventory', icon: Package, roles: ['PARENT', 'VIEWER'] },
+  { name: 'Insights', href: '/insights', icon: Brain, roles: ['PARENT', 'VIEWER'] },
+  { name: 'Chat Test', href: '/chat', icon: MessageSquare, roles: ['PARENT', 'VIEWER'] },
+  { name: 'Settings', href: '/settings', icon: Settings, roles: ['PARENT'] },
 ]
 
 function UserSection({ handleLogout }: { handleLogout: () => void }) {
@@ -86,6 +86,19 @@ export default function RootLayout({
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Fetch current user for role-based navigation
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: authAPI.getCurrentUser,
+    retry: false,
+    enabled: isAuthenticated,
+  })
+
+  // Filter navigation based on user role
+  const navigation = allNavigation.filter((item) =>
+    item.roles.includes(currentUser?.role || 'VIEWER')
+  )
 
   useEffect(() => {
     const token = localStorage.getItem('token')
