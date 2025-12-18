@@ -16,7 +16,17 @@ interface TimezoneContextType {
 const TimezoneContext = createContext<TimezoneContextType | undefined>(undefined);
 
 export function TimezoneProvider({ children }: { children: ReactNode }) {
-  const [timezone, setTimezoneState] = useState<string>('America/New_York');
+  // Initialize with localStorage or browser timezone instead of hardcoded Eastern
+  const getInitialTimezone = () => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('userTimezone');
+      if (saved) return saved;
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    }
+    return 'America/New_York'; // Fallback for SSR
+  };
+
+  const [timezone, setTimezoneState] = useState<string>(getInitialTimezone());
   const [isLoading, setIsLoading] = useState(true);
 
   // Load timezone from localStorage and API on mount
