@@ -28,7 +28,7 @@ const allMenuItems = [
   { icon: Trophy, label: 'Milestones', href: '/milestones', roles: ['PARENT', 'VIEWER'] },
   { icon: Package, label: 'Inventory', href: '/inventory', roles: ['PARENT', 'VIEWER'] },
   { icon: Brain, label: 'Insights', href: '/insights', roles: ['PARENT', 'VIEWER'] },
-  { icon: Settings, label: 'Settings', href: '/settings', roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { icon: Settings, label: 'Settings', href: '/settings', roles: ['PARENT'] },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
