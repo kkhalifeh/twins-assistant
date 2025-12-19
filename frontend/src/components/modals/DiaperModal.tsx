@@ -6,6 +6,7 @@ import { diaperAPI } from '@/lib/api'
 import { X, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
 import { useTimezone } from '@/contexts/TimezoneContext'
+import ChildSelector from '@/components/ChildSelector'
 
 interface DiaperModalProps {
   childId: string
@@ -22,7 +23,11 @@ const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
 export default function DiaperModal({ childId: initialChildId, children, onClose, editingLog }: DiaperModalProps) {
   const queryClient = useQueryClient()
   const { getUserTimezone } = useTimezone()
-  const [childId, setChildId] = useState(editingLog?.childId || '')
+
+  // Multi-child selection (disabled when editing)
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>(
+    editingLog?.childId ? [editingLog.childId] : []
+  )
   const [type, setType] = useState(editingLog?.type || 'WET')
   const [consistency, setConsistency] = useState(editingLog?.consistency || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
@@ -113,11 +118,17 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
     e.preventDefault()
     setUploadError(null)
 
+    // Validation
+    if (selectedChildIds.length === 0) {
+      setUploadError('Please select at least one child')
+      return
+    }
+
     try {
       if (editingLog) {
         // Update existing log
         const data = {
-          childId,
+          childId: selectedChildIds[0],
           timestamp: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString(),
           type,
           consistency: consistency || undefined,
@@ -127,27 +138,34 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
         }
         updateMutation.mutate({ id: editingLog.id, data })
       } else {
-        // Create new log with image upload
-        const formData = new FormData()
-        formData.append('childId', childId)
-        formData.append('timestamp', timestamp ? new Date(timestamp).toISOString() : new Date().toISOString())
-        formData.append('type', type)
-        if (consistency) formData.append('consistency', consistency)
-        if (notes) formData.append('notes', notes)
-        if (image) formData.append('image', image)
-        formData.append('timezone', getUserTimezone())
+        // Create mode: multiple children
+        const promises = []
 
-        // Upload using FormData
-        const response = await api.post('/diapers', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
+        for (const childId of selectedChildIds) {
+          const formData = new FormData()
+          formData.append('childId', childId)
+          formData.append('timestamp', timestamp ? new Date(timestamp).toISOString() : new Date().toISOString())
+          formData.append('type', type)
+          if (consistency) formData.append('consistency', consistency)
+          if (notes) formData.append('notes', notes)
+          if (image) formData.append('image', image)
+          formData.append('timezone', getUserTimezone())
 
-        if (response.data) {
-          queryClient.invalidateQueries({ queryKey: ['diapers'] })
-          onClose()
+          // Upload using FormData
+          promises.push(
+            api.post('/diapers', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            })
+          )
         }
+
+        await Promise.all(promises)
+        queryClient.invalidateQueries({ queryKey: ['diapers'] })
+        queryClient.invalidateQueries({ queryKey: ['journal'] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+        onClose()
       }
     } catch (error: any) {
       console.error('Upload error:', error)
@@ -184,20 +202,23 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Child</label>
-            <select
-              value={childId}
-              onChange={(e) => setChildId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              required
-            >
-              <option value="">Select Child</option>
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>
-                  {child.name}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {editingLog ? 'Child' : 'Select Children'}
+            </label>
+            {editingLog ? (
+              // Edit mode: show child name, no selection
+              <div className="px-3 py-2 bg-gray-50 rounded-md text-gray-700">
+                {children.find(c => c.id === selectedChildIds[0])?.name}
+              </div>
+            ) : (
+              // Create mode: multi-select
+              <ChildSelector
+                children={children}
+                selectedIds={selectedChildIds}
+                onChange={setSelectedChildIds}
+                multiSelect={true}
+              />
+            )}
           </div>
 
           <div>

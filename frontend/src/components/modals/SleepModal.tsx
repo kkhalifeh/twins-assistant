@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { sleepAPI } from '@/lib/api'
 import { X } from 'lucide-react'
 import { useTimezone } from '@/contexts/TimezoneContext'
+import ChildSelector from '@/components/ChildSelector'
 
 interface SleepModalProps {
   childId: string
@@ -16,7 +17,11 @@ interface SleepModalProps {
 export default function SleepModal({ childId: initialChildId, children, onClose, editingLog }: SleepModalProps) {
   const queryClient = useQueryClient()
   const { getUserTimezone } = useTimezone()
-  const [childId, setChildId] = useState(editingLog?.childId || '')
+
+  // Multi-child selection (disabled when editing)
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>(
+    editingLog?.childId ? [editingLog.childId] : []
+  )
   const [type, setType] = useState(editingLog?.type || 'NAP')
   const [headTilt, setHeadTilt] = useState(editingLog?.headTilt || '')
   const [notes, setNotes] = useState(editingLog?.notes || '')
@@ -56,41 +61,67 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
     },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingLog) {
-      const data = {
-        childId,
-        type,
-        headTilt: headTilt || undefined,
-        notes,
-        startTime: startTime ? new Date(startTime).toISOString() : undefined,
-        endTime: endTime ? new Date(endTime).toISOString() : undefined,
-        timezone: getUserTimezone(),
+    // Validation
+    if (selectedChildIds.length === 0) {
+      alert('Please select at least one child')
+      return
+    }
+
+    try {
+      if (editingLog) {
+        // Edit mode: single child
+        const data = {
+          childId: selectedChildIds[0],
+          type,
+          headTilt: headTilt || undefined,
+          notes,
+          startTime: startTime ? new Date(startTime).toISOString() : undefined,
+          endTime: endTime ? new Date(endTime).toISOString() : undefined,
+          timezone: getUserTimezone(),
+        }
+        updateMutation.mutate({ id: editingLog.id, data })
+      } else {
+        // Create mode: multiple children
+        const promises = []
+
+        for (const childId of selectedChildIds) {
+          if (logMode === 'new') {
+            // Start new sleep session (current time, no end time)
+            promises.push(sleepAPI.create({
+              childId,
+              type,
+              headTilt: headTilt || undefined,
+              notes,
+              startTime: new Date().toISOString(),
+              timezone: getUserTimezone(),
+            }))
+          } else {
+            // Log past sleep (with start and end time)
+            promises.push(sleepAPI.create({
+              childId,
+              type,
+              headTilt: headTilt || undefined,
+              notes,
+              startTime: new Date(startTime).toISOString(),
+              endTime: endTime ? new Date(endTime).toISOString() : undefined,
+              timezone: getUserTimezone(),
+            }))
+          }
+        }
+
+        await Promise.all(promises)
+        queryClient.invalidateQueries({ queryKey: ['sleep'] })
+        queryClient.invalidateQueries({ queryKey: ['journal'] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+        queryClient.invalidateQueries({ queryKey: ['activeSleep'] })
+        onClose()
       }
-      updateMutation.mutate({ id: editingLog.id, data })
-    } else if (logMode === 'new') {
-      // Start new sleep session (current time, no end time)
-      createMutation.mutate({
-        childId,
-        type,
-        headTilt: headTilt || undefined,
-        notes,
-        startTime: new Date().toISOString(),
-        timezone: getUserTimezone(),
-      })
-    } else {
-      // Log past sleep (with start and end time)
-      createMutation.mutate({
-        childId,
-        type,
-        headTilt: headTilt || undefined,
-        notes,
-        startTime: new Date(startTime).toISOString(),
-        endTime: endTime ? new Date(endTime).toISOString() : undefined,
-        timezone: getUserTimezone(),
-      })
+    } catch (error) {
+      console.error('Error creating sleep logs:', error)
+      alert('Error creating sleep logs. Please try again.')
     }
   }
 
@@ -135,20 +166,23 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Child</label>
-            <select
-              value={childId}
-              onChange={(e) => setChildId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              required
-            >
-              <option value="">Select Child</option>
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>
-                  {child.name}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {editingLog ? 'Child' : 'Select Children'}
+            </label>
+            {editingLog ? (
+              // Edit mode: show child name, no selection
+              <div className="px-3 py-2 bg-gray-50 rounded-md text-gray-700">
+                {children.find(c => c.id === selectedChildIds[0])?.name}
+              </div>
+            ) : (
+              // Create mode: multi-select
+              <ChildSelector
+                children={children}
+                selectedIds={selectedChildIds}
+                onChange={setSelectedChildIds}
+                multiSelect={true}
+              />
+            )}
           </div>
 
           <div>
