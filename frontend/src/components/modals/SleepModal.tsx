@@ -6,6 +6,7 @@ import { sleepAPI } from '@/lib/api'
 import { X } from 'lucide-react'
 import { useTimezone } from '@/contexts/TimezoneContext'
 import ChildSelector from '@/components/ChildSelector'
+import DateTimeSelector from '@/components/DateTimeSelector'
 
 interface SleepModalProps {
   childId: string
@@ -214,25 +215,21 @@ export default function SleepModal({ childId: initialChildId, children, onClose,
           {(editingLog || logMode === 'past') && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                <input
-                  type="datetime-local"
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                <DateTimeSelector
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  onChange={setStartTime}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   End Time {logMode === 'past' && !editingLog ? '(Optional)' : '(Optional)'}
                 </label>
-                <input
-                  type="datetime-local"
+                <DateTimeSelector
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  onChange={setEndTime}
                 />
               </div>
             </>
