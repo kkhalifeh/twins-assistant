@@ -181,16 +181,19 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
   const isLoading = createMutation.isPending || updateMutation.isPending
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md flex flex-col max-h-[90vh]">
+        {/* Fixed Header */}
+        <div className="flex justify-between items-center p-6 pb-4 border-b">
           <h2 className="text-xl font-semibold">{editingLog ? 'Edit Diaper Change' : 'Log Diaper Change'}</h2>
-          <button onClick={onClose}>
+          <button onClick={onClose} type="button">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Scrollable Content */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="overflow-y-auto px-6 py-4 space-y-4">
           {/* Error Messages */}
           {(imageError || uploadError) && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-2">
@@ -303,22 +306,26 @@ export default function DiaperModal({ childId: initialChildId, children, onClose
               rows={3}
             />
           </div>
+          </div>
 
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-            >
-              {isLoading ? 'Saving...' : editingLog ? 'Update' : 'Save'}
-            </button>
+          {/* Fixed Footer */}
+          <div className="p-6 pt-4 border-t bg-white">
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+              >
+                {isLoading ? 'Saving...' : editingLog ? 'Update' : 'Save'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

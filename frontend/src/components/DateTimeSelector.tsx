@@ -73,15 +73,15 @@ export default function DateTimeSelector({ value, onChange, required }: DateTime
   }
 
   return (
-    <div className="space-y-3">
-      {/* Mode Selection Buttons */}
+    <div className="space-y-2">
+      {/* Mode Selection Buttons - Compact Size */}
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => handleModeChange('today')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
             mode === 'today'
-              ? 'bg-primary-600 text-white shadow-md'
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -90,9 +90,9 @@ export default function DateTimeSelector({ value, onChange, required }: DateTime
         <button
           type="button"
           onClick={() => handleModeChange('yesterday')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
             mode === 'yesterday'
-              ? 'bg-primary-600 text-white shadow-md'
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -101,14 +101,14 @@ export default function DateTimeSelector({ value, onChange, required }: DateTime
         <button
           type="button"
           onClick={() => handleModeChange('other')}
-          className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1 ${
             mode === 'other'
-              ? 'bg-primary-600 text-white shadow-md'
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          <Calendar className="w-4 h-4" />
-          Other Date
+          <Calendar className="w-3 h-3" />
+          Other
         </button>
       </div>
 
