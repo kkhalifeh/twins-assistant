@@ -105,19 +105,26 @@ export const createPumpingLog = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Invalid timezone' });
     }
 
-    // Calculate duration if endTime is provided
+    // Calculate duration if endTime is provided, OR calculate endTime if duration is provided
     let calculatedDuration = duration ? parseIntSafe(duration) : null;
+    let calculatedEndTime = endTime ? new Date(endTime) : null;
+
     if (endTime && !calculatedDuration) {
+      // Calculate duration from endTime
       const start = new Date(startTime);
       const end = new Date(endTime);
       calculatedDuration = Math.floor((end.getTime() - start.getTime()) / 1000 / 60);
+    } else if (calculatedDuration && !endTime) {
+      // Calculate endTime from duration (for past logs with duration but no endTime)
+      const start = new Date(startTime);
+      calculatedEndTime = new Date(start.getTime() + calculatedDuration * 60 * 1000);
     }
 
     const log = await prisma.pumpingLog.create({
       data: {
         userId: req.user!.id,
         startTime: new Date(startTime),
-        endTime: endTime ? new Date(endTime) : null,
+        endTime: calculatedEndTime,
         pumpType,
         duration: calculatedDuration,
         amount: amount ? parseFloatSafe(amount) : null,
