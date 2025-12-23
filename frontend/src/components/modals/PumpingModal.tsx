@@ -89,7 +89,7 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
       } else {
         // Log past pumping (with start time, duration, amount, usage - no endTime)
         const data = {
-          startTime: new Date(startTime).toISOString(),
+          startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
           pumpType,
           duration: parseInt(duration),
           amount: parseFloat(amount),
