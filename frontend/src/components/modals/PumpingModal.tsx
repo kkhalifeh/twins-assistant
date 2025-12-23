@@ -65,7 +65,7 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
     if (log) {
       // Edit mode
       const data = {
-        startTime: startTime ? new Date(startTime).toISOString() : undefined,
+        startTime: startTime && startTime.trim() !== '' ? new Date(startTime).toISOString() : new Date().toISOString(),
         endTime: endTime && endTime.trim() !== '' ? new Date(endTime).toISOString() : undefined,
         pumpType,
         duration: duration ? parseInt(duration) : undefined,
