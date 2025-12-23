@@ -62,8 +62,20 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log('=== PUMPING MODAL SUBMIT DEBUG ===');
+    console.log('log:', log);
+    console.log('logMode:', logMode);
+    console.log('startTime:', startTime);
+    console.log('endTime:', endTime);
+    console.log('duration:', duration);
+    console.log('amount:', amount);
+
     if (log) {
       // Edit mode
+      console.log('EDIT MODE');
+      console.log('startTime check:', startTime, 'trim:', startTime?.trim(), 'isEmpty:', startTime?.trim() === '');
+      console.log('endTime check:', endTime, 'trim:', endTime?.trim(), 'isEmpty:', endTime?.trim() === '');
+
       const data = {
         startTime: startTime && startTime.trim() !== '' ? new Date(startTime).toISOString() : new Date().toISOString(),
         endTime: endTime && endTime.trim() !== '' ? new Date(endTime).toISOString() : undefined,
@@ -74,10 +86,12 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
         notes,
         timezone: getUserTimezone(),
       }
+      console.log('Edit data:', data);
       updateMutation.mutate({ id: log.id, data })
     } else {
       // Create mode
       if (logMode === 'new') {
+        console.log('CREATE MODE - NEW');
         // Start new pumping session (current time, no end time, no amount/duration yet)
         const data = {
           startTime: new Date().toISOString(),
@@ -85,8 +99,11 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
           notes,
           timezone: getUserTimezone(),
         }
+        console.log('New pump data:', data);
         createMutation.mutate(data)
       } else {
+        console.log('CREATE MODE - PAST');
+        console.log('startTime for past:', startTime, 'type:', typeof startTime);
         // Log past pumping (with start time, duration, amount, usage - no endTime)
         const data = {
           startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
@@ -97,6 +114,7 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
           notes,
           timezone: getUserTimezone(),
         }
+        console.log('Past pump data:', data);
         createMutation.mutate(data)
       }
     }
