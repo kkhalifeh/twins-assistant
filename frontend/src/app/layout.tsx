@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import {
   Home, Activity, Moon, Baby, Heart, Trophy,
   Package, Brain, Settings, Menu, X, LogOut,
-  MessageSquare, Calendar, Sparkles, Droplet, DollarSign
+  MessageSquare, Calendar, Sparkles, Droplet, DollarSign, Upload
 } from 'lucide-react'
 import { authAPI } from '@/lib/api'
 import { TimezoneProvider } from '@/contexts/TimezoneContext'
@@ -29,6 +29,7 @@ const queryClient = new QueryClient({
 
 const allNavigation = [
   { name: 'Dashboard', href: '/', icon: Home, roles: ['PARENT', 'NANNY', 'VIEWER'] },
+  { name: 'Import Logs', href: '/logs/import', icon: Upload, roles: ['PARENT', 'NANNY'] },
   { name: 'Journal', href: '/journal', icon: Calendar, roles: ['PARENT', 'NANNY', 'VIEWER'] },
   { name: 'Feeding', href: '/feeding', icon: Activity, roles: ['PARENT', 'NANNY', 'VIEWER'] },
   { name: 'Pumping', href: '/pumping', icon: Droplet, roles: ['PARENT', 'NANNY', 'VIEWER'] },

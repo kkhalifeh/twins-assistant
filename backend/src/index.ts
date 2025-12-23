@@ -26,6 +26,7 @@ import inventoryRoutes from './routes/inventory.routes';
 import dataRoutes from './routes/data.routes';
 import milestoneRoutes from './routes/milestone.routes';
 import paymentRoutes from './routes/payment.routes';
+import logImportRoutes from './routes/log-import.routes';
 import { checkResourceAccess } from './middleware/rbac.middleware';
 import { authMiddleware } from './utils/auth';
 
@@ -81,6 +82,7 @@ app.use('/api/inventory', authMiddleware, checkResourceAccess, inventoryRoutes);
 app.use('/api/data', authMiddleware, checkResourceAccess, dataRoutes);
 app.use('/api/milestones', authMiddleware, checkResourceAccess, milestoneRoutes);
 app.use('/api/payments', authMiddleware, checkResourceAccess, paymentRoutes);
+app.use('/api/log-import', authMiddleware, checkResourceAccess, logImportRoutes);
 
 // Base API route
 app.get('/api', (req: Request, res: Response) => {
@@ -100,7 +102,8 @@ app.get('/api', (req: Request, res: Response) => {
       analytics: '/api/analytics',
       inventory: '/api/inventory',
       milestones: '/api/milestones',
-      payments: '/api/payments'
+      payments: '/api/payments',
+      logImport: '/api/log-import'
     }
   });
 });

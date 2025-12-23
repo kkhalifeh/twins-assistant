@@ -204,3 +204,17 @@ export const paymentsAPI = {
   delete: (id: string) => api.delete(`/payments/${id}`).then(res => res.data),
   getSummary: (params?: any) => api.get('/payments/summary', { params }).then(res => res.data),
 };
+
+// Log Import API
+export const logImportAPI = {
+  analyzeImages: async (formData: FormData) => {
+    const response = await api.post('/log-import/analyze', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  bulkSave: (data: any) => api.post('/log-import/bulk-save', data).then(res => res.data),
+  createLog: (data: any) => api.post('/log-import/create-log', data).then(res => res.data),
+};
