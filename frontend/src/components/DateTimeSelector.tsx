@@ -12,7 +12,14 @@ interface DateTimeSelectorProps {
 export default function DateTimeSelector({ value, onChange, required }: DateTimeSelectorProps) {
   const [mode, setMode] = useState<'today' | 'yesterday' | 'other'>('today')
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [customDateTime, setCustomDateTime] = useState(value)
+  const [customDateTime, setCustomDateTime] = useState(() => {
+    // Initialize with current time if no value provided
+    if (!value || value.trim() === '') {
+      const now = new Date()
+      return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    }
+    return value
+  })
 
   // Initialize mode based on the value
   useEffect(() => {
@@ -138,7 +145,7 @@ export default function DateTimeSelector({ value, onChange, required }: DateTime
             type="time"
             value={customDateTime.split('T')[1] || ''}
             onChange={(e) => {
-              const date = customDateTime.split('T')[0]
+              const date = customDateTime.split('T')[0] || new Date().toISOString().split('T')[0]
               handleCustomDateTimeChange(`${date}T${e.target.value}`)
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
