@@ -29,7 +29,7 @@ const queryClient = new QueryClient({
 
 const allNavigation = [
   { name: 'Dashboard', href: '/', icon: Home, roles: ['PARENT', 'NANNY', 'VIEWER'] },
-  { name: 'Import Logs', href: '/logs/import', icon: Upload, roles: ['PARENT', 'NANNY'] },
+  // { name: 'Import Logs', href: '/logs/import', icon: Upload, roles: ['PARENT', 'NANNY'] },
   { name: 'Journal', href: '/journal', icon: Calendar, roles: ['PARENT', 'NANNY', 'VIEWER'] },
   { name: 'Feeding', href: '/feeding', icon: Activity, roles: ['PARENT', 'NANNY', 'VIEWER'] },
   { name: 'Pumping', href: '/pumping', icon: Droplet, roles: ['PARENT', 'NANNY', 'VIEWER'] },
