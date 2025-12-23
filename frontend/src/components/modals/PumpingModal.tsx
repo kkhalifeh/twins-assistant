@@ -66,7 +66,7 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
       // Edit mode
       const data = {
         startTime: startTime ? new Date(startTime).toISOString() : undefined,
-        endTime: endTime ? new Date(endTime).toISOString() : undefined,
+        endTime: endTime && endTime.trim() !== '' ? new Date(endTime).toISOString() : undefined,
         pumpType,
         duration: duration ? parseInt(duration) : undefined,
         amount: amount ? parseFloat(amount) : undefined,
@@ -87,13 +87,12 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
         }
         createMutation.mutate(data)
       } else {
-        // Log past pumping (with start, end, duration, amount, usage)
+        // Log past pumping (with start time, duration, amount, usage - no endTime)
         const data = {
           startTime: new Date(startTime).toISOString(),
-          endTime: endTime ? new Date(endTime).toISOString() : undefined,
           pumpType,
-          duration: duration ? parseInt(duration) : undefined,
-          amount: amount ? parseFloat(amount) : undefined,
+          duration: parseInt(duration),
+          amount: parseFloat(amount),
           usage,
           notes,
           timezone: getUserTimezone(),
@@ -178,19 +177,22 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Time (Optional)
-                  </label>
-                  <DateTimeSelector
-                    value={endTime}
-                    onChange={setEndTime}
-                  />
-                </div>
+                {/* Only show endTime field when editing existing logs */}
+                {log && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Time (Optional)
+                    </label>
+                    <DateTimeSelector
+                      value={endTime}
+                      onChange={setEndTime}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (minutes) {!log && '(Optional)'}
+                    Duration (minutes)
                   </label>
                   <input
                     type="number"
@@ -199,12 +201,13 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="15"
                     min="1"
+                    required={!log}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Milk Amount (ml) {!log && '(Optional)'}
+                    Milk Amount (ml)
                   </label>
                   <input
                     type="number"
@@ -214,17 +217,19 @@ export default function PumpingModal({ log, onClose }: PumpingModalProps) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="120"
                     min="0"
+                    required={!log}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Usage {!log && '(Optional)'}
+                    Usage
                   </label>
                   <select
                     value={usage}
                     onChange={(e) => setUsage(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required={!log}
                   >
                     <option value="STORED">Stored</option>
                     <option value="USED">Used</option>
