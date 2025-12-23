@@ -106,9 +106,11 @@ export const feedingAPI = {
 // Pumping API
 export const pumpingAPI = {
   getAll: (params?: any) => api.get('/pumping', { params }).then(res => res.data),
+  getActive: () => api.get('/pumping/active').then(res => res.data),
   create: (data: any) => api.post('/pumping', data).then(res => res.data),
   update: (id: string, data: any) => api.put(`/pumping/${id}`, data).then(res => res.data),
   delete: (id: string) => api.delete(`/pumping/${id}`).then(res => res.data),
+  endPumping: (id: string, data: { amount: number; usage: string }) => api.put(`/pumping/${id}/end`, data).then(res => res.data),
 };
 
 // Sleep API

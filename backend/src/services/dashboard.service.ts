@@ -109,7 +109,7 @@ export class DashboardService {
       prisma.pumpingLog.findMany({
         where: {
           userId: { in: userIds },
-          timestamp: {
+          startTime: {
             gte: startDate,
             lte: endDate
           }
@@ -119,7 +119,7 @@ export class DashboardService {
             select: { name: true, email: true }
           }
         },
-        orderBy: { timestamp: 'desc' }
+        orderBy: { startTime: 'desc' }
       }),
       prisma.hygieneLog.findMany({
         where: {
@@ -172,7 +172,7 @@ export class DashboardService {
 
     const pumpingLogs = allPumpingLogs.filter(log =>
       TimezoneService.isInDateRange(
-        log.timestamp,
+        log.startTime,
         log.entryTimezone || timezone,
         dateStr,
         timezone,

@@ -282,9 +282,9 @@ export class AnalyticsService {
     const pumpingLogs = await prisma.pumpingLog.findMany({
       where: {
         userId: { in: userIds },
-        timestamp: { gte: since }
+        startTime: { gte: since }
       },
-      orderBy: { timestamp: 'asc' }
+      orderBy: { startTime: 'asc' }
     });
 
     if (pumpingLogs.length === 0) return null;
@@ -292,7 +292,7 @@ export class AnalyticsService {
     // Group by day to count actual days with data
     const pumpingByDay = new Map<string, any[]>();
     pumpingLogs.forEach(log => {
-      const dayKey = format(log.timestamp, 'yyyy-MM-dd');
+      const dayKey = format(log.startTime, 'yyyy-MM-dd');
       const currentLogs = pumpingByDay.get(dayKey) || [];
       currentLogs.push(log);
       pumpingByDay.set(dayKey, currentLogs);
@@ -755,7 +755,7 @@ export class AnalyticsService {
       }
 
       // Provide next action based on last session time
-      const lastSessionTime = formatInTimeZone(pumpingPattern.lastSession.timestamp, timezone, 'h:mm a');
+      const lastSessionTime = formatInTimeZone(pumpingPattern.lastSession.startTime, timezone, 'h:mm a');
 
       insights.push({
         type: 'pumping',

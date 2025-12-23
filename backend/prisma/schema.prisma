@@ -96,11 +96,12 @@ model FeedingLog {
 model PumpingLog {
   id            String       @id @default(cuid())
   userId        String
-  timestamp     DateTime
+  startTime     DateTime     // Changed from timestamp to match SleepLog pattern
+  endTime       DateTime?    // Added for active session tracking
   pumpType      PumpType
-  duration      Int          // in minutes
-  amount        Float        // in ml
-  usage         UsageType
+  duration      Int?         // in minutes (nullable, calculated when session ends)
+  amount        Float?       // in ml (nullable, entered when session ends)
+  usage         UsageType?   // STORED or USED (nullable, entered when session ends)
   notes         String?
   entryTimezone String       @default("America/New_York") // IANA timezone when log was created
   createdAt     DateTime     @default(now())
@@ -108,7 +109,7 @@ model PumpingLog {
   // Relations
   user  User  @relation(fields: [userId], references: [id])
 
-  @@index([userId, timestamp])
+  @@index([userId, startTime])
 }
 
 model SleepLog {
@@ -377,6 +378,7 @@ enum PumpType {
   MADELA_SYMPHONY
   SPECTRA_S1
   MADELA_IN_STYLE
+  OTHER
 }
 
 enum UsageType {

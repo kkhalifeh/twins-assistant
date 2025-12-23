@@ -43,7 +43,7 @@ export const getPumpingLogs = async (req: AuthRequest, res: Response) => {
       const endDate = new Date(date as string);
       endDate.setUTCHours(23, 59, 59, 999);
 
-      where.timestamp = {
+      where.startTime = {
         gte: startDate,
         lte: endDate
       };
@@ -56,7 +56,7 @@ export const getPumpingLogs = async (req: AuthRequest, res: Response) => {
           select: { name: true, email: true }
         }
       },
-      orderBy: { timestamp: 'desc' }
+      orderBy: { startTime: 'desc' }
     });
 
     res.json(logs);
@@ -71,7 +71,8 @@ export const getPumpingLogs = async (req: AuthRequest, res: Response) => {
 export const createPumpingLog = async (req: AuthRequest, res: Response) => {
   try {
     const {
-      timestamp,
+      startTime,
+      endTime,
       pumpType,
       duration,
       amount,
@@ -85,9 +86,9 @@ export const createPumpingLog = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    if (!timestamp || !pumpType || !duration || !amount || !usage) {
+    if (!startTime || !pumpType) {
       return res.status(400).json({
-        error: 'Timestamp, pump type, duration, amount, and usage are required'
+        error: 'Start time and pump type are required'
       });
     }
 
@@ -104,14 +105,23 @@ export const createPumpingLog = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Invalid timezone' });
     }
 
+    // Calculate duration if endTime is provided
+    let calculatedDuration = duration ? parseIntSafe(duration) : null;
+    if (endTime && !calculatedDuration) {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      calculatedDuration = Math.floor((end.getTime() - start.getTime()) / 1000 / 60);
+    }
+
     const log = await prisma.pumpingLog.create({
       data: {
         userId: req.user!.id,
-        timestamp: new Date(timestamp),
+        startTime: new Date(startTime),
+        endTime: endTime ? new Date(endTime) : null,
         pumpType,
-        duration: parseIntSafe(duration) || 0,
-        amount: parseFloatSafe(amount) || 0,
-        usage,
+        duration: calculatedDuration,
+        amount: amount ? parseFloatSafe(amount) : null,
+        usage: usage || null,
         notes,
         entryTimezone
       },
@@ -140,7 +150,8 @@ export const updatePumpingLog = async (req: AuthRequest, res: Response) => {
     }
 
     const {
-      timestamp,
+      startTime,
+      endTime,
       pumpType,
       duration,
       amount,
@@ -180,14 +191,23 @@ export const updatePumpingLog = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Pumping log not found' });
     }
 
+    // Recalculate duration if times are updated
+    let calculatedDuration = duration !== undefined ? parseIntSafe(duration) : undefined;
+    if (startTime && endTime && calculatedDuration === undefined) {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      calculatedDuration = Math.floor((end.getTime() - start.getTime()) / 1000 / 60);
+    }
+
     const log = await prisma.pumpingLog.update({
       where: { id },
       data: {
-        ...(timestamp && { timestamp: new Date(timestamp) }),
+        ...(startTime && { startTime: new Date(startTime) }),
+        ...(endTime !== undefined && { endTime: endTime ? new Date(endTime) : null }),
         ...(pumpType && { pumpType }),
-        ...(duration !== undefined && { duration: parseIntSafe(duration) || 0 }),
-        ...(amount !== undefined && { amount: parseFloatSafe(amount) || 0 }),
-        ...(usage && { usage }),
+        ...(calculatedDuration !== undefined && { duration: calculatedDuration }),
+        ...(amount !== undefined && { amount: amount ? parseFloatSafe(amount) : null }),
+        ...(usage !== undefined && { usage }),
         ...(notes !== undefined && { notes })
       },
       include: {
@@ -255,6 +275,144 @@ export const deletePumpingLog = async (req: AuthRequest, res: Response) => {
     console.error('Delete pumping log error:', error);
     res.status(500).json({
       error: 'Failed to delete pumping log'
+    });
+  }
+};
+
+// Get active pumping sessions for all users in account
+export const getActivePumpingSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all users in the same account
+    const users = await prisma.user.findMany({
+      where: {
+        accountId: user.accountId
+      },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
+    if (userIds.length === 0) {
+      return res.json([]);
+    }
+
+    // Find all active pumping sessions (no endTime) for users in the account
+    const activeSessions = await prisma.pumpingLog.findMany({
+      where: {
+        userId: { in: userIds },
+        endTime: null
+      },
+      include: {
+        user: {
+          select: { name: true, email: true }
+        }
+      },
+      orderBy: { startTime: 'desc' }
+    });
+
+    res.json(activeSessions);
+  } catch (error) {
+    console.error('Get active pumping sessions error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch active pumping sessions'
+    });
+  }
+};
+
+// End pumping session by pumping log ID
+export const endPumpingSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const { pumpingLogId } = req.params;
+    const { amount, usage } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (!amount || !usage) {
+      return res.status(400).json({ error: 'Amount and usage are required to end pumping session' });
+    }
+
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all users in the same account
+    const users = await prisma.user.findMany({
+      where: {
+        accountId: user.accountId
+      },
+      select: { id: true }
+    });
+
+    const userIds = users.map(u => u.id);
+
+    if (userIds.length === 0) {
+      return res.status(404).json({ error: 'No users found in account' });
+    }
+
+    // Find the pumping log and verify it belongs to a user in the account
+    const activeSession = await prisma.pumpingLog.findFirst({
+      where: {
+        id: pumpingLogId,
+        userId: { in: userIds },
+        endTime: null
+      }
+    });
+
+    if (!activeSession) {
+      return res.status(404).json({
+        error: 'No active pumping session found'
+      });
+    }
+
+    const endTime = new Date();
+    const duration = Math.floor(
+      (endTime.getTime() - activeSession.startTime.getTime()) / 1000 / 60
+    );
+
+    const updated = await prisma.pumpingLog.update({
+      where: { id: activeSession.id },
+      data: {
+        endTime,
+        duration,
+        amount: parseFloatSafe(amount) || 0,
+        usage
+      },
+      include: {
+        user: {
+          select: { name: true, email: true }
+        }
+      }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error('End pumping session error:', error);
+    res.status(500).json({
+      error: 'Failed to end pumping session'
     });
   }
 };

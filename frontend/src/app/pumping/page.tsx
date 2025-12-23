@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pumpingAPI, authAPI } from '@/lib/api'
-import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns'
-import { Droplet, Plus, TrendingUp, Edit2, Trash2, Activity } from 'lucide-react'
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, differenceInMinutes } from 'date-fns'
+import { Droplet, Plus, TrendingUp, Edit2, Trash2, Activity, AlertCircle, Clock } from 'lucide-react'
 import PumpingModal from '@/components/modals/PumpingModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { useTimezone } from '@/contexts/TimezoneContext'
@@ -17,6 +17,7 @@ const PUMP_TYPE_LABELS: Record<string, string> = {
   BABY_BUDDHA: 'Baby Buddha',
   MADELA_SYMPHONY: 'Madela Symphony',
   SPECTRA_S1: 'Spectra S1',
+  MADELA_IN_STYLE: 'Madela In Style',
   OTHER: 'Other'
 }
 
@@ -34,13 +35,18 @@ export default function PumpingPage() {
       end: endOfWeek(now, { weekStartsOn: 0 })
     }
   })
+  const [endingSession, setEndingSession] = useState<string | null>(null)
+  const [endSessionError, setEndSessionError] = useState<string | null>(null)
+  const [endSessionAmount, setEndSessionAmount] = useState<string>('')
+  const [endSessionUsage, setEndSessionUsage] = useState<string>('STORED')
+  const [showEndModal, setShowEndModal] = useState<string | null>(null)
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: authAPI.getCurrentUser,
   })
 
-  const { data: pumpingLogs } = useQuery({
+  const { data: pumpingLogs, refetch: refetchPumpingLogs } = useQuery({
     queryKey: ['pumping'],
     queryFn: () => pumpingAPI.getAll(),
   })
@@ -50,6 +56,25 @@ export default function PumpingPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pumping'] })
     },
+  })
+
+  const endPumpingMutation = useMutation({
+    mutationFn: ({ id, amount, usage }: { id: string; amount: number; usage: string }) =>
+      pumpingAPI.endPumping(id, { amount, usage }),
+    onSuccess: () => {
+      setEndingSession(null)
+      setEndSessionError(null)
+      setShowEndModal(null)
+      setEndSessionAmount('')
+      setEndSessionUsage('STORED')
+      refetchPumpingLogs()
+      queryClient.invalidateQueries({ queryKey: ['pumping'] })
+    },
+    onError: (error: any) => {
+      setEndingSession(null)
+      setEndSessionError(error.response?.data?.error || 'Failed to end pumping session')
+      console.error('Error ending pumping session:', error)
+    }
   })
 
   const handleEdit = (log: any) => {
@@ -63,7 +88,27 @@ export default function PumpingPage() {
     }
   }
 
+  const handleEndPump = async (sessionId: string) => {
+    if (!endSessionAmount) {
+      setEndSessionError('Please enter the milk amount')
+      return
+    }
+    setEndingSession(sessionId)
+    setEndSessionError(null)
+    endPumpingMutation.mutate({
+      id: sessionId,
+      amount: parseFloat(endSessionAmount),
+      usage: endSessionUsage
+    })
+  }
+
   const isParent = currentUser?.role === 'PARENT'
+
+  // Get active pumping sessions
+  const activePumpingSessions = useMemo(() => {
+    if (!pumpingLogs) return []
+    return pumpingLogs.filter((log: any) => !log.endTime)
+  }, [pumpingLogs])
 
   // Filter logs based on date range
   const filteredLogs = useMemo(() => {
@@ -71,9 +116,9 @@ export default function PumpingPage() {
 
     return pumpingLogs.filter((log: any) => {
       try {
-        const logDate = typeof log.timestamp === 'string'
-          ? parseISO(log.timestamp)
-          : new Date(log.timestamp)
+        const logDate = typeof log.startTime === 'string'
+          ? parseISO(log.startTime)
+          : new Date(log.startTime)
 
         return isWithinInterval(logDate, {
           start: dateRange.start,
@@ -91,7 +136,7 @@ export default function PumpingPage() {
     const groupedByDay: Record<string, number> = {}
 
     filteredLogs.forEach((log: any) => {
-      const day = format(new Date(log.timestamp), 'MM/dd')
+      const day = format(new Date(log.startTime), 'MM/dd')
       if (!groupedByDay[day]) {
         groupedByDay[day] = 0
       }
@@ -175,6 +220,97 @@ export default function PumpingPage() {
       <div className="mb-4 sm:mb-6">
         <DateRangeSelector onRangeChange={handleDateRangeChange} />
       </div>
+
+      {/* Error Alert */}
+      {endSessionError && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-red-600" />
+          <span className="text-sm text-red-700">{endSessionError}</span>
+        </div>
+      )}
+
+      {/* Active Pumping Sessions */}
+      {activePumpingSessions.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Active Pumping Sessions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activePumpingSessions.map((session: any) => (
+              <div key={session.id} className="card bg-blue-50 border-blue-200">
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <Droplet className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-blue-900">{PUMP_TYPE_LABELS[session.pumpType] || session.pumpType}</p>
+                        <p className="text-sm text-blue-700">
+                          Started at {format(new Date(session.startTime), 'h:mm a')}
+                        </p>
+                        <p className="text-xs text-blue-600 flex items-center mt-1">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {Math.round(differenceInMinutes(new Date(), new Date(session.startTime)))} minutes
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* End Session Form */}
+                  {showEndModal === session.id ? (
+                    <div className="bg-white rounded-md p-3 space-y-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Amount (ml)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={endSessionAmount}
+                          onChange={(e) => setEndSessionAmount(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                          placeholder="120"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Usage</label>
+                        <select
+                          value={endSessionUsage}
+                          onChange={(e) => setEndSessionUsage(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                        >
+                          <option value="STORED">Stored</option>
+                          <option value="USED">Used</option>
+                        </select>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setShowEndModal(null)}
+                          className="flex-1 px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleEndPump(session.id)}
+                          disabled={endingSession === session.id}
+                          className="flex-1 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {endingSession === session.id ? 'Ending...' : 'End Session'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowEndModal(session.id)}
+                      className="w-full px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                    >
+                      End Pumping
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -313,24 +449,28 @@ export default function PumpingPage() {
                 filteredLogs.map((log: any) => (
                   <tr key={log.id} className="hover:bg-gray-50">
                     <td className="px-3 sm:px-4 py-3 text-sm">
-                      <div>{formatDate(log.timestamp)}</div>
-                      <div className="text-gray-500">{formatTime(log.timestamp)}</div>
+                      <div>{formatDate(log.startTime)}</div>
+                      <div className="text-gray-500">{formatTime(log.startTime)}</div>
                     </td>
                     <td className="px-3 sm:px-4 py-3 text-sm">
                       {PUMP_TYPE_LABELS[log.pumpType] || log.pumpType}
                     </td>
-                    <td className="px-3 sm:px-4 py-3 text-sm">{log.duration} min</td>
+                    <td className="px-3 sm:px-4 py-3 text-sm">{log.duration ? `${log.duration} min` : '-'}</td>
                     <td className="px-3 sm:px-4 py-3 text-sm font-semibold text-blue-600">
-                      {log.amount} ml
+                      {log.amount ? `${log.amount} ml` : '-'}
                     </td>
                     <td className="px-3 sm:px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        log.usage === 'STORED'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {log.usage === 'STORED' ? 'Stored' : 'Used'}
-                      </span>
+                      {log.usage ? (
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          log.usage === 'STORED'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {log.usage === 'STORED' ? 'Stored' : 'Used'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
                     </td>
                     {isParent && (
                       <td className="px-3 sm:px-4 py-3 text-sm">

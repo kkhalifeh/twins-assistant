@@ -255,7 +255,8 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     const pumpingLog = await prisma.pumpingLog.create({
       data: {
         userId,
-        timestamp: pumpingTime,
+        startTime: pumpingTime,
+        endTime: pumpingTime,
         amount: amount || 120,
         duration: duration || 15,
         pumpType: pumpType?.toUpperCase() || 'OTHER',
@@ -272,20 +273,20 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
     const todayCount = await prisma.pumpingLog.count({
       where: {
         userId,
-        timestamp: { gte: startOfDay(new Date()) }
+        startTime: { gte: startOfDay(new Date()) }
       }
     });
 
     const todayTotal = await prisma.pumpingLog.aggregate({
       where: {
         userId,
-        timestamp: { gte: startOfDay(new Date()) }
+        startTime: { gte: startOfDay(new Date()) }
       },
       _sum: { amount: true }
     });
 
-    const timeStr = formatInTimeZone(pumpingLog.timestamp, timezone, 'h:mm a');
-    return `✅ Logged pumping session: ${amount || 120}ml in ${duration || 15} min at ${timeStr}. Today's total: ${todayCount} sessions (${todayTotal._sum.amount || 0}ml)`;
+    const timeStr = formatInTimeZone(pumpingLog.startTime, timezone, 'h:mm a');
+    return `✅ Logged pumping session: ${amount || 120}ml in ${duration || 15} min at ${timeStr}. Today's total: ${todayCount} sessions (${todayTotal._sum?.amount || 0}ml)`;
   },
 
   getLastPumping: async (args: any): Promise<string> => {
@@ -293,7 +294,7 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
 
     const lastPumping = await prisma.pumpingLog.findFirst({
       where: { userId },
-      orderBy: { timestamp: 'desc' },
+      orderBy: { startTime: 'desc' },
       include: {
         user: {
           select: { name: true }
@@ -305,9 +306,9 @@ const availableFunctions: Record<string, (args: any) => Promise<string>> = {
       return 'No pumping records found';
     }
 
-    const hoursAgo = differenceInHours(new Date(), lastPumping.timestamp);
-    const minutesAgo = differenceInMinutes(new Date(), lastPumping.timestamp) % 60;
-    const timeStr = formatInTimeZone(lastPumping.timestamp, timezone, 'h:mm a');
+    const hoursAgo = differenceInHours(new Date(), lastPumping.startTime);
+    const minutesAgo = differenceInMinutes(new Date(), lastPumping.startTime) % 60;
+    const timeStr = formatInTimeZone(lastPumping.startTime, timezone, 'h:mm a');
 
     return `Last pumping session was ${hoursAgo}h ${minutesAgo}m ago: ${lastPumping.amount}ml in ${lastPumping.duration} min at ${timeStr}`;
   },
