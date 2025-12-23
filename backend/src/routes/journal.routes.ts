@@ -70,7 +70,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       const pumpingLogs = await prisma.pumpingLog.findMany({
         where: {
           userId: { in: userIds },
-          timestamp: {
+          startTime: {
             gte: startDate,
             lte: endDate
           }
@@ -176,7 +176,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
       prisma.pumpingLog.findMany({
         where: {
           userId: { in: userIds },
-          timestamp: {
+          startTime: {
             gte: startDate,
             lte: endDate
           }
@@ -186,7 +186,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
             select: { name: true, email: true }
           }
         },
-        orderBy: { timestamp: 'desc' }
+        orderBy: { startTime: 'desc' }
       }),
       prisma.hygieneLog.findMany({
         where: {
@@ -249,7 +249,7 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
 
     const pumpingLogs = allPumpingLogs.filter(log =>
       TimezoneService.isInDateRange(
-        log.timestamp,
+        log.startTime,
         log.entryTimezone || viewTimezone,
         dateStr,
         viewTimezone,
@@ -339,10 +339,10 @@ router.get('/daily', async (req: AuthRequest, res: Response) => {
         type: 'pumping',
         childName: null,
         description: `Pumped ${log.amount}ml in ${log.duration} min`,
-        timestamp: log.timestamp,
+        timestamp: log.startTime,
         entryTimezone: log.entryTimezone,
         displayTime: TimezoneService.formatInTimezone(
-          log.timestamp,
+          log.startTime,
           log.entryTimezone || viewTimezone,
           viewTimezone
         ),
