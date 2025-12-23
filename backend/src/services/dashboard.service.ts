@@ -514,10 +514,10 @@ export class DashboardService {
         type: 'pumping',
         childName: null,
         description: `Pumped ${log.amount}ml in ${log.duration} min`,
-        timestamp: log.timestamp,
+        timestamp: log.startTime,
         entryTimezone: log.entryTimezone,
         displayTime: TimezoneService.formatInTimezone(
-          log.timestamp,
+          log.startTime,
           log.entryTimezone || displayTimezone,
           displayTimezone
         ),
