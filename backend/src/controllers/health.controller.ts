@@ -126,6 +126,137 @@ export const createHealthLog = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateHealthLog = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const {
+      timestamp,
+      type,
+      value,
+      unit,
+      notes
+    } = req.body;
+
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
+      select: { id: true }
+    });
+
+    const childIds = children.map(c => c.id);
+
+    // Verify log belongs to a child in the account
+    const existingLog = await prisma.healthLog.findFirst({
+      where: {
+        id,
+        childId: { in: childIds }
+      }
+    });
+
+    if (!existingLog) {
+      return res.status(404).json({ error: 'Health log not found' });
+    }
+
+    const log = await prisma.healthLog.update({
+      where: { id },
+      data: {
+        ...(timestamp && { timestamp: new Date(timestamp) }),
+        ...(type && { type }),
+        ...(value !== undefined && { value: value.toString() }),
+        ...(unit !== undefined && { unit }),
+        ...(notes !== undefined && { notes })
+      },
+      include: {
+        child: true,
+        user: {
+          select: { name: true, email: true }
+        }
+      }
+    });
+
+    res.json(log);
+  } catch (error) {
+    console.error('Update health log error:', error);
+    res.status(500).json({
+      error: 'Failed to update health log'
+    });
+  }
+};
+
+export const deleteHealthLog = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Get user's accountId
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountId: true }
+    });
+
+    if (!user?.accountId) {
+      return res.status(400).json({ error: 'User not part of an account' });
+    }
+
+    // Get all children IDs for users in the same account
+    const children = await prisma.child.findMany({
+      where: {
+        user: {
+          accountId: user.accountId
+        }
+      },
+      select: { id: true }
+    });
+
+    const childIds = children.map(c => c.id);
+
+    // Verify log belongs to a child in the account
+    const existingLog = await prisma.healthLog.findFirst({
+      where: {
+        id,
+        childId: { in: childIds }
+      }
+    });
+
+    if (!existingLog) {
+      return res.status(404).json({ error: 'Health log not found' });
+    }
+
+    await prisma.healthLog.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'Health log deleted successfully' });
+  } catch (error) {
+    console.error('Delete health log error:', error);
+    res.status(500).json({
+      error: 'Failed to delete health log'
+    });
+  }
+};
+
 export const getLatestVitals = async (req: AuthRequest, res: Response) => {
   try {
     const { childId } = req.params;
