@@ -43,6 +43,7 @@ model User {
   hygieneLogs  HygieneLog[]
   schedules    Schedule[]
   inventory    Inventory[]
+  paymentLogs  PaymentLog[]
 
   @@index([accountId])
 }
@@ -387,4 +388,45 @@ enum HygieneType {
   BATH
   NAIL_TRIMMING
   ORAL_CARE
+}
+
+model PaymentLog {
+  id            String          @id @default(cuid())
+  userId        String
+  childIds      String[]        // Optional: Array of child IDs this payment relates to
+  timestamp     DateTime
+  category      PaymentCategory
+  description   String
+  amount        Float
+  currency      Currency        @default(JOD)
+  notes         String?
+  entryTimezone String          @default("America/New_York") // IANA timezone when log was created
+  createdAt     DateTime        @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
+  @@index([category])
+}
+
+enum PaymentCategory {
+  NANNY
+  DOCTOR
+  CLINIC
+  LAB
+  PHARMACY
+  FORMULA
+  DIAPERS
+  SUPPLIES
+  DAYCARE
+  THERAPY
+  OTHER
+}
+
+enum Currency {
+  JOD
+  AED
+  USD
+  EUR
 }

@@ -195,3 +195,12 @@ export const milestonesAPI = {
   update: (id: string, data: any) => api.put(`/milestones/${id}`, data).then(res => res.data),
   delete: (id: string) => api.delete(`/milestones/${id}`).then(res => res.data),
 };
+
+// Payments API
+export const paymentsAPI = {
+  getAll: (params?: any) => api.get('/payments', { params }).then(res => res.data),
+  create: (data: any) => api.post('/payments', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/payments/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/payments/${id}`).then(res => res.data),
+  getSummary: (params?: any) => api.get('/payments/summary', { params }).then(res => res.data),
+};
