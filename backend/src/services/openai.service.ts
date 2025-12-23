@@ -163,8 +163,17 @@ Return the data in this exact JSON structure:
       throw new Error('No response from OpenAI');
     }
 
+    // Strip markdown code blocks if present (```json ... ```)
+    let cleanedResult = result.trim();
+    if (cleanedResult.startsWith('```')) {
+      // Remove opening code fence
+      cleanedResult = cleanedResult.replace(/^```(?:json)?\s*\n?/, '');
+      // Remove closing code fence
+      cleanedResult = cleanedResult.replace(/\n?```\s*$/, '');
+    }
+
     // Parse the JSON response
-    const analysisResponse: AnalysisResponse = JSON.parse(result);
+    const analysisResponse: AnalysisResponse = JSON.parse(cleanedResult);
 
     // Validate the response structure
     if (!analysisResponse.logs || !Array.isArray(analysisResponse.logs)) {
