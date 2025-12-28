@@ -135,7 +135,7 @@ export default function PaymentsPage() {
   const availableCategories = useMemo(() => {
     if (!paymentLogs) return []
     const categories = new Set(paymentLogs.map((log: any) => log.category))
-    return Array.from(categories)
+    return Array.from(categories) as string[]
   }, [paymentLogs])
 
   return (

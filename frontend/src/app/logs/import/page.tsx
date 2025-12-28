@@ -9,7 +9,7 @@ import { useTimezone } from '@/contexts/TimezoneContext'
 
 export default function LogImportPage() {
   const router = useRouter()
-  const { userTimezone } = useTimezone()
+  const { timezone: userTimezone } = useTimezone()
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [selectedChildren, setSelectedChildren] = useState<string[]>([])
   const [previews, setPreviews] = useState<string[]>([])

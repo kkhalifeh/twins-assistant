@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pumpingAPI, authAPI } from '@/lib/api'
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, differenceInMinutes } from 'date-fns'
-import { Droplet, Plus, TrendingUp, Edit2, Trash2, Activity, AlertCircle, Clock } from 'lucide-react'
+import { Droplet, Plus, TrendingUp, Edit2, Trash2, Activity, AlertCircle, Clock, FileDown } from 'lucide-react'
 import PumpingModal from '@/components/modals/PumpingModal'
+import PumpingExportModal from '@/components/modals/PumpingExportModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { useTimezone } from '@/contexts/TimezoneContext'
 import {
@@ -40,6 +41,7 @@ export default function PumpingPage() {
   const [endSessionAmount, setEndSessionAmount] = useState<string>('')
   const [endSessionUsage, setEndSessionUsage] = useState<string>('STORED')
   const [showEndModal, setShowEndModal] = useState<string | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -203,17 +205,26 @@ export default function PumpingPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Pumping Tracker</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor pumping sessions and milk supply</p>
         </div>
-        <button
-          data-log-button
-          onClick={() => {
-            setEditingLog(null)
-            setShowModal(true)
-          }}
-          className="btn-primary flex items-center space-x-2 w-full sm:w-auto mt-3 sm:mt-0 justify-center"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Log Pumping Session</span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="btn-secondary flex items-center justify-center space-x-2"
+          >
+            <FileDown className="w-5 h-5" />
+            <span>Export Report</span>
+          </button>
+          <button
+            data-log-button
+            onClick={() => {
+              setEditingLog(null)
+              setShowModal(true)
+            }}
+            className="btn-primary flex items-center justify-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Log Pumping Session</span>
+          </button>
+        </div>
       </div>
 
       {/* Date Range Selector */}
@@ -506,6 +517,10 @@ export default function PumpingPage() {
             setEditingLog(null)
           }}
         />
+      )}
+
+      {showExportModal && (
+        <PumpingExportModal onClose={() => setShowExportModal(false)} />
       )}
     </div>
   )

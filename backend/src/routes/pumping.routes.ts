@@ -8,6 +8,10 @@ import {
   getActivePumpingSessions,
   endPumpingSession
 } from '../controllers/pumping.controller';
+import {
+  exportPumpingCSV,
+  generatePumpingInsights
+} from '../controllers/pumping-export.controller';
 
 const router = Router();
 
@@ -19,6 +23,10 @@ router.get('/', getPumpingLogs);
 
 // Get active pumping sessions - MUST come before specific routes to avoid conflicts
 router.get('/active', getActivePumpingSessions);
+
+// Export routes - MUST come before /:id route to avoid conflict
+router.get('/export/csv', exportPumpingCSV);
+router.get('/export/insights', generatePumpingInsights);
 
 // Create pumping log - use controller with proper authorization
 router.post('/', createPumpingLog);
