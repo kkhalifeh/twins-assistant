@@ -268,6 +268,15 @@ export const generateFeedingInsights = async (req: AuthRequest, res: Response) =
     // Generate AI insights using OpenAI
     const prompt = `You are a pediatric nutritionist and infant feeding specialist. Analyze the following feeding data for ${children.length > 1 ? 'twins/multiples' : 'a baby'} and provide detailed insights and recommendations.
 
+IMPORTANT - Feeding Type Definitions:
+- BOTTLE: Breast milk given via bottle (pumped breast milk)
+- BREAST: Direct breastfeeding from the mother
+- FORMULA: Infant formula
+- MIXED: Combination of breast milk and formula in one feeding
+- SOLID: Solid foods (for older infants)
+
+Note: Both BOTTLE and BREAST represent breast milk feeding - BOTTLE is pumped breast milk, BREAST is direct nursing. When analyzing breast milk intake, combine both BOTTLE and BREAST counts.
+
 Data Summary:
 - Date Range: ${analysisData.dateRange.start} to ${analysisData.dateRange.end}
 - Total Feedings: ${analysisData.summary.totalFeedings}
