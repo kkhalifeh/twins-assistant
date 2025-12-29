@@ -4,8 +4,9 @@ import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { childrenAPI, feedingAPI, authAPI } from '@/lib/api'
 import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek } from 'date-fns'
-import { Milk, Plus, TrendingUp, Edit2, Trash2 } from 'lucide-react'
+import { Milk, Plus, TrendingUp, Edit2, Trash2, Download } from 'lucide-react'
 import FeedingModal from '@/components/modals/FeedingModal'
+import FeedingExportModal from '@/components/modals/FeedingExportModal'
 import DateRangeSelector from '@/components/DateRangeSelector'
 import { useTimezone } from '@/contexts/TimezoneContext'
 import {
@@ -37,6 +38,7 @@ export default function FeedingPage() {
   const queryClient = useQueryClient()
   const [selectedChild, setSelectedChild] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
   const [modalChildId, setModalChildId] = useState<string>('')
   const [editingLog, setEditingLog] = useState<any | null>(null)
   const [dateRange, setDateRange] = useState(() => {
@@ -165,18 +167,27 @@ export default function FeedingPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Feeding Tracker</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Monitor feeding patterns and intake</p>
         </div>
-        <button
-          data-log-button
-          onClick={() => {
-            setModalChildId(children?.[0]?.id || '')
-            setEditingLog(null)
-            setShowModal(true)
-          }}
-          className="btn-primary flex items-center space-x-2 w-full sm:w-auto mt-3 sm:mt-0 justify-center"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Log Feeding</span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="btn-secondary flex items-center space-x-2 justify-center"
+          >
+            <Download className="w-5 h-5" />
+            <span>Export</span>
+          </button>
+          <button
+            data-log-button
+            onClick={() => {
+              setModalChildId(children?.[0]?.id || '')
+              setEditingLog(null)
+              setShowModal(true)
+            }}
+            className="btn-primary flex items-center space-x-2 justify-center"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Log Feeding</span>
+          </button>
+        </div>
       </div>
 
       {/* Date Range Selector */}
@@ -350,6 +361,10 @@ export default function FeedingPage() {
             setEditingLog(null)
           }}
         />
+      )}
+
+      {showExportModal && (
+        <FeedingExportModal onClose={() => setShowExportModal(false)} />
       )}
     </div>
   )
