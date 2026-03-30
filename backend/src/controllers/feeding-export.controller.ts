@@ -3,6 +3,7 @@ import { prisma } from '../index';
 import { AuthRequest } from '../utils/auth';
 import OpenAI from 'openai';
 import { format } from 'date-fns';
+import { DateTime } from 'luxon';
 
 const openai = new OpenAI({
   apiKey: (process.env.OPENAI_API_KEY || '').trim(),
@@ -85,18 +86,23 @@ export const exportFeedingCSV = async (req: AuthRequest, res: Response) => {
       'Timezone'
     ];
 
-    const csvRows = logs.map(log => [
-      format(new Date(log.startTime), 'yyyy-MM-dd'),
-      format(new Date(log.startTime), 'HH:mm:ss'),
-      log.endTime ? format(new Date(log.endTime), 'HH:mm:ss') : '',
-      log.child?.name || '',
-      log.type,
-      log.amount?.toString() || '',
-      log.duration?.toString() || '',
-      log.user?.name || log.user?.email || '',
-      log.notes || '',
-      log.entryTimezone
-    ]);
+    const csvRows = logs.map(log => {
+      const tz = log.entryTimezone || 'America/New_York';
+      const start = DateTime.fromJSDate(new Date(log.startTime), { zone: 'utc' }).setZone(tz);
+      const end = log.endTime ? DateTime.fromJSDate(new Date(log.endTime), { zone: 'utc' }).setZone(tz) : null;
+      return [
+        start.toFormat('yyyy-MM-dd'),
+        start.toFormat('HH:mm:ss'),
+        end ? end.toFormat('HH:mm:ss') : '',
+        log.child?.name || '',
+        log.type,
+        log.amount?.toString() || '',
+        log.duration?.toString() || '',
+        log.user?.name || log.user?.email || '',
+        log.notes || '',
+        tz
+      ];
+    });
 
     const csv = [
       csvHeaders.join(','),
@@ -222,9 +228,10 @@ export const generateFeedingInsights = async (req: AuthRequest, res: Response) =
       };
     });
 
-    // Group by date for daily trends
+    // Group by date for daily trends (using each log's entry timezone)
     const dailyData = logs.reduce((acc, log) => {
-      const date = format(new Date(log.startTime), 'yyyy-MM-dd');
+      const tz = log.entryTimezone || 'America/New_York';
+      const date = DateTime.fromJSDate(new Date(log.startTime), { zone: 'utc' }).setZone(tz).toFormat('yyyy-MM-dd');
       if (!acc[date]) {
         acc[date] = { count: 0, amount: 0, byChild: {} as Record<string, { count: number; amount: number }> };
       }
