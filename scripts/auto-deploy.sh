@@ -56,23 +56,20 @@ fi
 
 # Backend deployment
 echo -e "${YELLOW}🔨 Deploying backend...${NC}"
-cd backend
 
-# Install/update dependencies
-npm install
+# Rebuild and restart backend container with new code
+echo -e "${YELLOW}🏗️  Rebuilding backend Docker image...${NC}"
+docker compose -f docker-compose.prod.yml build backend
 
-# Generate Prisma client
-npx prisma generate
+echo -e "${YELLOW}🔄 Restarting backend container...${NC}"
+docker compose -f docker-compose.prod.yml up -d backend
 
 # Run database migrations
 echo -e "${YELLOW}🗄️  Running database migrations...${NC}"
+sleep 5  # Wait for container to start
 docker exec parenting_backend npx prisma migrate deploy || {
   echo -e "${RED}⚠️  Migration failed, but continuing...${NC}"
 }
-
-# Restart backend
-echo -e "${YELLOW}🔄 Restarting backend container...${NC}"
-docker restart parenting_backend
 
 # Wait for backend to start with retry
 echo -e "${YELLOW}⏳ Waiting for backend to start...${NC}"
@@ -92,7 +89,7 @@ echo -e "${GREEN}✅ Backend is healthy${NC}"
 
 # Frontend deployment
 echo -e "${YELLOW}🎨 Deploying frontend...${NC}"
-cd ../frontend
+cd /var/www/parenting-assistant/frontend
 
 # Install/update dependencies
 npm install
