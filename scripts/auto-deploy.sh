@@ -59,10 +59,10 @@ echo -e "${YELLOW}🔨 Deploying backend...${NC}"
 
 # Rebuild and restart backend container with new code
 echo -e "${YELLOW}🏗️  Rebuilding backend Docker image...${NC}"
-docker compose -f docker-compose.prod.yml build backend
+docker-compose -f docker-compose.prod.yml build backend
 
 echo -e "${YELLOW}🔄 Restarting backend container...${NC}"
-docker compose -f docker-compose.prod.yml up -d backend
+docker-compose -f docker-compose.prod.yml up -d backend
 
 # Run database migrations
 echo -e "${YELLOW}🗄️  Running database migrations...${NC}"
