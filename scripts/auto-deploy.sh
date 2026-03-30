@@ -61,8 +61,10 @@ echo -e "${YELLOW}🔨 Deploying backend...${NC}"
 echo -e "${YELLOW}🏗️  Rebuilding backend Docker image...${NC}"
 docker-compose -f docker-compose.prod.yml build backend
 
-echo -e "${YELLOW}🔄 Restarting backend container...${NC}"
-docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
+echo -e "${YELLOW}🔄 Stopping and replacing backend container...${NC}"
+docker stop parenting_backend || true
+docker rm parenting_backend || true
+docker-compose -f docker-compose.prod.yml up -d --no-deps backend
 
 # Run database migrations
 echo -e "${YELLOW}🗄️  Running database migrations...${NC}"
